@@ -112,7 +112,8 @@ export async function POST(req: NextRequest) {
 
     // Render PDF
     const pdfBuffer = Buffer.from(
-      await renderToBuffer(React.createElement(ProposalDocument as React.ComponentType<{ data: ProposalData }>, { data: proposalData }))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await renderToBuffer(React.createElement(ProposalDocument, { data: proposalData }) as any)
     );
 
     // Send email with PDF attached
