@@ -237,7 +237,7 @@ export default function Home() {
       <NavBar />
 
       {/* HERO — layered: StarWarp → Sphere → Text */}
-      <div className="relative w-full h-screen overflow-hidden">
+      <div className="relative w-full h-[100svh] min-h-[600px] overflow-hidden">
         {/* Layer 0: AI neural network canvas */}
         <div className="absolute inset-0" style={{ zIndex: 0 }}>
           <AIBackground className="w-full h-full" />
@@ -251,12 +251,12 @@ export default function Home() {
 
       <DotGlobeHero
         rotationSpeed={0.004}
-        globeRadius={1.4}
+        globeRadius={typeof window !== "undefined" && window.innerWidth < 768 ? 0.85 : 1.4}
         className="absolute inset-0 bg-transparent"
       >
 
         {/* All hero content in a single vertical flow */}
-        <div className="relative w-full h-full flex flex-col items-center justify-between py-32 px-6" style={{ zIndex: 20 }}>
+        <div className="relative w-full h-full flex flex-col items-center justify-between py-16 md:py-32 px-6" style={{ zIndex: 20 }}>
 
           {/* MIDDLE — both texts stacked in center + floating badges */}
           <div className="flex-1 relative w-full flex items-center justify-center">

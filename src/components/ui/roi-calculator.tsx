@@ -77,7 +77,7 @@ export default function ROICalculator() {
   const handleCalculate = () => setShowResults(true);
 
   return (
-    <div className="grid grid-cols-2 gap-12 items-start max-w-5xl mx-auto w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start max-w-5xl mx-auto w-full">
       {/* Left — inputs */}
       <motion.div
         initial={{ opacity: 0, x: -30 }}
@@ -102,7 +102,7 @@ export default function ROICalculator() {
         {/* Service selector */}
         <div className="flex flex-col gap-3">
           <span style={{ fontSize: "0.72rem", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)" }}>Service you need</span>
-          <div className="grid grid-cols-2 gap-2" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {SERVICES.map(s => (
               <button
                 key={s.id}
@@ -212,7 +212,7 @@ export default function ROICalculator() {
               </div>
 
               {/* Stats grid */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { label: "Current monthly cost", value: `$${monthlyManualCost.toLocaleString()}`, sub: "in manual labour", color: "rgba(255,255,255,0.6)" },
                   { label: "AI subscription", value: `$${aiMonthlyCost.toLocaleString()}/mo`, sub: service.label, color: "#00d4ff" },
