@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="380 -50 1040 720" role="img" aria-label="CyberCraft360">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D5FF"/>
+      <stop offset="44%" stop-color="#1686FF"/>
+      <stop offset="74%" stop-color="#7A39FF"/>
+      <stop offset="100%" stop-color="#E64DFF"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#B8C7D8"/>
+      <stop offset="65%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#8293A8"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.0  0 0 0 0 0.55  0 0 0 0 1  0 0 0 0.55 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>.thin{fill:none;stroke-linecap:round;stroke-linejoin:round;}</style>
+  </defs>
+
+  <g id="icon" transform="translate(900 330)" filter="url(#softGlow)">
+    <!-- segmented 360 ring -->
+    <path d="M -290 -20 A 292 292 0 0 1 -18 -292" class="thin" stroke="url(#brandGrad)" stroke-width="18"/>
+    <path d="M 18 -292 A 292 292 0 0 1 292 -30" class="thin" stroke="url(#brandGrad)" stroke-width="18"/>
+    <path d="M 292 30 A 292 292 0 0 1 20 292" class="thin" stroke="url(#brandGrad)" stroke-width="18"/>
+    <path d="M -20 292 A 292 292 0 0 1 -292 30" class="thin" stroke="url(#brandGrad)" stroke-width="18" opacity="0.72"/>
+    <!-- orbit -->
+    <ellipse cx="0" cy="0" rx="365" ry="108" transform="rotate(-22)" fill="none" stroke="url(#brandGrad)" stroke-width="8" opacity="0.9"/>
+    <circle cx="-312" cy="125" r="27" fill="url(#brandGrad)"/>
+    <circle cx="313" cy="-123" r="27" fill="url(#brandGrad)"/>
+    <!-- shield outline -->
+    <path d="M0 -230 L190 -142 L178 76 C158 168 78 238 0 275 C-78 238 -158 168 -178 76 L-190 -142 Z" fill="none" stroke="url(#brandGrad)" stroke-width="23" stroke-linejoin="round"/>
+    <!-- C monogram -->
+    <path d="M105 -98 C65 -137 6 -158 -58 -139 C-140 -115 -190 -39 -178 47 C-166 132 -98 193 -10 198 C41 201 87 185 125 155" fill="none" stroke="url(#brandGrad)" stroke-width="62" stroke-linecap="butt"/>
+    <path d="M118 -96 L172 -45 L78 4" fill="none" stroke="url(#brandGrad)" stroke-width="34" stroke-linecap="square" stroke-linejoin="miter"/>
+    <!-- chip -->
+    <g transform="translate(20 30)">
+      <rect x="-55" y="-55" width="110" height="110" rx="14" fill="#071B3D" stroke="url(#brandGrad)" stroke-width="10"/>
+      <rect x="-25" y="-25" width="50" height="50" rx="5" fill="none" stroke="url(#metal)" stroke-width="6"/>
+      <g stroke="url(#brandGrad)" stroke-width="7" stroke-linecap="round">
+        <path d="M-40 -76 L-40 -102"/><path d="M-14 -76 L-14 -104"/><path d="M14 -76 L14 -104"/><path d="M40 -76 L40 -102"/>
+        <path d="M-40 76 L-40 102"/><path d="M-14 76 L-14 104"/><path d="M14 76 L14 104"/><path d="M40 76 L40 102"/>
+        <path d="M-76 -40 L-102 -40"/><path d="M-76 -14 L-104 -14"/><path d="M-76 14 L-104 14"/><path d="M-76 40 L-102 40"/>
+        <path d="M76 -40 L102 -40"/><path d="M76 -14 L104 -14"/><path d="M76 14 L104 14"/><path d="M76 40 L102 40"/>
+      </g>
+    </g>
+    <!-- circuit lines -->
+    <g fill="none" stroke="url(#brandGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-260 -20 H-380 L-410 -50 H-470"/><circle cx="-485" cy="-50" r="12"/>
+      <path d="M-260 32 H-345 L-374 62 H-435"/><circle cx="-450" cy="62" r="12"/>
+      <path d="M260 -5 H365 L398 -35 H462"/><circle cx="478" cy="-35" r="12"/>
+      <path d="M260 48 H350 L384 83 H440"/><circle cx="456" cy="83" r="12"/>
+    </g>
+  </g>
+</svg>
