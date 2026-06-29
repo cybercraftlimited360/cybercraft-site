@@ -88,6 +88,8 @@ export default function IrisAgent() {
   const [started, setStarted] = useState(false);
   const [bookedCall, setBookedCall] = useState(false);
   const [supported, setSupported] = useState(true);
+  const [textMode, setTextMode] = useState(false);
+  const [textInput, setTextInput] = useState("");
   const [currentLang, setCurrentLang] = useState("en-US");
   const [capturedLead, setCapturedLead] = useState<CapturedLead | null>(null);
 
@@ -106,8 +108,11 @@ export default function IrisAgent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Auto-enable text mode on touch/mobile devices
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+    if (isTouch) { setTextMode(true); }
     const SR = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
-    if (!SR || !window.speechSynthesis) { setSupported(false); return; }
+    if (!SR || !window.speechSynthesis) { setSupported(false); setTextMode(true); return; }
     synthRef.current = window.speechSynthesis;
   }, []);
 
@@ -260,6 +265,48 @@ export default function IrisAgent() {
     recognition.start();
   }, [activePersona, phase, speakText]);
 
+  const sendTextMessage = useCallback(async (text: string) => {
+    if (!text.trim() || phase === "thinking") return;
+    setTextInput("");
+    setPhase("thinking");
+
+    const userMsg: Message = { role: "user", content: text };
+    const updated = [...messagesRef.current, userMsg];
+    setMessages(updated);
+
+    if (text.toLowerCase().includes("book") || text.toLowerCase().includes("calendly") || text.toLowerCase().includes("schedule")) {
+      setBookedCall(true);
+    }
+
+    try {
+      const res = await fetch("/api/iris", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updated, persona: activePersona }),
+      });
+      const data = await res.json();
+      const reply = data.reply || "Sorry, something went wrong. Please try again.";
+      const lang = data.lang || currentLangRef.current;
+
+      setCurrentLang(lang);
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+      setAgentText(reply);
+
+      if (reply.toLowerCase().includes("calendly") || reply.toLowerCase().includes("book") || reply.toLowerCase().includes("strategy session")) {
+        setBookedCall(true);
+      }
+      if (data.lead && (data.lead.name || data.lead.company) && !leadSavedRef.current) {
+        leadSavedRef.current = true;
+        setCapturedLead(data.lead);
+      }
+
+      setPhase("speaking");
+      speakText(reply, lang, () => setPhase("idle"));
+    } catch {
+      setPhase("idle");
+    }
+  }, [activePersona, phase, speakText]);
+
   const handleStart = () => {
     setStarted(true);
     setMessages([]);
@@ -282,10 +329,10 @@ export default function IrisAgent() {
     leadSavedRef.current = false;
   };
 
-  if (!supported) {
+  if (!supported && !textMode) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground text-sm">Voice agents require Chrome or Edge. Please switch browsers to experience this demo.</p>
+        <p className="text-muted-foreground text-sm">Voice not supported in this browser. <button onClick={() => setTextMode(true)} className="text-[#00d4ff] underline">Switch to text mode</button></p>
       </div>
     );
   }
@@ -356,7 +403,7 @@ export default function IrisAgent() {
             cursor: !started || phase === "idle" ? "pointer" : "default",
             position: "relative",
           }}
-          onClick={!started ? handleStart : phase === "idle" ? startListening : undefined}
+          onClick={!started ? handleStart : (phase === "idle" && !textMode) ? startListening : undefined}
         >
           <AnimatePresence mode="wait">
             {phase === "listening" && (
@@ -403,7 +450,7 @@ export default function IrisAgent() {
            phase === "listening" ? `Listening... (${currentLang})` :
            phase === "thinking" ? `${persona.name} is thinking...` :
            phase === "speaking" ? `${persona.name} is speaking...` :
-           "Tap orb to respond"}
+           textMode ? "Type your message below" : "Tap orb to respond"}
         </motion.p>
       </AnimatePresence>
 
@@ -494,6 +541,53 @@ export default function IrisAgent() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Text input — shown on mobile / when voice unsupported */}
+      {started && textMode && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ width: "100%", maxWidth: "520px" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <input
+              type="text"
+              value={textInput}
+              onChange={e => setTextInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") sendTextMessage(textInput); }}
+              placeholder={`Message ${persona.name}...`}
+              disabled={phase === "thinking" || phase === "speaking"}
+              style={{
+                flex: 1, background: "rgba(255,255,255,0.04)", border: `1px solid ${persona.border}`,
+                borderRadius: "12px", padding: "12px 16px", fontSize: "0.9rem", color: "#fff",
+                outline: "none", opacity: phase === "thinking" ? 0.5 : 1,
+              }}
+            />
+            <button
+              onClick={() => sendTextMessage(textInput)}
+              disabled={!textInput.trim() || phase === "thinking" || phase === "speaking"}
+              style={{
+                background: `linear-gradient(135deg, ${persona.color}, #7c3aed)`,
+                border: "none", borderRadius: "12px", padding: "12px 18px",
+                color: "#fff", fontSize: "0.85rem", fontWeight: 700, cursor: "pointer",
+                opacity: !textInput.trim() || phase === "thinking" ? 0.4 : 1,
+              }}
+            >
+              Send
+            </button>
+          </div>
+          {!supported && (
+            <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", marginTop: "8px", textAlign: "center" }}>
+              Voice not supported in this browser — text mode active
+            </p>
+          )}
+        </motion.div>
+      )}
+
+      {/* Voice/Text toggle — desktop only */}
+      {started && supported && (
+        <button onClick={() => setTextMode(t => !t)}
+          style={{ background: "transparent", border: "none", fontSize: "0.65rem", letterSpacing: "0.15em",
+            textTransform: "uppercase", color: "rgba(255,255,255,0.2)", cursor: "pointer", textDecoration: "underline" }}>
+          Switch to {textMode ? "voice" : "text"} mode
+        </button>
+      )}
 
       {/* End session */}
       {started && (
