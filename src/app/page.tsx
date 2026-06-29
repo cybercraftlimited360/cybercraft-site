@@ -253,7 +253,6 @@ export default function Home() {
         rotationSpeed={0.004}
         globeRadius={1.4}
         className="absolute inset-0 bg-transparent"
-        style={{ zIndex: 2 }}
       >
 
         {/* All hero content in a single vertical flow */}
