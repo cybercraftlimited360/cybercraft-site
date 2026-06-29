@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 const LEADS_FILE = path.join(process.cwd(), "data", "leads.json");
 const PENDING_FILE = path.join(process.cwd(), "data", "pending-calls.json");
-const NOTIFY_EMAIL = "saadimran1994@gmail.com";
+const NOTIFY_EMAIL = "cybercraftlimited@gmail.com";
 
 function readPending(): any[] {
   try { return JSON.parse(fs.readFileSync(PENDING_FILE, "utf-8")); }
