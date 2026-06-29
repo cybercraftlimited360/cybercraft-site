@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 
     // Render PDF
     const pdfBuffer = Buffer.from(
-      await renderToBuffer(React.createElement(ProposalDocument, { data: proposalData }))
+      await renderToBuffer(React.createElement(ProposalDocument as React.ComponentType<{ data: ProposalData }>, { data: proposalData }))
     );
 
     // Send email with PDF attached
