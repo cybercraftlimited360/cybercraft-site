@@ -34,7 +34,7 @@ function NavBar() {
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const sections = ["about", "demo", "services", "clients", "faq"];
+    const sections = ["about", "demo", "services", "pricing", "clients", "faq"];
     const observers: IntersectionObserver[] = [];
     sections.forEach(id => {
       const el = document.getElementById(id);
@@ -55,7 +55,7 @@ function NavBar() {
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  const navLinks = ["About", "Demo", "Services", "Clients", "FAQ"];
+  const navLinks = ["About", "Demo", "Services", "Pricing", "Clients", "FAQ"];
 
   return (
     <>
