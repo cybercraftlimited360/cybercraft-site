@@ -425,35 +425,95 @@ export default function Home() {
 
       <ResultsTicker />
 
-      {/* TECH STACK / BUILT WITH */}
-      <section className="hidden md:block px-[5vw] md:px-[6vw] py-12 md:py-16 border-b border-border/40">
+      {/* HOW IT WORKS */}
+      <section id="about" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/30 overflow-hidden">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col items-center gap-8"
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="mb-20"
         >
-          <p className="text-[0.65rem] font-bold tracking-[0.3em] uppercase text-muted-foreground/50">Built with & integrated into</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          <div className="flex items-center gap-3 mb-5">
+            <motion.div initial={{ width: 0 }} whileInView={{ width: 32 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }} className="h-0.5 bg-primary rounded-full" />
+            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ How It Works</span>
+          </div>
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground max-w-xl" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+              From First Call to<br /><em>Live AI in 4 Steps</em>
+            </h2>
+            <p className="text-muted-foreground text-base max-w-sm leading-relaxed lg:text-right mb-1">No lengthy procurement. No bloated agencies. Just a clear, fast path from idea to working AI.</p>
+          </div>
+        </motion.div>
+
+        {/* Steps */}
+        <div className="relative">
+          {/* Connecting line */}
+          <div className="absolute top-[52px] left-0 right-0 hidden lg:block" style={{ zIndex: 0 }}>
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 1.2, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+              style={{ transformOrigin: "left", height: "1px", background: "linear-gradient(90deg, rgba(0,212,255,0.6), rgba(124,58,237,0.6))", margin: "0 6%" }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 relative" style={{ zIndex: 1 }}>
             {[
-              "OpenAI", "Anthropic", "HubSpot", "Salesforce", "Twilio",
-              "WhatsApp", "GoHighLevel", "Zapier", "Stripe", "Zoho",
-            ].map((name, i) => (
-              <motion.span
-                key={name}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="text-sm font-semibold tracking-widest uppercase"
-                style={{ color: "rgba(255,255,255,0.18)", letterSpacing: "0.15em" }}
-                whileHover={{ color: "rgba(255,255,255,0.55)" }}
-              >
-                {name}
-              </motion.span>
+              { step: "01", title: "Discovery Call", duration: "45 min", desc: "We map your business, your pain points, and exactly where AI will have the highest impact. You leave with a clear picture of what's possible — no obligation.", color: "#00d4ff", detail: "Free · No commitment" },
+              { step: "02", title: "Custom Build", duration: "2–6 weeks", desc: "We engineer your AI from scratch — trained on your data, integrated with your tools, built to sound and behave like an expert member of your team.", color: "#4f8fff", detail: "Full transparency throughout" },
+              { step: "03", title: "Deploy & Test", duration: "1 week", desc: "We go live in a controlled rollout, run real-world tests, fine-tune responses, and make sure everything works exactly as expected before full launch.", color: "#7c3aed", detail: "You approve before go-live" },
+              { step: "04", title: "Ongoing Support", duration: "Monthly", desc: "Your AI keeps improving. We monitor performance, retrain the model as your business evolves, and push updates — all included in your monthly subscription.", color: "#e64dff", detail: "Included in subscription" },
+            ].map(({ step, title, duration, desc, color, detail }, i) => (
+              <motion.div key={step} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.6, delay: i * 0.15, ease: [0.25, 0.1, 0.25, 1] }} className="flex flex-col">
+                <div className="flex items-center gap-4 mb-6">
+                  <motion.div whileInView={{ scale: [0.5, 1.15, 1] }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 + i * 0.15 }} className="w-[52px] h-[52px] rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm" style={{ background: `${color}18`, border: `2px solid ${color}`, color, boxShadow: `0 0 20px ${color}30` }}>
+                    {step}
+                  </motion.div>
+                  <span className="text-[0.62rem] font-semibold tracking-widest uppercase text-muted-foreground">{duration}</span>
+                </div>
+                <motion.div whileHover={{ y: -4, borderColor: color }} transition={{ duration: 0.25 }} className="flex-1 rounded-xl p-7 border border-border/60" style={{ background: "rgba(255,255,255,0.02)" }}>
+                  <div className="font-semibold text-foreground text-lg mb-3">{title}</div>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-5 line-clamp-2 md:line-clamp-none">{desc}</p>
+                  <span className="inline-flex items-center gap-1.5 text-[0.62rem] font-semibold tracking-wider uppercase" style={{ color }}>
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                    {detail}
+                  </span>
+                </motion.div>
+              </motion.div>
             ))}
           </div>
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }} className="mt-16 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+          <Magnetic strength={0.35} radius={120}>
+            <motion.a href="#contact" whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-sm tracking-widest uppercase no-underline">
+              Start With a Free Discovery Call <ArrowRight className="w-4 h-4" />
+            </motion.a>
+          </Magnetic>
+          <span className="text-muted-foreground text-sm">45 minutes · No obligation · Clear answers guaranteed</span>
+        </motion.div>
+      </section>
+
+      {/* IRIS VOICE AGENT DEMO */}
+      <section id="demo" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-background border-t border-border/40">
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="text-center mb-16">
+          <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="w-8 h-0.5 bg-primary rounded-full" />
+            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Live Demo</span>
+            <div className="w-8 h-0.5 bg-primary rounded-full" />
+          </div>
+          <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-4" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+            Meet <em>IRIS</em>
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+            Our AI voice agent — live, on this page. This is exactly what we build for our clients. Speak with her and experience it for yourself.
+          </p>
+          <p className="text-muted-foreground/40 text-xs mt-3 tracking-widest uppercase">Best experienced on Chrome or Edge · Allow microphone access</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7, delay: 0.2 }} className="flex justify-center">
+          <IrisAgent />
         </motion.div>
       </section>
 
@@ -594,6 +654,20 @@ export default function Home() {
             </div>
           );
         })()}
+      </section>
+
+      {/* TECH STACK / BUILT WITH */}
+      <section className="hidden md:block px-[5vw] md:px-[6vw] py-12 md:py-16 border-b border-border/40">
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex flex-col items-center gap-8">
+          <p className="text-[0.65rem] font-bold tracking-[0.3em] uppercase text-muted-foreground/50">Built with & integrated into</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+            {["OpenAI", "Anthropic", "HubSpot", "Salesforce", "Twilio", "WhatsApp", "GoHighLevel", "Zapier", "Stripe", "Zoho"].map((name, i) => (
+              <motion.span key={name} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.06 }} className="text-sm font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.18)", letterSpacing: "0.15em" }} whileHover={{ color: "rgba(255,255,255,0.55)" }}>
+                {name}
+              </motion.span>
+            ))}
+          </div>
+        </motion.div>
       </section>
 
       {/* Pricing */}
@@ -798,171 +872,6 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
-        </motion.div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="about" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/30 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
-          className="mb-20"
-        >
-          <div className="flex items-center gap-3 mb-5">
-            <motion.div initial={{ width: 0 }} whileInView={{ width: 32 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }} className="h-0.5 bg-primary rounded-full" />
-            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ How It Works</span>
-          </div>
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground max-w-xl" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-              From First Call to<br /><em>Live AI in 4 Steps</em>
-            </h2>
-            <p className="text-muted-foreground text-base max-w-sm leading-relaxed lg:text-right mb-1">No lengthy procurement. No bloated agencies. Just a clear, fast path from idea to working AI.</p>
-          </div>
-        </motion.div>
-
-        {/* Steps */}
-        <div className="relative">
-          {/* Connecting line */}
-          <div className="absolute top-[52px] left-0 right-0 hidden lg:block" style={{ zIndex: 0 }}>
-            <motion.div
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1.2, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              style={{ transformOrigin: "left", height: "1px", background: "linear-gradient(90deg, rgba(0,212,255,0.6), rgba(124,58,237,0.6))", margin: "0 6%" }}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 relative" style={{ zIndex: 1 }}>
-            {[
-              {
-                step: "01",
-                title: "Discovery Call",
-                duration: "45 min",
-                desc: "We map your business, your pain points, and exactly where AI will have the highest impact. You leave with a clear picture of what's possible — no obligation.",
-                color: "#00d4ff",
-                detail: "Free · No commitment",
-              },
-              {
-                step: "02",
-                title: "Custom Build",
-                duration: "2–6 weeks",
-                desc: "We engineer your AI from scratch — trained on your data, integrated with your tools, built to sound and behave like an expert member of your team.",
-                color: "#4f8fff",
-                detail: "Full transparency throughout",
-              },
-              {
-                step: "03",
-                title: "Deploy & Test",
-                duration: "1 week",
-                desc: "We go live in a controlled rollout, run real-world tests, fine-tune responses, and make sure everything works exactly as expected before full launch.",
-                color: "#7c3aed",
-                detail: "You approve before go-live",
-              },
-              {
-                step: "04",
-                title: "Ongoing Support",
-                duration: "Monthly",
-                desc: "Your AI keeps improving. We monitor performance, retrain the model as your business evolves, and push updates — all included in your monthly subscription.",
-                color: "#e64dff",
-                detail: "Included in subscription",
-              },
-            ].map(({ step, title, duration, desc, color, detail }, i) => (
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.6, delay: i * 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-                className="flex flex-col"
-              >
-                {/* Step circle */}
-                <div className="flex items-center gap-4 mb-6">
-                  <motion.div
-                    whileInView={{ scale: [0.5, 1.15, 1] }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.3 + i * 0.15 }}
-                    className="w-[52px] h-[52px] rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                    style={{ background: `${color}18`, border: `2px solid ${color}`, color, boxShadow: `0 0 20px ${color}30` }}
-                  >
-                    {step}
-                  </motion.div>
-                  <span className="text-[0.62rem] font-semibold tracking-widest uppercase text-muted-foreground">{duration}</span>
-                </div>
-
-                {/* Card */}
-                <motion.div
-                  whileHover={{ y: -4, borderColor: color }}
-                  transition={{ duration: 0.25 }}
-                  className="flex-1 rounded-xl p-7 border border-border/60"
-                  style={{ background: "rgba(255,255,255,0.02)" }}
-                >
-                  <div className="font-semibold text-foreground text-lg mb-3">{title}</div>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-5 line-clamp-2 md:line-clamp-none">{desc}</p>
-                  <span className="inline-flex items-center gap-1.5 text-[0.62rem] font-semibold tracking-wider uppercase" style={{ color }}>
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                    {detail}
-                  </span>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-16 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6"
-        >
-          <Magnetic strength={0.35} radius={120}>
-            <motion.a
-              href="#contact"
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-sm tracking-widest uppercase no-underline"
-            >
-              Start With a Free Discovery Call <ArrowRight className="w-4 h-4" />
-            </motion.a>
-          </Magnetic>
-          <span className="text-muted-foreground text-sm">45 minutes · No obligation · Clear answers guaranteed</span>
-        </motion.div>
-      </section>
-
-      {/* IRIS VOICE AGENT DEMO */}
-      <section id="demo" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-background border-t border-border/40">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-16"
-        >
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <div className="w-8 h-0.5 bg-primary rounded-full" />
-            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Live Demo</span>
-            <div className="w-8 h-0.5 bg-primary rounded-full" />
-          </div>
-          <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-4" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-            Meet <em>IRIS</em>
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-            Our AI voice agent — live, on this page. This is exactly what we build for our clients. Speak with her and experience it for yourself.
-          </p>
-          <p className="text-muted-foreground/40 text-xs mt-3 tracking-widest uppercase">Best experienced on Chrome or Edge · Allow microphone access</p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="flex justify-center"
-        >
-          <IrisAgent />
         </motion.div>
       </section>
 
