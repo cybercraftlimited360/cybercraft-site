@@ -426,7 +426,7 @@ export default function Home() {
       <ResultsTicker />
 
       {/* TECH STACK / BUILT WITH */}
-      <section className="px-[5vw] md:px-[6vw] py-12 md:py-16 border-b border-border/40">
+      <section className="hidden md:block px-[5vw] md:px-[6vw] py-12 md:py-16 border-b border-border/40">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -581,7 +581,7 @@ export default function Home() {
                               <Icon className="w-4.5 h-4.5 stroke-[1.5]" style={{ color: group.accent }} />
                             </div>
                             <div className="font-semibold text-foreground text-[1.05rem] mb-2 leading-snug">{name}</div>
-                            <p className="text-muted-foreground text-sm leading-relaxed mb-4">{desc}</p>
+                            <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2 md:line-clamp-none">{desc}</p>
                             <span className="inline-block text-[0.58rem] font-bold tracking-[0.18em] uppercase px-2 py-0.5 rounded-sm"
                               style={{ color: group.accent, background: `${group.accent}10`, border: `1px solid ${group.accent}22` }}>{tag}</span>
                           </div>
@@ -597,7 +597,7 @@ export default function Home() {
       </section>
 
       {/* STATEMENT INTERSTITIAL */}
-      <section className="px-[5vw] md:px-[6vw] py-16 md:py-28 bg-background border-t border-border/30 overflow-hidden">
+      <section className="hidden md:block px-[5vw] md:px-[6vw] py-16 md:py-28 bg-background border-t border-border/30 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -666,7 +666,7 @@ export default function Home() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <p className="text-white/45 text-sm leading-relaxed mb-8">Unlike off-the-shelf solutions that plateau on deployment, every CyberCraft360 system is built with continuous learning at its core — so your AI investment compounds rather than depreciates.</p>
+          <p className="hidden md:block text-white/45 text-sm leading-relaxed mb-8">Unlike off-the-shelf solutions that plateau on deployment, every CyberCraft360 system is built with continuous learning at its core — so your AI investment compounds rather than depreciates.</p>
           <div className="grid grid-cols-2 gap-px bg-white/8 border border-white/8 rounded-sm overflow-hidden mt-4">
             {[["12×", "Avg. efficiency gain"], ["98%", "Uptime guarantee"], ["6 wk", "Avg. deployment time"], ["0", "Off-the-shelf templates"]].map(([num, label], i) => (
               <motion.div
@@ -784,7 +784,7 @@ export default function Home() {
                   style={{ background: "rgba(255,255,255,0.02)" }}
                 >
                   <div className="font-semibold text-foreground text-lg mb-3">{title}</div>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-5">{desc}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-5 line-clamp-2 md:line-clamp-none">{desc}</p>
                   <span className="inline-flex items-center gap-1.5 text-[0.62rem] font-semibold tracking-wider uppercase" style={{ color }}>
                     <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
                     {detail}
@@ -956,6 +956,7 @@ export default function Home() {
           ].map(({ initials, name, role, company, industry, service, metric, metricLabel, secondaryMetric, secondaryLabel, quote, accent }, i) => (
             <motion.div
               key={name}
+              className={i >= 2 ? "hidden md:flex" : ""}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
@@ -1205,7 +1206,9 @@ export default function Home() {
               a: "Yes. In fact, small businesses see the biggest return. When you're a team of one or a small team wearing multiple hats, AI doesn't just save money — it gives you leverage that was previously only available to large enterprises. You compete like a company ten times your size."
             },
           ].map(({ q, a }, i) => (
-            <FAQItem key={i} question={q} answer={a} index={i} />
+            <div key={i} className={i >= 5 ? "hidden md:block" : ""}>
+              <FAQItem question={q} answer={a} index={i} />
+            </div>
           ))}
         </div>
       </section>
@@ -1234,6 +1237,7 @@ export default function Home() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="hidden lg:block"
           >
             <ul className="border border-border rounded-md overflow-hidden bg-background">
               {[
