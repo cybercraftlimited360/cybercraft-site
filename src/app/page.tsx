@@ -596,6 +596,122 @@ export default function Home() {
         })()}
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/20">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="mb-16"
+        >
+          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Pricing</span>
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mt-3 mb-6">
+            Transparent.<br />No surprises.
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-xl">
+            Every service includes a one-time setup fee and a monthly subscription. All pricing is quoted to your exact requirements — ranges below are starting points.
+          </p>
+        </motion.div>
+
+        {[
+          {
+            category: "Conversational AI",
+            color: "cyan",
+            accent: "rgba(0,212,255,0.15)",
+            border: "rgba(0,212,255,0.25)",
+            services: [
+              { name: "Custom AI Chatbot", setup: "$500–$1,500", monthly: "$500–$800/mo", note: "Web, WhatsApp & SMS" },
+              { name: "Voice AI Agent", setup: "$800–$2,000", monthly: "$700–$1,200/mo", note: "Inbound & outbound" },
+              { name: "AI Phone Agent", setup: "$1,000–$2,500", monthly: "$700–$1,200/mo", note: "Appointment booking" },
+            ],
+          },
+          {
+            category: "Revenue & Growth",
+            color: "purple",
+            accent: "rgba(124,58,237,0.15)",
+            border: "rgba(124,58,237,0.3)",
+            services: [
+              { name: "AI Sales Agent", setup: "$1,200–$3,000", monthly: "$900–$1,400/mo", note: "Outbound prospecting" },
+              { name: "AI Ads & Marketing", setup: "$500–$1,500", monthly: "$600–$950/mo", note: "Google & Meta" },
+              { name: "AI Content Engine", setup: "$500–$1,500", monthly: "$600–$950/mo", note: "Multi-channel content" },
+            ],
+          },
+          {
+            category: "Operations & Automation",
+            color: "green",
+            accent: "rgba(34,197,94,0.12)",
+            border: "rgba(34,197,94,0.25)",
+            services: [
+              { name: "Workflow & CRM Automation", setup: "$800–$2,500", monthly: "$600–$950/mo", note: "HubSpot, GHL & more" },
+              { name: "Document Intelligence", setup: "$1,200–$3,000", monthly: "$700–$1,100/mo", note: "OCR + AI extraction" },
+              { name: "Lead Intelligence", setup: "$600–$1,500", monthly: "$600–$900/mo", note: "Predictive scoring" },
+            ],
+          },
+          {
+            category: "Digital & Security",
+            color: "amber",
+            accent: "rgba(245,158,11,0.12)",
+            border: "rgba(245,158,11,0.25)",
+            services: [
+              { name: "Premium Website Design", setup: "$1,500–$4,000", monthly: "$300–$600/mo", note: "Custom, no templates" },
+              { name: "AI Analytics Dashboard", setup: "$1,200–$3,000", monthly: "$800–$1,200/mo", note: "Natural language queries" },
+              { name: "AI Cybersecurity", setup: "$1,500–$4,000", monthly: "$1,000–$1,500/mo", note: "24/7 threat monitoring" },
+            ],
+          },
+        ].map((group, gi) => (
+          <motion.div
+            key={group.category}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, delay: gi * 0.1 }}
+            className="mb-10 rounded-2xl overflow-hidden"
+            style={{ border: `1px solid ${group.border}`, background: group.accent }}
+          >
+            <div className="px-6 py-4 border-b" style={{ borderColor: group.border }}>
+              <span className="text-xs font-bold tracking-[0.2em] uppercase" style={{ color: group.color === "cyan" ? "#00d4ff" : group.color === "purple" ? "#a78bfa" : group.color === "green" ? "#22c55e" : "#f59e0b" }}>
+                {group.category}
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: group.border }}>
+                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">Service</th>
+                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">One-Time Setup</th>
+                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">Monthly</th>
+                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground hidden sm:table-cell">Includes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.services.map((svc, si) => (
+                    <tr key={svc.name} className={si < group.services.length - 1 ? "border-b" : ""} style={{ borderColor: group.border }}>
+                      <td className="px-6 py-4 font-semibold text-foreground">{svc.name}</td>
+                      <td className="px-6 py-4 font-bold" style={{ color: group.color === "cyan" ? "#00d4ff" : group.color === "purple" ? "#a78bfa" : group.color === "green" ? "#22c55e" : "#f59e0b" }}>{svc.setup}</td>
+                      <td className="px-6 py-4 text-foreground/80">{svc.monthly}</td>
+                      <td className="px-6 py-4 text-muted-foreground hidden sm:table-cell">{svc.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        ))}
+
+        <div className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <div className="flex-1">
+            <p className="text-muted-foreground text-sm">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — our founder will scope your project and give an exact figure.</p>
+          </div>
+          <a
+            href="#contact"
+            className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity"
+          >
+            Get a Custom Quote <ArrowRight size={15} />
+          </a>
+        </div>
+      </section>
+
       {/* STATEMENT INTERSTITIAL */}
       <section className="hidden md:block px-[5vw] md:px-[6vw] py-16 md:py-28 bg-background border-t border-border/30 overflow-hidden">
         <motion.div
@@ -1026,122 +1142,6 @@ export default function Home() {
               </div>
             </motion.div>
           ))}
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/20">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
-          className="mb-16"
-        >
-          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Pricing</span>
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mt-3 mb-6">
-            Transparent.<br />No surprises.
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-xl">
-            Every service includes a one-time setup fee and a monthly subscription. All pricing is quoted to your exact requirements — ranges below are starting points.
-          </p>
-        </motion.div>
-
-        {[
-          {
-            category: "Conversational AI",
-            color: "cyan",
-            accent: "rgba(0,212,255,0.15)",
-            border: "rgba(0,212,255,0.25)",
-            services: [
-              { name: "Custom AI Chatbot", setup: "$500–$1,500", monthly: "$500–$800/mo", note: "Web, WhatsApp & SMS" },
-              { name: "Voice AI Agent", setup: "$800–$2,000", monthly: "$700–$1,200/mo", note: "Inbound & outbound" },
-              { name: "AI Phone Agent", setup: "$1,000–$2,500", monthly: "$700–$1,200/mo", note: "Appointment booking" },
-            ],
-          },
-          {
-            category: "Revenue & Growth",
-            color: "purple",
-            accent: "rgba(124,58,237,0.15)",
-            border: "rgba(124,58,237,0.3)",
-            services: [
-              { name: "AI Sales Agent", setup: "$1,200–$3,000", monthly: "$900–$1,400/mo", note: "Outbound prospecting" },
-              { name: "AI Ads & Marketing", setup: "$500–$1,500", monthly: "$600–$950/mo", note: "Google & Meta" },
-              { name: "AI Content Engine", setup: "$500–$1,500", monthly: "$600–$950/mo", note: "Multi-channel content" },
-            ],
-          },
-          {
-            category: "Operations & Automation",
-            color: "green",
-            accent: "rgba(34,197,94,0.12)",
-            border: "rgba(34,197,94,0.25)",
-            services: [
-              { name: "Workflow & CRM Automation", setup: "$800–$2,500", monthly: "$600–$950/mo", note: "HubSpot, GHL & more" },
-              { name: "Document Intelligence", setup: "$1,200–$3,000", monthly: "$700–$1,100/mo", note: "OCR + AI extraction" },
-              { name: "Lead Intelligence", setup: "$600–$1,500", monthly: "$600–$900/mo", note: "Predictive scoring" },
-            ],
-          },
-          {
-            category: "Digital & Security",
-            color: "amber",
-            accent: "rgba(245,158,11,0.12)",
-            border: "rgba(245,158,11,0.25)",
-            services: [
-              { name: "Premium Website Design", setup: "$1,500–$4,000", monthly: "$300–$600/mo", note: "Custom, no templates" },
-              { name: "AI Analytics Dashboard", setup: "$1,200–$3,000", monthly: "$800–$1,200/mo", note: "Natural language queries" },
-              { name: "AI Cybersecurity", setup: "$1,500–$4,000", monthly: "$1,000–$1,500/mo", note: "24/7 threat monitoring" },
-            ],
-          },
-        ].map((group, gi) => (
-          <motion.div
-            key={group.category}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.6, delay: gi * 0.1 }}
-            className="mb-10 rounded-2xl overflow-hidden"
-            style={{ border: `1px solid ${group.border}`, background: group.accent }}
-          >
-            <div className="px-6 py-4 border-b" style={{ borderColor: group.border }}>
-              <span className="text-xs font-bold tracking-[0.2em] uppercase" style={{ color: group.color === "cyan" ? "#00d4ff" : group.color === "purple" ? "#a78bfa" : group.color === "green" ? "#22c55e" : "#f59e0b" }}>
-                {group.category}
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b" style={{ borderColor: group.border }}>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">Service</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">One-Time Setup</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">Monthly</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground hidden sm:table-cell">Includes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.services.map((svc, si) => (
-                    <tr key={svc.name} className={si < group.services.length - 1 ? "border-b" : ""} style={{ borderColor: group.border }}>
-                      <td className="px-6 py-4 font-semibold text-foreground">{svc.name}</td>
-                      <td className="px-6 py-4 font-bold" style={{ color: group.color === "cyan" ? "#00d4ff" : group.color === "purple" ? "#a78bfa" : group.color === "green" ? "#22c55e" : "#f59e0b" }}>{svc.setup}</td>
-                      <td className="px-6 py-4 text-foreground/80">{svc.monthly}</td>
-                      <td className="px-6 py-4 text-muted-foreground hidden sm:table-cell">{svc.note}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-        ))}
-
-        <div className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <div className="flex-1">
-            <p className="text-muted-foreground text-sm">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — our founder will scope your project and give an exact figure.</p>
-          </div>
-          <a
-            href="#contact"
-            className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity"
-          >
-            Get a Custom Quote <ArrowRight size={15} />
-          </a>
         </div>
       </section>
 
