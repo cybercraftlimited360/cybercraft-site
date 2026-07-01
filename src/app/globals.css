@@ -141,10 +141,12 @@
     cursor: none;
   }
   input, textarea, select {
-    color: rgba(255, 255, 255, 0.9) !important;
+    color: #0a0c12 !important;
+    background-color: rgba(255, 255, 255, 0.92) !important;
+    border-radius: 8px;
   }
   input::placeholder, textarea::placeholder {
-    color: rgba(255, 255, 255, 0.25) !important;
+    color: rgba(0, 0, 0, 0.35) !important;
   }
 }
 
