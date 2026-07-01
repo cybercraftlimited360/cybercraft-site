@@ -84,7 +84,7 @@ async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer)
         We've put together a bespoke AI strategy document for <strong style="color:rgba(255,255,255,0.85);">${company}</strong>.
         Your proposal is attached — it outlines the exact AI solutions we'd recommend and what you can expect in terms of ROI and timeline.
       </p>
-      <a href="https://calendly.com/cybercraftlimited/30min" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
+      <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
         Book Your Free Strategy Call →
       </a>
       <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:28px 0 0;">CyberCraft360 · Bespoke AI Agency · cybercraftlimited.com</p>

@@ -80,6 +80,9 @@ export default function AdminPage() {
 
         {/* Header */}
         <div style={{ marginBottom: "40px" }}>
+          <div style={{ display:"flex", gap:12, marginBottom:16 }}>
+            <a href="/admin/schedule" style={{ fontSize:13, padding:"7px 16px", borderRadius:8, background:"rgba(0,212,255,0.1)", border:"1px solid rgba(0,212,255,0.25)", color:"#00d4ff", textDecoration:"none", fontWeight:600 }}>📅 Schedule Manager</a>
+          </div>
           <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>CyberCraft360</span>
           <h1 style={{ fontSize: "1.8rem", fontWeight: 800, color: "#fff", margin: "8px 0 6px" }}>Send Invoice</h1>
           <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.35)", margin: 0 }}>

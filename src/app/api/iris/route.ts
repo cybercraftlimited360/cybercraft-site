@@ -71,7 +71,7 @@ const SHARED_KNOWLEDGE = `
 - Custom AI Chatbots start from $500/month
 - AI Voice Agents start from $700/month
 - All other services from $500–$5,000+/month depending on scope
-- Free 30-minute strategy session: https://calendly.com/cybercraftlimited/30min
+- Free 30-minute strategy session: book at cybercraft360.com/book
 - Services: Custom AI Chatbots, Voice AI Agents, Workflow & CRM Automation, AI Content Engine, AI Call Centre, Lead Intelligence, AI Cybersecurity, Self-Learning CRM Bots
 
 ## KEY OBJECTION RESPONSES (keep short)
