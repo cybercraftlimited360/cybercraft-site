@@ -63,9 +63,9 @@ Pick the 3 most relevant services from: Custom AI Chatbot ($500/mo), Voice AI Ag
 
 async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
+  if (!apiKey) throw new Error("Resend API key not configured");
 
-  await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
@@ -99,6 +99,10 @@ async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer)
       ],
     }),
   });
+
+  const resData = await res.json();
+  console.log("Resend response:", JSON.stringify(resData));
+  if (!res.ok) throw new Error(resData.message || resData.name || "Email delivery failed");
 }
 
 export async function POST(req: NextRequest) {
