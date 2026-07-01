@@ -54,6 +54,10 @@ Pick the 3 most relevant services from: Custom AI Chatbot ($500/mo), Voice AI Ag
   });
 
   const data = await res.json();
+  if (!res.ok || !data.choices?.[0]?.message?.content) {
+    console.error("Groq proposal error:", JSON.stringify(data));
+    throw new Error(data.error?.message || "AI generation failed — please try again.");
+  }
   return JSON.parse(data.choices[0].message.content);
 }
 
@@ -67,7 +71,7 @@ async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer)
     body: JSON.stringify({
       from: "CyberCraft360 <onboarding@resend.dev>",
       to: [to],
-      bcc: ["saadimran1994@gmail.com"],
+      bcc: ["cybercraftlimited@gmail.com"],
       subject: `Your Bespoke AI Proposal — ${company}`,
       html: `
 <div style="background:#0a0c12;padding:40px 20px;font-family:'Inter',system-ui,sans-serif;">
