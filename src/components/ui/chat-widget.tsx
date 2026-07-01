@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -9,6 +9,51 @@ const OPENING_MESSAGE: Message = {
   role: "assistant",
   content: "Hey there 👋 I'm Cipher — what brought you here today?",
 };
+
+function BookingCTA() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+      style={{
+        margin: "4px 0",
+        borderRadius: "16px",
+        overflow: "hidden",
+        border: "1px solid rgba(0,212,255,0.2)",
+        background: "rgba(0,212,255,0.04)",
+      }}
+    >
+      <div style={{ height: "2px", background: "linear-gradient(90deg, #00d4ff, #7c3aed)" }} />
+      <div style={{ padding: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#00d4ff", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Book Your Free Strategy Call
+          </span>
+        </div>
+        <p style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.5)", marginBottom: "12px", lineHeight: 1.5 }}>
+          30 minutes with our founder — no pitch, no pressure. Walk away with a clear AI roadmap for your business.
+        </p>
+        <a
+          href="/book"
+          style={{
+            display: "block", textAlign: "center", padding: "10px 12px",
+            borderRadius: "10px", fontSize: "0.7rem", fontWeight: 700,
+            letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none",
+            background: "linear-gradient(135deg, #00d4ff, #7c3aed)",
+            color: "#fff", cursor: "pointer",
+          }}
+        >
+          Pick a time →
+        </a>
+      </div>
+    </motion.div>
+  );
+}
 
 function LeadCapturedCard({ lead }: { lead: Lead }) {
   return (
@@ -24,11 +69,9 @@ function LeadCapturedCard({ lead }: { lead: Lead }) {
         background: "rgba(34,197,94,0.05)",
       }}
     >
-      {/* Green top bar */}
       <div style={{ height: "2px", background: "linear-gradient(90deg, #22c55e, transparent)" }} />
 
       <div style={{ padding: "16px" }}>
-        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
           <div style={{
             width: "22px", height: "22px", borderRadius: "50%", flexShrink: 0,
@@ -44,7 +87,6 @@ function LeadCapturedCard({ lead }: { lead: Lead }) {
           </span>
         </div>
 
-        {/* Lead details */}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "14px" }}>
           {[
             { label: "Name", value: lead.name },
@@ -65,11 +107,8 @@ function LeadCapturedCard({ lead }: { lead: Lead }) {
           Our founder will personally review your details and follow up within 24 hours.
         </p>
 
-        {/* CTA */}
         <a
-          href="https://calendly.com/cybercraftlimited/30min"
-          target="_blank"
-          rel="noreferrer"
+          href="/book"
           style={{
             display: "block", textAlign: "center", padding: "9px 12px",
             borderRadius: "10px", fontSize: "0.68rem", fontWeight: 700,
@@ -92,14 +131,38 @@ export default function ChatWidget() {
   const [loading, setLoading] = useState(false);
   const [showLabel, setShowLabel] = useState(false);
   const [capturedLead, setCapturedLead] = useState<Lead | null>(null);
+  const [showBookingCTA, setShowBookingCTA] = useState(false);
+  const [proactiveTriggered, setProactiveTriggered] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Label pulse: show at 2.5s, hide at 6.5s
   useEffect(() => {
     const t1 = setTimeout(() => setShowLabel(true), 2500);
     const t2 = setTimeout(() => setShowLabel(false), 6500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
+
+  // Feature 1: Proactive trigger — 30s auto-open + exit intent
+  const triggerProactive = useCallback(() => {
+    if (proactiveTriggered) return;
+    setProactiveTriggered(true);
+    setOpen(true);
+  }, [proactiveTriggered]);
+
+  useEffect(() => {
+    const timer = setTimeout(triggerProactive, 30000);
+
+    const handleExitIntent = (e: MouseEvent) => {
+      if (e.clientY <= 5) triggerProactive();
+    };
+    document.addEventListener("mouseleave", handleExitIntent);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mouseleave", handleExitIntent);
+    };
+  }, [triggerProactive]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
@@ -107,7 +170,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, capturedLead]);
+  }, [messages, loading, capturedLead, showBookingCTA]);
 
   async function send() {
     const text = input.trim();
@@ -131,14 +194,15 @@ export default function ChatWidget() {
       const data = await res.json();
       if (data.error) console.error("Chat error:", data.error);
 
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: data.reply || data.error || "Something went wrong." },
-      ]);
+      const reply: string = data.reply || data.error || "Something went wrong.";
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
 
-      // Show lead card once — only the first time all 3 fields are captured
+      // Feature 2: Show booking CTA when lead captured OR CIPHER mentions booking
       if (data.lead && !capturedLead) {
         setCapturedLead(data.lead);
+        setShowBookingCTA(true);
+      } else if (!showBookingCTA && /\/(book|strategy|calendly)|book.*call|strategy.*call|book.*session|schedule.*call/i.test(reply)) {
+        setShowBookingCTA(true);
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -223,7 +287,6 @@ export default function ChatWidget() {
             )}
           </AnimatePresence>
 
-          {/* Green dot when lead captured */}
           {capturedLead && (
             <motion.span
               initial={{ scale: 0 }}
@@ -291,10 +354,7 @@ export default function ChatWidget() {
                   CIPHER
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <span style={{
-                    width: "6px", height: "6px", borderRadius: "50%",
-                    background: capturedLead ? "#22c55e" : "#22c55e", display: "inline-block",
-                  }} />
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
                   <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em" }}>
                     {capturedLead ? "Lead captured — you're in the queue" : "Online now"}
                   </span>
@@ -328,7 +388,10 @@ export default function ChatWidget() {
                 </motion.div>
               ))}
 
-              {/* Lead captured card — injected inline in message stream */}
+              {/* Feature 2: Inline booking CTA — shows when CIPHER mentions booking */}
+              {showBookingCTA && !capturedLead && <BookingCTA />}
+
+              {/* Lead captured card — injected after booking CTA once lead is confirmed */}
               {capturedLead && <LeadCapturedCard lead={capturedLead} />}
 
               {loading && (

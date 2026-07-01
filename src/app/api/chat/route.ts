@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-
-const CIPHER_DATA = path.join(process.cwd(), "data", "cipher-conversations.json");
+import { redis } from "@/lib/redis";
 
 type ConvRecord = {
   id: string;
@@ -12,16 +9,33 @@ type ConvRecord = {
 };
 
 async function loadConvs(): Promise<ConvRecord[]> {
-  try { return JSON.parse(await fs.readFile(CIPHER_DATA, "utf-8")); }
-  catch { return []; }
+  try {
+    const data = await redis.get<ConvRecord[]>("chat:conversations");
+    return data ?? [];
+  } catch { return []; }
 }
 
 async function saveConv(conv: ConvRecord) {
-  const all = await loadConvs();
-  const key = `${conv.lead.name}:${conv.lead.company}`.toLowerCase();
-  if (all.some(c => `${c.lead.name}:${c.lead.company}`.toLowerCase() === key)) return;
-  all.push(conv);
-  fs.writeFile(CIPHER_DATA, JSON.stringify(all.slice(-150), null, 2)).catch(() => {});
+  try {
+    const all = await loadConvs();
+    const key = `${conv.lead.name}:${conv.lead.company}`.toLowerCase();
+    if (all.some(c => `${c.lead.name}:${c.lead.company}`.toLowerCase() === key)) return;
+    const trimmed = [...all, conv].slice(-150);
+    await redis.set("chat:conversations", JSON.stringify(trimmed));
+  } catch { /* non-blocking */ }
+}
+
+async function trackAnalytics(hasLead: boolean, messageCount: number) {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    await Promise.all([
+      redis.hincrby("chat:stats", "totalConversations", 1),
+      redis.hincrby("chat:stats", "totalMessages", messageCount),
+      ...(hasLead ? [redis.hincrby("chat:stats", "totalLeads", 1)] : []),
+      redis.hincrby(`chat:daily:${today}`, "conversations", 1),
+      ...(hasLead ? [redis.hincrby(`chat:daily:${today}`, "leads", 1)] : []),
+    ]);
+  } catch { /* non-blocking */ }
 }
 
 async function buildCipherExamples(): Promise<string> {
@@ -39,7 +53,7 @@ const SYSTEM_PROMPT = `You are CIPHER, the intelligent sales and support assista
 
 ## YOUR MISSION
 Guide every conversation toward one of two outcomes:
-1. The visitor books a free 30-minute AI Strategy Session at: https://calendly.com/cybercraftlimited/30min
+1. The visitor books a free 30-minute AI Strategy Session at: /book
 2. The visitor leaves with a crystal-clear understanding of what AI can do for their business and why CyberCraft360 is the right partner.
 
 ## ABOUT CYBERCRAFT360
@@ -47,7 +61,7 @@ Guide every conversation toward one of two outcomes:
 - We build 100% bespoke AI systems — no templates, no off-the-shelf tools
 - Every solution is custom-built from discovery to deployment
 - We serve businesses across all industries — from startups to established firms
-- Based in the UK, serving clients globally
+- Based in Houston, TX, serving clients globally
 - Monthly subscription model — ongoing monitoring, retraining, and support included
 
 ## OUR SERVICES (grouped by category)
@@ -81,9 +95,6 @@ Guide every conversation toward one of two outcomes:
 - All services custom-scoped — clients save far more than they pay
 - Value compounds over time — the AI gets smarter every month
 - No hidden costs, no per-seat fees, no usage caps on most plans
-- Clients save far more than they pay — replacing human labour, reducing errors, scaling without headcount
-- Value compounds over time — the AI gets smarter every month
-- No hidden costs, no per-seat fees, no usage caps on most plans
 - Free 30-minute strategy session to scope the right solution before any commitment
 
 ## LEAD QUALIFICATION — IMPORTANT
@@ -93,7 +104,7 @@ Naturally weave these 4 questions into conversation (one at a time, never ask al
 3. Their biggest challenge or what they're trying to solve
 4. Their phone number — after getting the first 3, say: "Would you be open to a quick call from our founder? If you drop your number I can have someone reach out today."
 
-Once you have all four, say: "Perfect — I'll have someone from the team reach out shortly. In the meantime, you can also book directly at calendly.com/cybercraftlimited/30min"
+Once you have all four, say: "Perfect — I'll have someone from the team reach out shortly. In the meantime, you can book a free strategy call directly at /book — takes 2 minutes."
 
 ## HOW TO HANDLE OBJECTIONS & REBUTTALS
 
@@ -113,7 +124,7 @@ Once you have all four, say: "Perfect — I'll have someone from the team reach 
 → "Actually, smaller businesses often get the biggest ROI from AI — because you're replacing proportionally more manual work. A 5-person team with an AI assistant operates like a 15-person team. We have clients who are solo operators saving 30+ hours a week. What tasks are currently eating most of your time?"
 
 ### "Why pay monthly? Just build it once"
-→ "Great question. AI isn't software you install and forget — it's a system that needs to learn, adapt, and improve as your business evolves. Your products change, your customers change, new threats emerge. The monthly subscription covers continuous retraining, performance monitoring, security patches, and direct access to us for updates. A one-time build becomes obsolete. A subscription keeps you ahead. Think of it like the difference between buying a car and having a dedicated chauffeur who also maintains the vehicle."
+→ "Great question. AI isn't software you install and forget — it's a system that needs to learn, adapt, and improve as your business evolves. Your products change, your customers change, new threats emerge. The monthly subscription covers continuous retraining, performance monitoring, security patches, and direct access to us for updates. A one-time build becomes obsolete. A subscription keeps you ahead."
 
 ### "I need to think about it / speak to my team"
 → "Of course — this is a significant decision. Can I ask what the main thing you'd want to think through is? I can probably answer it right now and save you the wait. And if it would help, our free strategy session is completely no-obligation — our founder will map out exactly what an AI system would look like for your business, no pitch, no pressure. That way you have something concrete to bring to your team."
@@ -122,13 +133,13 @@ Once you have all four, say: "Perfect — I'll have someone from the team reach 
 → "We've deployed AI systems across retail, property, finance, healthcare admin, legal, hospitality, e-commerce, and more. Every system is built from scratch around your specific workflows — we don't force your business into a template. The discovery phase is specifically designed to understand your industry's nuances before we write a single line of code."
 
 ### "What if the AI makes mistakes?"
-→ "Every system we build includes human escalation paths — the AI handles what it's confident about and flags anything uncertain for human review. We also monitor performance continuously and retrain when needed. Over time, the error rate decreases as the model learns. We're not replacing human judgement — we're handling the high-volume, repetitive tasks so your team can focus on the decisions that actually need a human."
+→ "Every system we build includes human escalation paths — the AI handles what it's confident about and flags anything uncertain for human review. We also monitor performance continuously and retrain when needed. Over time, the error rate decreases as the model learns."
 
 ### "How long does it take to set up?"
-→ "Most projects go live within 4–6 weeks from the discovery call. Complex multi-system integrations can take 8–10 weeks. We move fast because we're a focused team — no corporate red tape, no waiting in a queue. You have a named engineer on your project from day one."
+→ "Most projects go live within 4–6 weeks from the discovery call. Complex multi-system integrations can take 8–10 weeks. We move fast because we're a focused team — no corporate red tape, no waiting in a queue."
 
 ### "Is my data safe?"
-→ "Absolutely. We follow GDPR compliance standards, all data is encrypted in transit and at rest, and we never use your business data to train models for other clients. For regulated industries we can discuss additional compliance frameworks. Cybersecurity isn't just a service we sell — it's baked into everything we build."
+→ "Absolutely. We follow GDPR compliance standards, all data is encrypted in transit and at rest, and we never use your business data to train models for other clients. Cybersecurity isn't just a service we sell — it's baked into everything we build."
 
 ## CONVERSATION STYLE
 - Be confident, warm, and direct — not salesy or pushy
@@ -138,7 +149,7 @@ Once you have all four, say: "Perfect — I'll have someone from the team reach 
 - Mirror their language — technical with technical people, plain with everyone else
 - Always bring the conversation back to their specific pain points
 - When they're ready, push gently toward booking: "Want me to drop the booking link for a free 30-min call with our founder?"
-- Booking link: https://calendly.com/cybercraftlimited/30min
+- Booking link: /book
 - Never make up specific pricing — give ranges only, recommend the strategy call for an accurate quote
 - Never promise specific results
 - No bullet points or markdown in responses — plain conversational text only
@@ -201,7 +212,6 @@ export async function POST(req: NextRequest) {
 
     const userCount = messages.filter((m: { role: string }) => m.role === "user").length;
 
-    // Build learned examples + run reply + extraction all in parallel
     const [examples, reply, extractedRaw] = await Promise.all([
       buildCipherExamples(),
       groqChat(apiKey, messages, SYSTEM_PROMPT, { maxTokens: 180 }),
@@ -210,11 +220,7 @@ export async function POST(req: NextRequest) {
         : Promise.resolve(null),
     ]);
 
-    // Inject learned examples into a richer system prompt on next call
-    // (examples appended; used by the groqChat above on the NEXT request cycle
-    //  — we pre-build here so it's ready for the *current* reply too if > 1 msg)
     const enrichedPrompt = SYSTEM_PROMPT + examples;
-    // Re-run reply with enriched prompt only if we actually have examples
     const finalReply = examples
       ? await groqChat(apiKey, messages, enrichedPrompt, { maxTokens: 180 })
       : reply;
@@ -235,20 +241,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (lead) {
-      // Save conversation for self-learning (non-blocking)
-      saveConv({
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        messages,
-        lead,
-      });
-
-      // Persist lead to leads store + trigger email
+      saveConv({ id: Date.now().toString(), date: new Date().toISOString(), messages, lead });
       fetch(new URL("/api/leads", req.url).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lead),
       }).catch(() => {});
+    }
+
+    // Track analytics (non-blocking, only on first user message to avoid double-counting)
+    if (userCount === 1) {
+      trackAnalytics(!!lead, messages.length);
     }
 
     return NextResponse.json({ reply: finalReply, lead });
