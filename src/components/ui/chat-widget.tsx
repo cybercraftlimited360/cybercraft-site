@@ -7,7 +7,7 @@ type Lead = { name: string; company: string; challenge: string };
 
 const OPENING_MESSAGE: Message = {
   role: "assistant",
-  content: "Hey there 👋 I'm CIPHER — what brought you to CyberCraft360 today?",
+  content: "Hey there 👋 I'm Cipher — what brought you here today?",
 };
 
 function LeadCapturedCard({ lead }: { lead: Lead }) {

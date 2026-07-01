@@ -12,46 +12,13 @@ const PERSONAS = {
     gradient: "linear-gradient(135deg, rgba(0,212,255,0.25), rgba(124,58,237,0.2))",
     border: "rgba(0,212,255,0.3)",
     glow: "rgba(0,212,255,0.4)",
-    greeting: "Hello, I'm IRIS — CyberCraft360's AI strategy consultant. I'm a live example of what we build for our clients. Tell me, what does your business do?",
+    greeting: "Hi, I'm Iris. What does your business do?",
     voices: ["Microsoft Aria Online (Natural)", "Microsoft Aria", "Microsoft Jenny Online (Natural)", "Google UK English Female", "Samantha"],
     defaultLang: "en-US",
   },
-  RYAN: {
-    name: "RYAN",
-    title: "Cybersecurity Specialist",
-    color: "#a855f7",
-    gradient: "linear-gradient(135deg, rgba(168,85,247,0.25), rgba(59,130,246,0.2))",
-    border: "rgba(168,85,247,0.3)",
-    glow: "rgba(168,85,247,0.4)",
-    greeting: "Hey, I'm Ryan — CyberCraft360's cybersecurity specialist. Most businesses don't realise they've been compromised until it's too late. What does your current security setup look like?",
-    voices: ["Microsoft Ryan Online (Natural)", "Microsoft Ryan", "Microsoft Guy Online (Natural)", "Microsoft Eric Online (Natural)", "Google UK English Male"],
-    defaultLang: "en-GB",
-  },
-  MARCUS: {
-    name: "MARCUS",
-    title: "Automation & ROI Expert",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.2))",
-    border: "rgba(16,185,129,0.3)",
-    glow: "rgba(16,185,129,0.4)",
-    greeting: "What's up, I'm Marcus — I help businesses cut costs and scale revenue through AI automation. What's the most repetitive thing your team deals with every single day?",
-    voices: ["Microsoft Andrew Online (Natural)", "Microsoft Andrew", "Microsoft Guy Online (Natural)", "Microsoft Roger Online (Natural)", "Google US English Male"],
-    defaultLang: "en-US",
-  },
-  ZARA: {
-    name: "ZARA",
-    title: "Voice AI Engineer",
-    color: "#f43f5e",
-    gradient: "linear-gradient(135deg, rgba(244,63,94,0.25), rgba(251,146,60,0.2))",
-    border: "rgba(244,63,94,0.3)",
-    glow: "rgba(244,63,94,0.4)",
-    greeting: "I'm ZARA — I build voice AI agents and chatbots like the one you're speaking to right now. What systems does your business currently run on?",
-    voices: ["Microsoft Sonia Online (Natural)", "Microsoft Hazel Online (Natural)", "Microsoft Libby Online (Natural)", "Google UK English Female", "Karen"],
-    defaultLang: "en-GB",
-  },
 } as const;
 
-type PersonaKey = "IRIS" | "RYAN" | "MARCUS" | "ZARA";
+type PersonaKey = "IRIS";
 
 // Language-to-voice priority map for multilingual support
 const LANG_VOICES: Record<string, string[]> = {
@@ -339,35 +306,6 @@ export default function IrisAgent() {
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
-
-      {/* Persona selector */}
-      <div className="grid grid-cols-4 gap-3 w-full">
-        {(Object.keys(PERSONAS) as PersonaKey[]).map(key => {
-          const p = PERSONAS[key];
-          const isActive = activePersona === key;
-          return (
-            <motion.button
-              key={key}
-              onClick={() => setActivePersona(key)}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              style={{
-                padding: "12px 8px",
-                borderRadius: "12px",
-                border: `1px solid ${isActive ? p.border : "rgba(255,255,255,0.07)"}`,
-                background: isActive ? p.gradient : "rgba(255,255,255,0.02)",
-                cursor: "pointer",
-                textAlign: "center",
-                transition: "all 0.25s",
-                boxShadow: isActive ? `0 0 20px ${p.glow}30` : "none",
-              }}
-            >
-              <div style={{ fontSize: "0.9rem", fontWeight: 700, color: isActive ? p.color : "rgba(255,255,255,0.4)", letterSpacing: "0.05em", marginBottom: "3px" }}>{p.name}</div>
-              <div style={{ fontSize: "0.55rem", color: isActive ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{p.title}</div>
-            </motion.button>
-          );
-        })}
-      </div>
 
       {/* Orb */}
       <div className="relative flex items-center justify-center" style={{ width: "180px", height: "180px" }}>
