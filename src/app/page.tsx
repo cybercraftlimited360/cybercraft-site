@@ -366,11 +366,11 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.5 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-16 lg:mt-48"
           >
-            <Magnetic strength={0.4} radius={130}>
+            <Magnetic strength={0} radius={0}>
               <motion.a
                 href="#services"
-                whileHover={{ scale: 1.04, y: -2 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
                 className="group inline-flex items-center gap-2.5 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-sm tracking-widest uppercase no-underline shadow-lg hover:shadow-primary/25 transition-shadow duration-300 overflow-hidden relative"
               >
                 <motion.div
@@ -384,11 +384,11 @@ export default function Home() {
               </motion.a>
             </Magnetic>
 
-            <Magnetic strength={0.35} radius={120}>
+            <Magnetic strength={0} radius={0}>
               <motion.a
                 href="#contact"
-                whileHover={{ scale: 1.04, y: -2 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-2.5 px-8 py-4 border border-border/60 rounded-md font-medium text-sm tracking-widest uppercase text-foreground no-underline bg-background/60 backdrop-blur-sm hover:border-primary/40 hover:text-primary transition-colors duration-200"
               >
                 <Zap className="w-4 h-4" />

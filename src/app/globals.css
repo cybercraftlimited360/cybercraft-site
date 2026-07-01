@@ -140,6 +140,12 @@
   a, button, [role="button"], input, textarea, select, label {
     cursor: none;
   }
+  input, textarea, select {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: rgba(255, 255, 255, 0.25) !important;
+  }
 }
 
 /* Custom scrollbar */
