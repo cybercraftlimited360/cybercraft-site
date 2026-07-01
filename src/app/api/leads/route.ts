@@ -37,8 +37,6 @@ async function sendLeadEmail(
   approveUrl?: string,
   skipUrl?: string,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
 
   const time = new Date(lead.capturedAt).toLocaleString("en-US", {
     dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago",
@@ -139,15 +137,11 @@ async function sendLeadEmail(
 </body>
 </html>`;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "CyberCraft360 Leads <onboarding@resend.dev>",
-      to: [NOTIFY_EMAIL],
-      subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? " (has phone)" : ""}`,
-      html,
-    }),
+  const { sendEmail } = await import("@/lib/mailer");
+  await sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? " (has phone)" : ""}`,
+    html,
   });
 }
 

@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { createCalendarEvent } from "@/lib/google-calendar";
 import { getBookings, saveBookings, Booking } from "@/lib/redis";
+import { sendEmail } from "@/lib/mailer";
 
 const AVAIL_FILE = path.join(process.cwd(), "data", "availability.json");
 
@@ -21,24 +22,17 @@ function generateId() {
 
 async function sendConfirmationEmails(booking: {
   id: string; name: string; email: string; company: string;
-  phone: string; date: string; time: string; message: string; timezone: string;
+  phone: string; date: string; time: string; message: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
-
   const dateLabel = new Date(`${booking.date}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
   // Email to client
-  fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "CyberCraft360 <onboarding@resend.dev>",
-      to: [booking.email],
-      subject: `Your Strategy Session is Confirmed — ${dateLabel}`,
-      html: `
+  sendEmail({
+    to: booking.email,
+    subject: `Your Strategy Session is Confirmed — ${dateLabel}`,
+    html: `
 <div style="background:#0a0c12;padding:40px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
     <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></div>
@@ -47,43 +41,28 @@ async function sendConfirmationEmails(booking: {
       <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 8px;">You're booked in.</h1>
       <p style="font-size:14px;color:rgba(255,255,255,0.5);margin:0 0 28px;">We're looking forward to speaking with you.</p>
       <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-        <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
-          <span style="color:#00d4ff;font-size:18px;">📅</span>
-          <div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Date</div>
-            <div style="color:#fff;font-weight:600;font-size:15px;">${dateLabel}</div>
-          </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">📅 Date</div>
+          <div style="color:#fff;font-weight:600;font-size:15px;">${dateLabel}</div>
         </div>
-        <div style="display:flex;gap:12px;align-items:flex-start;">
-          <span style="color:#00d4ff;font-size:18px;">⏰</span>
-          <div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Time</div>
-            <div style="color:#fff;font-weight:600;font-size:15px;">${fmt12(booking.time)} CT</div>
-          </div>
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">⏰ Time</div>
+          <div style="color:#fff;font-weight:600;font-size:15px;">${fmt12(booking.time)} CT</div>
         </div>
       </div>
-      <p style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.7;margin:0 0 20px;">
-        Our founder will call you directly at the scheduled time.
-      </p>
-      <a href="https://cybercraft360.com/reschedule/${booking.id}" style="display:inline-block;padding:10px 22px;border-radius:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;letter-spacing:0.06em;text-decoration:none;margin-bottom:24px;">
-        🔄 Need to reschedule?
-      </a>
+      <p style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.7;margin:0 0 20px;">Our founder will call you directly at the scheduled time.</p>
+      <a href="https://cybercraft360.com/reschedule/${booking.id}" style="display:inline-block;padding:10px 22px;border-radius:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;text-decoration:none;margin-bottom:24px;">🔄 Need to reschedule?</a>
       <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:0;">CyberCraft360 · Bespoke AI Agency · Houston, TX</p>
     </div>
   </div>
 </div>`,
-    }),
   }).catch(() => {});
 
   // Notification to owner
-  fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "CyberCraft360 Scheduler <onboarding@resend.dev>",
-      to: ["cybercraftlimited@gmail.com"],
-      subject: `📅 New Booking — ${booking.name} (${booking.company}) — ${dateLabel} at ${fmt12(booking.time)} CT`,
-      html: `
+  sendEmail({
+    to: "cybercraftlimited@gmail.com",
+    subject: `📅 New Booking — ${booking.name} (${booking.company}) — ${dateLabel} at ${fmt12(booking.time)} CT`,
+    html: `
 <div style="font-family:system-ui,sans-serif;padding:32px;background:#f9fafb;max-width:560px;">
   <h2 style="margin:0 0 20px;color:#111;">New Strategy Session Booked</h2>
   <table style="width:100%;border-collapse:collapse;">
@@ -97,7 +76,6 @@ async function sendConfirmationEmails(booking: {
   </table>
   <p style="margin:20px 0 0;font-size:12px;color:#999;">Booking ID: ${booking.id}</p>
 </div>`,
-    }),
   }).catch(() => {});
 }
 
@@ -140,7 +118,6 @@ export async function POST(req: NextRequest) {
       gcal_event_id: null,
     };
 
-    // Try Google Calendar (no-op if not configured)
     const slotDuration = avail?.slotDuration ?? 30;
     const [h, m] = time.split(":").map(Number);
     const startDT = new Date(`${date}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`);

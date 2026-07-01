@@ -62,18 +62,11 @@ Pick the 3 most relevant services from: Custom AI Chatbot ($500/mo), Voice AI Ag
 }
 
 async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("Resend API key not configured");
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "CyberCraft360 <onboarding@resend.dev>",
-      to: [to],
-      bcc: ["cybercraftlimited@gmail.com"],
-      subject: `Your Bespoke AI Proposal — ${company}`,
-      html: `
+  const { sendEmail } = await import("@/lib/mailer");
+  await sendEmail({
+    to: [to, "cybercraftlimited@gmail.com"],
+    subject: `Your Bespoke AI Proposal — ${company}`,
+    html: `
 <div style="background:#0a0c12;padding:40px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
     <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></div>
@@ -87,22 +80,18 @@ async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer)
       <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
         Book Your Free Strategy Call →
       </a>
-      <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:28px 0 0;">CyberCraft360 · Bespoke AI Agency · cybercraftlimited.com</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:28px 0 0;">CyberCraft360 · Bespoke AI Agency · cybercraft360.com</p>
     </div>
   </div>
 </div>`,
-      attachments: [
-        {
-          filename: `CyberCraft360-Proposal-${company.replace(/\s+/g, "-")}.pdf`,
-          content: pdfBuffer.toString("base64"),
-        },
-      ],
-    }),
+    attachments: [
+      {
+        filename: `CyberCraft360-Proposal-${company.replace(/\s+/g, "-")}.pdf`,
+        content: pdfBuffer.toString("base64"),
+        encoding: "base64",
+      },
+    ],
   });
-
-  const resData = await res.json();
-  console.log("Resend response:", JSON.stringify(resData));
-  if (!res.ok) throw new Error(resData.message || resData.name || "Email delivery failed");
 }
 
 export async function POST(req: NextRequest) {
