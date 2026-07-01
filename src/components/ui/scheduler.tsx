@@ -188,11 +188,11 @@ export default function Scheduler() {
         {step === "calendar" && (
           <motion.div key="cal" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }} className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <button onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors" style={{ cursor: "none", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <button onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors" style={{ cursor: "pointer", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <ChevronLeft size={15} style={{ color: "rgba(255,255,255,0.5)" }} />
               </button>
               <span className="font-semibold text-sm text-white">{MONTHS[viewMonth]} {viewYear}</span>
-              <button onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors" style={{ cursor: "none", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <button onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors" style={{ cursor: "pointer", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <ChevronRight size={15} style={{ color: "rgba(255,255,255,0.5)" }} />
               </button>
             </div>
@@ -218,7 +218,7 @@ export default function Scheduler() {
                     onClick={() => { setSelectedDate(key); setSelectedTime(null); setStep("time"); }}
                     className="relative mx-auto w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
                     style={{
-                      cursor: isPast ? "not-allowed" : "none",
+                      cursor: isPast ? "not-allowed" : "pointer",
                       color: isPast ? "rgba(255,255,255,0.15)" : isSelected ? "#000" : isToday ? "#00d4ff" : "rgba(255,255,255,0.7)",
                       background: isSelected ? "#00d4ff" : isToday ? "rgba(0,212,255,0.1)" : "transparent",
                       border: isToday && !isSelected ? "1px solid rgba(0,212,255,0.3)" : "1px solid transparent",
@@ -239,7 +239,7 @@ export default function Scheduler() {
         {/* STEP: TIME SLOTS */}
         {step === "time" && (
           <motion.div key="time" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }} className="p-5">
-            <button onClick={() => setStep("calendar")} className="flex items-center gap-1.5 mb-4 text-xs hover:text-white transition-colors" style={{ color: "rgba(255,255,255,0.4)", cursor: "none" }}>
+            <button onClick={() => setStep("calendar")} className="flex items-center gap-1.5 mb-4 text-xs hover:text-white transition-colors" style={{ color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
               <ChevronLeft size={13} /> Back to calendar
             </button>
 
@@ -260,7 +260,7 @@ export default function Scheduler() {
             ) : slots.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>No available slots on this day.</p>
-                <button onClick={() => setStep("calendar")} className="mt-3 text-xs underline" style={{ color: "#00d4ff", cursor: "none" }}>Choose another date</button>
+                <button onClick={() => setStep("calendar")} className="mt-3 text-xs underline" style={{ color: "#00d4ff", cursor: "pointer" }}>Choose another date</button>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
@@ -274,7 +274,7 @@ export default function Scheduler() {
                       key={slot}
                       onClick={() => { setSelectedTime(slot); setStep("details"); }}
                       className="py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex flex-col items-center"
-                      style={{ cursor: "none", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)", color: "#00d4ff" }}
+                      style={{ cursor: "pointer", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)", color: "#00d4ff" }}
                       onMouseEnter={e => { const el = e.currentTarget; el.style.background = "rgba(0,212,255,0.15)"; el.style.borderColor = "rgba(0,212,255,0.5)"; }}
                       onMouseLeave={e => { const el = e.currentTarget; el.style.background = "rgba(0,212,255,0.06)"; el.style.borderColor = "rgba(0,212,255,0.2)"; }}
                     >
@@ -291,7 +291,7 @@ export default function Scheduler() {
         {/* STEP: DETAILS FORM */}
         {step === "details" && (
           <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }} className="p-5">
-            <button onClick={() => setStep("time")} className="flex items-center gap-1.5 mb-4 text-xs hover:text-white transition-colors" style={{ color: "rgba(255,255,255,0.4)", cursor: "none" }}>
+            <button onClick={() => setStep("time")} className="flex items-center gap-1.5 mb-4 text-xs hover:text-white transition-colors" style={{ color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
               <ChevronLeft size={13} /> Back
             </button>
 
@@ -347,7 +347,7 @@ export default function Scheduler() {
               disabled={submitting}
               className="w-full mt-4 py-3 rounded-xl font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-opacity"
               style={{
-                cursor: "none",
+                cursor: submitting ? "not-allowed" : "pointer",
                 background: submitting ? "rgba(0,212,255,0.3)" : "linear-gradient(135deg,#00d4ff,#7c3aed)",
                 color: "#fff",
                 opacity: submitting ? 0.7 : 1,
