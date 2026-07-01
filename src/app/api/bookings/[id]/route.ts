@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 
-const BOOK_FILE = path.join(process.cwd(), "data", "bookings.json");
+const BOOK_FILE = process.env.VERCEL ? "/tmp/bookings.json" : path.join(process.cwd(), "data", "bookings.json");
 
 async function readBookings() {
   try { return JSON.parse(await fs.readFile(BOOK_FILE, "utf-8")); } catch { return []; }

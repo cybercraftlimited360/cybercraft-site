@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const AVAIL_FILE = path.join(process.cwd(), "data", "availability.json");
-const BOOK_FILE  = path.join(process.cwd(), "data", "bookings.json");
+const BOOK_FILE  = process.env.VERCEL ? "/tmp/bookings.json" : path.join(process.cwd(), "data", "bookings.json");
 
 async function readJson(file: string) {
   try { return JSON.parse(await fs.readFile(file, "utf-8")); } catch { return null; }

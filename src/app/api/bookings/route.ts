@@ -3,7 +3,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { createCalendarEvent } from "@/lib/google-calendar";
 
-const BOOK_FILE  = path.join(process.cwd(), "data", "bookings.json");
+// On Vercel the project root is read-only — use /tmp for writes
+const BOOK_FILE  = process.env.VERCEL ? "/tmp/bookings.json" : path.join(process.cwd(), "data", "bookings.json");
 const AVAIL_FILE = path.join(process.cwd(), "data", "availability.json");
 
 function fmt12(t: string) {
