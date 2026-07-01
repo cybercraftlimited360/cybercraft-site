@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { createCalendarEvent } from "@/lib/google-calendar";
+import { getBookings, saveBookings, Booking } from "@/lib/redis";
 
-// On Vercel the project root is read-only — use /tmp for writes
-const BOOK_FILE  = process.env.VERCEL ? "/tmp/bookings.json" : path.join(process.cwd(), "data", "bookings.json");
 const AVAIL_FILE = path.join(process.cwd(), "data", "availability.json");
 
 function fmt12(t: string) {
@@ -12,12 +11,8 @@ function fmt12(t: string) {
   return `${h % 12 || 12}:${m.toString().padStart(2,"0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
-async function readJson(file: string) {
-  try { return JSON.parse(await fs.readFile(file, "utf-8")); } catch { return null; }
-}
-
-async function writeJson(file: string, data: unknown) {
-  await fs.writeFile(file, JSON.stringify(data, null, 2));
+async function readAvail() {
+  try { return JSON.parse(await fs.readFile(AVAIL_FILE, "utf-8")); } catch { return null; }
 }
 
 function generateId() {
@@ -36,7 +31,7 @@ async function sendConfirmationEmails(booking: {
   });
 
   // Email to client
-  await fetch("https://api.resend.com/emails", {
+  fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
@@ -81,13 +76,13 @@ async function sendConfirmationEmails(booking: {
   }).catch(() => {});
 
   // Notification to owner
-  await fetch("https://api.resend.com/emails", {
+  fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       from: "CyberCraft360 Scheduler <onboarding@resend.dev>",
       to: ["cybercraftlimited@gmail.com"],
-      subject: `📅 New Booking — ${booking.name} (${booking.company}) — ${dateLabel} at ${booking.time}`,
+      subject: `📅 New Booking — ${booking.name} (${booking.company}) — ${dateLabel} at ${fmt12(booking.time)} CT`,
       html: `
 <div style="font-family:system-ui,sans-serif;padding:32px;background:#f9fafb;max-width:560px;">
   <h2 style="margin:0 0 20px;color:#111;">New Strategy Session Booked</h2>
@@ -97,7 +92,7 @@ async function sendConfirmationEmails(booking: {
     <tr><td style="padding:8px 0;color:#666;">Email</td><td style="padding:8px 0;color:#111;">${booking.email}</td></tr>
     <tr><td style="padding:8px 0;color:#666;">Phone</td><td style="padding:8px 0;color:#111;">${booking.phone || "—"}</td></tr>
     <tr><td style="padding:8px 0;color:#666;">Date</td><td style="padding:8px 0;font-weight:600;color:#0066cc;">${dateLabel}</td></tr>
-    <tr><td style="padding:8px 0;color:#666;">Time</td><td style="padding:8px 0;font-weight:600;color:#0066cc;">${booking.time} CT</td></tr>
+    <tr><td style="padding:8px 0;color:#666;">Time</td><td style="padding:8px 0;font-weight:600;color:#0066cc;">${fmt12(booking.time)} CT</td></tr>
     ${booking.message ? `<tr><td style="padding:8px 0;color:#666;vertical-align:top;">Note</td><td style="padding:8px 0;color:#111;">${booking.message}</td></tr>` : ""}
   </table>
   <p style="margin:20px 0 0;font-size:12px;color:#999;">Booking ID: ${booking.id}</p>
@@ -111,7 +106,7 @@ export async function GET(req: NextRequest) {
   if (secret !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const bookings = (await readJson(BOOK_FILE)) ?? [];
+  const bookings = await getBookings();
   return NextResponse.json({ bookings });
 }
 
@@ -124,16 +119,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name, email, date and time are required." }, { status: 400 });
     }
 
-    // Double-check slot is still available
-    const avail = await readJson(AVAIL_FILE);
-    const bookings: { date: string; time: string; status: string }[] = (await readJson(BOOK_FILE)) ?? [];
+    const avail = await readAvail();
+    const bookings = await getBookings();
 
     const conflict = bookings.find(b => b.date === date && b.time === time && b.status !== "cancelled");
     if (conflict) {
       return NextResponse.json({ error: "That slot was just taken. Please pick another time." }, { status: 409 });
     }
 
-    const booking = {
+    const booking: Booking = {
       id: generateId(),
       name, email,
       company: company || "",
@@ -143,16 +137,15 @@ export async function POST(req: NextRequest) {
       timezone: timezone || avail?.timezone || "America/Chicago",
       status: "confirmed",
       createdAt: new Date().toISOString(),
-      gcal_event_id: null as string | null,
+      gcal_event_id: null,
     };
 
-    // Try to add to Google Calendar (no-op if not configured)
+    // Try Google Calendar (no-op if not configured)
     const slotDuration = avail?.slotDuration ?? 30;
     const [h, m] = time.split(":").map(Number);
     const startDT = new Date(`${date}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`);
     const endDT   = new Date(startDT.getTime() + slotDuration * 60000);
-
-    const gcalId = await createCalendarEvent({
+    const gcalId  = await createCalendarEvent({
       summary: `Strategy Session — ${name} (${company || "CyberCraft360"})`,
       description: `Name: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone}\n${message ? `\nNote: ${message}` : ""}`,
       startDateTime: startDT.toISOString(),
@@ -162,11 +155,9 @@ export async function POST(req: NextRequest) {
     });
     if (gcalId) booking.gcal_event_id = gcalId;
 
-    // Save booking
     bookings.push(booking);
-    await writeJson(BOOK_FILE, bookings);
+    await saveBookings(bookings);
 
-    // Send emails (non-blocking for response)
     sendConfirmationEmails(booking).catch(() => {});
 
     return NextResponse.json({ ok: true, bookingId: booking.id });

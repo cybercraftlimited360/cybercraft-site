@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { getBookings } from "@/lib/redis";
 
 const AVAIL_FILE = path.join(process.cwd(), "data", "availability.json");
-const BOOK_FILE  = process.env.VERCEL ? "/tmp/bookings.json" : path.join(process.cwd(), "data", "bookings.json");
 
 async function readJson(file: string) {
   try { return JSON.parse(await fs.readFile(file, "utf-8")); } catch { return null; }
@@ -21,7 +21,7 @@ function minutesToTime(m: number) {
 }
 
 export async function GET(req: NextRequest) {
-  const date = req.nextUrl.searchParams.get("date"); // YYYY-MM-DD
+  const date = req.nextUrl.searchParams.get("date");
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
@@ -35,12 +35,10 @@ export async function GET(req: NextRequest) {
   };
 
   const avail = (await readJson(AVAIL_FILE)) ?? DEFAULT_AVAIL;
-  const bookings = (await readJson(BOOK_FILE)) ?? [];
+  const bookings = await getBookings();
 
-  // Blocked date?
   if (avail.blockedDates?.includes(date)) return NextResponse.json({ slots: [] });
 
-  // Day of week (0=Sun)
   const dow = new Date(`${date}T12:00:00`).getDay().toString();
   const day = avail.weekdays[dow];
   if (!day?.enabled) return NextResponse.json({ slots: [] });
@@ -52,20 +50,17 @@ export async function GET(req: NextRequest) {
   const startMin = timeToMinutes(day.start);
   const endMin   = timeToMinutes(day.end);
 
-  // Build all possible slots
   const allSlots: string[] = [];
   for (let m = startMin; m + slotDuration <= endMin; m += stepMinutes) {
     allSlots.push(minutesToTime(m));
   }
 
-  // Filter out already-booked slots on this date
   const bookedTimes = new Set(
     bookings
-      .filter((b: { date: string; status: string }) => b.date === date && b.status !== "cancelled")
-      .map((b: { time: string }) => b.time)
+      .filter(b => b.date === date && b.status !== "cancelled")
+      .map(b => b.time)
   );
 
-  // Filter out past slots if date is today
   const nowCT = new Date().toLocaleString("en-US", { timeZone: avail.timezone || "America/Chicago" });
   const todayStr = new Date(nowCT).toISOString().slice(0, 10);
   const nowMinutes = date === todayStr
