@@ -28,8 +28,10 @@ async function sendConfirmationEmails(booking: {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
+  if (!process.env.GMAIL_APP_PASSWORD) throw new Error("GMAIL_APP_PASSWORD not set in environment variables");
+
   // Email to client
-  sendEmail({
+  await sendEmail({
     to: booking.email,
     subject: `Your Strategy Session is Confirmed — ${dateLabel}`,
     html: `
@@ -56,10 +58,10 @@ async function sendConfirmationEmails(booking: {
     </div>
   </div>
 </div>`,
-  }).catch(() => {});
+  });
 
   // Notification to owner
-  sendEmail({
+  await sendEmail({
     to: "cybercraftlimited@gmail.com",
     subject: `📅 New Booking — ${booking.name} (${booking.company}) — ${dateLabel} at ${fmt12(booking.time)} CT`,
     html: `
@@ -76,7 +78,7 @@ async function sendConfirmationEmails(booking: {
   </table>
   <p style="margin:20px 0 0;font-size:12px;color:#999;">Booking ID: ${booking.id}</p>
 </div>`,
-  }).catch(() => {});
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -135,7 +137,11 @@ export async function POST(req: NextRequest) {
     bookings.push(booking);
     await saveBookings(bookings);
 
-    sendConfirmationEmails(booking).catch(() => {});
+    try {
+      await sendConfirmationEmails(booking);
+    } catch (emailErr) {
+      console.error("Email send failed:", emailErr);
+    }
 
     return NextResponse.json({ ok: true, bookingId: booking.id });
   } catch (err) {
