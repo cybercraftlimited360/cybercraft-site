@@ -1,10 +1,12 @@
 import Scheduler from "@/components/ui/scheduler";
+import CursorGlow from "@/components/ui/cursor-glow";
 
 export const metadata = { title: "Book a Strategy Session — CyberCraft360" };
 
 export default function BookPage() {
   return (
     <div style={{ minHeight:"100vh", background:"#0a0c12", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px", fontFamily:"system-ui" }}>
+      <CursorGlow />
       <div style={{ width:"100%", maxWidth:460 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.25)", margin:"0 0 10px" }}>CyberCraft360</p>
