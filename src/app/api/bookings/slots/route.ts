@@ -26,10 +26,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
-  const avail = await readJson(AVAIL_FILE);
-  const bookings = (await readJson(BOOK_FILE)) ?? [];
+  const DEFAULT_AVAIL = {
+    timezone: "America/Chicago",
+    slotDuration: 30,
+    bufferMinutes: 15,
+    weekdays: Object.fromEntries([0,1,2,3,4,5,6].map(d => [d, { enabled: true, start: "00:00", end: "23:30" }])),
+    blockedDates: [],
+  };
 
-  if (!avail) return NextResponse.json({ slots: [] });
+  const avail = (await readJson(AVAIL_FILE)) ?? DEFAULT_AVAIL;
+  const bookings = (await readJson(BOOK_FILE)) ?? [];
 
   // Blocked date?
   if (avail.blockedDates?.includes(date)) return NextResponse.json({ slots: [] });

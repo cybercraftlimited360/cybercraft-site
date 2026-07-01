@@ -1,4 +1,8 @@
 node_modules
 .next
 .env.local
-data/*.json
+data/bookings.json
+data/leads.json
+data/iris-conversations.json
+data/cipher-conversations.json
+data/pending-calls.json
