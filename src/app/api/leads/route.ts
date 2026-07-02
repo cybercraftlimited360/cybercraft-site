@@ -1,74 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { redis } from "@/lib/redis";
 import crypto from "crypto";
 
-const LEADS_FILE = path.join(process.cwd(), "data", "leads.json");
-const PENDING_FILE = path.join(process.cwd(), "data", "pending-calls.json");
 const NOTIFY_EMAIL = "cybercraftlimited@gmail.com";
+const LAUREN_URL = "https://amused-empathy-production-6b44.up.railway.app";
 
-function readPending(): any[] {
-  try { return JSON.parse(fs.readFileSync(PENDING_FILE, "utf-8")); }
-  catch { return []; }
-}
-
-function savePendingCall(lead: any, token: string) {
-  const pending = readPending();
-  pending.push({ token, ...lead, createdAt: new Date().toISOString() });
-  fs.mkdirSync(path.dirname(PENDING_FILE), { recursive: true });
-  fs.writeFileSync(PENDING_FILE, JSON.stringify(pending, null, 2));
-}
-
-function readLeads(): object[] {
+async function triggerLaurenCall(lead: { name: string; company: string; challenge: string; phone: string }, retryCount = 0) {
   try {
-    return JSON.parse(fs.readFileSync(LEADS_FILE, "utf-8"));
-  } catch {
-    return [];
+    const context = `This lead came from our website chat. They mentioned: ${lead.challenge}. Address this specifically in your pitch.`;
+    const res = await fetch(`${LAUREN_URL}/make-call`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: lead.phone,
+        contactName: lead.name,
+        company: lead.company,
+        challenge: lead.challenge,
+        context,
+        retryCount,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      console.log(`Lauren calling ${lead.name} (${lead.phone}) — callSid: ${data.callSid}`);
+      // Track in Redis
+      await redis.hincrby("lauren:stats", "totalCalls", 1);
+    }
+    return data;
+  } catch (err) {
+    console.error("Lauren call trigger error:", err);
+    return null;
   }
-}
-
-function writeLeads(leads: object[]) {
-  fs.mkdirSync(path.dirname(LEADS_FILE), { recursive: true });
-  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
 }
 
 async function sendLeadEmail(
   lead: { name: string; company: string; phone?: string; challenge: string; capturedAt: string },
-  approveUrl?: string,
-  skipUrl?: string,
+  laurenCalling: boolean,
 ) {
-
   const time = new Date(lead.capturedAt).toLocaleString("en-US", {
     dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago",
   });
 
-  const callSection = lead.phone && approveUrl && skipUrl ? `
-        <!-- Call decision -->
-        <tr><td style="padding:0 36px 28px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:14px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);overflow:hidden;">
-            <tr><td style="padding:20px 24px 8px;">
-              <span style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Phone: ${lead.phone}</span><br/>
-              <span style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:4px;display:block;">Should Aria (Bland AI) call this lead now?</span>
-            </td></tr>
-            <tr><td style="padding:16px 24px 20px;">
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="padding-right:10px;">
-                    <a href="${approveUrl}" style="display:inline-block;padding:11px 22px;border-radius:8px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-                      ✓ Yes — Have Aria Call Them
-                    </a>
-                  </td>
-                  <td>
-                    <a href="${skipUrl}" style="display:inline-block;padding:11px 22px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-                      ✕ I'll Call Them Myself
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:10px 0 0;font-size:10px;color:rgba(255,255,255,0.2);">Aria charges ~$0.14/min · approx $1.40 for a 10-min call · one-time use link</p>
-            </td></tr>
-          </table>
-        </td></tr>` : "";
+  const callSection = lead.phone ? `
+    <tr><td style="padding:0 36px 28px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:14px;background:${laurenCalling ? "rgba(34,197,94,0.05)" : "rgba(255,165,0,0.05)"};border:1px solid ${laurenCalling ? "rgba(34,197,94,0.2)" : "rgba(255,165,0,0.2)"};overflow:hidden;">
+        <tr><td style="padding:20px 24px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="font-size:18px;">${laurenCalling ? "📞" : "⚠️"}</span>
+            <span style="font-size:13px;font-weight:700;color:${laurenCalling ? "#22c55e" : "#f59e0b"};">
+              ${laurenCalling ? "Lauren is calling them now" : "No phone — Lauren not triggered"}
+            </span>
+          </div>
+          <span style="font-size:12px;color:rgba(255,255,255,0.4);">
+            ${laurenCalling
+              ? `Calling ${lead.phone} · If no answer, Lauren will retry in 30 min and 2 hours`
+              : "Lead has no phone number on file"
+            }
+          </span>
+        </td></tr>
+      </table>
+    </td></tr>` : "";
 
   const html = `
 <!DOCTYPE html>
@@ -78,9 +69,7 @@ async function sendLeadEmail(
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0c12;padding:40px 20px;">
     <tr><td align="center">
       <table width="580" cellpadding="0" cellspacing="0" style="background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
-
         <tr><td style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></td></tr>
-
         <tr><td style="padding:32px 36px 24px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
@@ -94,15 +83,14 @@ async function sendLeadEmail(
             </tr>
           </table>
         </td></tr>
-
         <tr><td style="padding:0 36px;"><div style="height:1px;background:rgba(255,255,255,0.06);"></div></td></tr>
-
         <tr><td style="padding:28px 36px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
             ${[
               { label: "Name", value: lead.name, color: "#00d4ff" },
               { label: "Company", value: lead.company, color: "#7c3aed" },
               { label: "Challenge", value: lead.challenge, color: "#e64dff" },
+              ...(lead.phone ? [{ label: "Phone", value: lead.phone, color: "#22c55e" }] : []),
             ].map((row, i) => `
             <tr style="${i > 0 ? "border-top:1px solid rgba(255,255,255,0.05);" : ""}">
               <td style="padding:14px 20px;width:100px;">
@@ -114,23 +102,18 @@ async function sendLeadEmail(
             </tr>`).join("")}
           </table>
         </td></tr>
-
         ${callSection}
-
         <tr><td style="padding:0 36px 28px;">
           <span style="font-size:11px;color:rgba(255,255,255,0.2);">Captured via website · ${time} CT</span>
         </td></tr>
-
-        <tr><td style="padding:0 36px 36px;">
-          <a href="https://calendly.com/cybercraftlimited/30min" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-            View Booking Calendar →
+        <tr><td style="padding:0 36px 28px;">
+          <a href="https://cybercraft360.com/admin/schedule" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
+            View Bookings Dashboard →
           </a>
         </td></tr>
-
         <tr><td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.05);">
           <span style="font-size:11px;color:rgba(255,255,255,0.15);">CyberCraft360 · Lead Notification · Automated message</span>
         </td></tr>
-
       </table>
     </td></tr>
   </table>
@@ -140,7 +123,7 @@ async function sendLeadEmail(
   const { sendEmail } = await import("@/lib/mailer");
   await sendEmail({
     to: NOTIFY_EMAIL,
-    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? " (has phone)" : ""}`,
+    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? (laurenCalling ? " 📞 Lauren calling" : " (no answer yet)") : ""}`,
     html,
   });
 }
@@ -148,33 +131,35 @@ async function sendLeadEmail(
 export async function POST(req: NextRequest) {
   try {
     const lead = await req.json();
-    const leads = readLeads();
 
-    const exists = leads.some(
-      (l: any) =>
-        l.name?.toLowerCase() === lead.name?.toLowerCase() &&
-        l.company?.toLowerCase() === lead.company?.toLowerCase()
-    );
+    // Deduplicate using Redis
+    const key = `lead:${lead.name?.toLowerCase()}:${lead.company?.toLowerCase()}`;
+    const exists = await redis.get(key);
+    if (exists) return NextResponse.json({ ok: true, duplicate: true });
 
-    if (!exists) {
-      const enriched = { ...lead, capturedAt: new Date().toISOString() };
-      leads.push(enriched);
-      writeLeads(leads);
+    await redis.set(key, "1", { ex: 60 * 60 * 24 * 7 }); // 7 day TTL
 
-      // Build approval URLs if phone provided
-      let approveUrl: string | undefined;
-      let skipUrl: string | undefined;
-      if (lead.phone) {
-        const token = crypto.randomBytes(20).toString("hex");
-        savePendingCall({ phone: lead.phone, name: lead.name, company: lead.company, challenge: lead.challenge }, token);
-        const base = req.nextUrl.origin;
-        approveUrl = `${base}/api/call/approve?token=${token}&action=approve`;
-        skipUrl = `${base}/api/call/approve?token=${token}&action=skip`;
-      }
+    const enriched = { ...lead, capturedAt: new Date().toISOString() };
 
-      // Fire email notification — non-blocking
-      sendLeadEmail(enriched, approveUrl, skipUrl).catch(err => console.error("Email error:", err));
+    // Save lead to Redis list
+    const allLeads = await redis.get<any[]>("leads:all") ?? [];
+    allLeads.push(enriched);
+    await redis.set("leads:all", JSON.stringify(allLeads));
+
+    // Auto-trigger Lauren if phone number provided
+    let laurenCalling = false;
+    if (lead.phone) {
+      triggerLaurenCall({
+        name: lead.name,
+        company: lead.company,
+        challenge: lead.challenge,
+        phone: lead.phone,
+      }).catch(err => console.error("Lauren trigger error:", err));
+      laurenCalling = true;
     }
+
+    // Send notification email (non-blocking)
+    sendLeadEmail(enriched, laurenCalling).catch(err => console.error("Email error:", err));
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -184,5 +169,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json(readLeads());
+  const leads = await redis.get<any[]>("leads:all") ?? [];
+  return NextResponse.json(leads.reverse());
 }
