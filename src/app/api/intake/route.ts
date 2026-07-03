@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { redis } from "@/lib/redis";
 
-const INTAKE_FILE = path.join(process.cwd(), "data", "intakes.json");
-const NOTIFY_EMAIL = "saadimran1994@gmail.com";
-
-async function loadIntakes() {
-  try { return JSON.parse(await fs.readFile(INTAKE_FILE, "utf-8")); }
-  catch { return []; }
-}
+const NOTIFY_EMAIL = "cybercraftlimited@gmail.com";
 
 async function saveIntake(intake: object) {
-  const all = await loadIntakes();
-  all.push(intake);
-  await fs.mkdir(path.dirname(INTAKE_FILE), { recursive: true });
-  await fs.writeFile(INTAKE_FILE, JSON.stringify(all, null, 2));
+  try {
+    const all = await redis.get<object[]>("intakes:all") ?? [];
+    all.push(intake);
+    await redis.set("intakes:all", all);
+  } catch (err) {
+    console.error("Redis intake save error:", err);
+  }
 }
 
 function scoreServices(form: Record<string, unknown>): string[] {
@@ -42,8 +38,6 @@ function scoreServices(form: Record<string, unknown>): string[] {
 }
 
 async function sendIntakeEmail(form: Record<string, unknown>) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
 
   const recommendations = scoreServices(form);
   const time = new Date().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago" });
@@ -171,7 +165,7 @@ async function sendIntakeEmail(form: Record<string, unknown>) {
   </td></tr>` : ""}
 
   <tr><td style="padding:0 36px 28px;">
-    <a href="https://calendly.com/cybercraftlimited/30min" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
+    <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
       Book Strategy Call with ${form.name?.toString().split(" ")[0]} →
     </a>
   </td></tr>
@@ -184,15 +178,11 @@ async function sendIntakeEmail(form: Record<string, unknown>) {
 </td></tr></table>
 </body></html>`;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "CyberCraft360 Intake <onboarding@resend.dev>",
-      to: [NOTIFY_EMAIL],
-      subject: `📋 New Intake: ${form.name} — ${form.businessName} (${form.industry})`,
-      html,
-    }),
+  const { sendEmail } = await import("@/lib/mailer");
+  await sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: `📋 New Intake: ${form.name} — ${form.businessName} (${form.industry})`,
+    html,
   });
 }
 
