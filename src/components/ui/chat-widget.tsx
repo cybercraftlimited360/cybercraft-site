@@ -349,7 +349,7 @@ export default function ChatWidget() {
                   </svg>
                 )}
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "rgba(255,255,255,0.9)", letterSpacing: "0.01em" }}>
                   CIPHER
                 </div>
@@ -360,6 +360,21 @@ export default function ChatWidget() {
                   </span>
                 </div>
               </div>
+              <button
+                onClick={() => setOpen(false)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "6px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "rgba(255,255,255,0.35)", transition: "color 0.2s, background 0.2s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.8)"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.07)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.35)"; (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+                aria-label="Close chat"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
 
             {/* Messages */}
