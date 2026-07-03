@@ -99,16 +99,12 @@ function NavBar() {
             );
           })}
           <li>
-            <Magnetic strength={0.3} radius={100}>
               <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all mr-2">
                 Get a Quote
               </a>
-            </Magnetic>
-            <Magnetic strength={0.3} radius={100}>
               <a href="#contact" className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:opacity-90 transition-opacity">
                 Book a Call
               </a>
-            </Magnetic>
           </li>
         </ul>
 
