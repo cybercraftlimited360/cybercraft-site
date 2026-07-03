@@ -845,54 +845,160 @@ export default function Home() {
       {/* COMPARISON TABLE */}
       <section className="px-[5vw] md:px-[6vw] py-16 md:py-28 bg-muted/30 border-t border-border/30">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="text-center mb-14">
-          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Why CyberCraft360</span>
+          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ The Difference</span>
           <h2 className="font-serif text-4xl md:text-5xl font-light leading-tight text-foreground mt-3" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-            Not All AI Is <em>Created Equal</em>
+            One Glance <em>Tells the Story</em>
           </h2>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.15 }} className="overflow-x-auto rounded-2xl border border-white/07">
-          <table className="w-full text-sm" style={{ background: "rgba(255,255,255,0.015)" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <th className="text-left px-6 py-4 text-[0.65rem] font-bold tracking-widest uppercase text-muted-foreground w-[35%]">What You&apos;re Comparing</th>
-                <th className="text-left px-6 py-4 text-[0.65rem] font-bold tracking-widest uppercase text-muted-foreground w-[32%]">
-                  <span className="text-muted-foreground/50">Traditional Agency / Off-the-Shelf</span>
-                </th>
-                <th className="text-left px-6 py-4 text-[0.65rem] font-bold tracking-widest uppercase w-[33%]" style={{ color: "#00d4ff" }}>
-                  CyberCraft360
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mb-10">
+          {/* Traditional Business */}
+          <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
+            className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(239,68,68,0.18)", background: "rgba(239,68,68,0.03)" }}>
+            <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(239,68,68,0.12)", background: "rgba(239,68,68,0.06)" }}>
+              <div className="text-[0.65rem] font-bold tracking-[0.22em] uppercase" style={{ color: "rgba(239,68,68,0.7)" }}>Without AI</div>
+              <div className="text-base font-bold text-white/70 mt-0.5">Traditional Business</div>
+            </div>
+            <div className="px-6 py-5 flex flex-col gap-4">
               {[
-                ["What you actually get", "Generic chatbot or automation template", "Custom AI employee built for your workflows"],
-                ["How it's delivered", "One-time setup, then you're on your own", "Continuous partnership — we optimize every month"],
-                ["What it sounds like", "Robotic, scripted, obvious-AI", "Natural, trained on your voice & brand"],
-                ["Integrations", "Limited, often plug-and-play only", "Deep integration with your CRM, calendar & tools"],
-                ["How it learns", "Doesn't — fixed behavior after launch", "Improves with every customer interaction"],
-                ["What you're buying", "Software license or hours", "An AI employee that delivers business results"],
-                ["Support after go-live", "Ticket system, weeks to respond", "Dedicated team, changes within 48 hours"],
-                ["Pricing model", "Hidden fees, usage caps, seat limits", "Flat monthly partnership — no surprises"],
-              ].map(([label, them, us], i) => (
-                <tr key={label} style={{ borderBottom: i < 7 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                  <td className="px-6 py-4 text-xs font-semibold text-foreground/60 tracking-wide">{label}</td>
-                  <td className="px-6 py-4 text-xs text-muted-foreground/50">
-                    <span className="flex items-center gap-2"><span style={{ color: "#ef4444", fontSize: "0.8rem" }}>✕</span> {them}</span>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
-                    <span className="flex items-center gap-2"><span style={{ color: "#00d4ff", fontSize: "0.8rem" }}>✓</span> {us}</span>
-                  </td>
-                </tr>
+                { icon: "📵", text: "Missed calls" },
+                { icon: "🐢", text: "Manual follow-up" },
+                { icon: "🌙", text: "Unavailable after hours" },
+                { icon: "❌", text: "Human error" },
+                { icon: "💸", text: "High payroll overhead" },
+              ].map(({ icon, text }, i) => (
+                <motion.div key={text} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
+                  className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                    {icon}
+                  </div>
+                  <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{text}</span>
+                </motion.div>
               ))}
-            </tbody>
-          </table>
-        </motion.div>
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="mt-8 text-center">
+            </div>
+          </motion.div>
+
+          {/* CyberCraft360 */}
+          <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
+            className="rounded-2xl overflow-hidden relative" style={{ border: "1px solid rgba(0,212,255,0.25)", background: "rgba(0,212,255,0.03)", boxShadow: "0 0 40px rgba(0,212,255,0.07)" }}>
+            <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, #00d4ff, #7c3aed)" }} />
+            <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(0,212,255,0.12)", background: "rgba(0,212,255,0.06)" }}>
+              <div className="text-[0.65rem] font-bold tracking-[0.22em] uppercase" style={{ color: "#00d4ff" }}>With AI Employees</div>
+              <div className="text-base font-bold text-white mt-0.5">CyberCraft360</div>
+            </div>
+            <div className="px-6 py-5 flex flex-col gap-4">
+              {[
+                { icon: "⚡", text: "AI answers instantly", color: "#00d4ff" },
+                { icon: "🔄", text: "AI follows up automatically", color: "#7c3aed" },
+                { icon: "🌐", text: "24/7 availability", color: "#00d4ff" },
+                { icon: "🧠", text: "Continuous learning", color: "#a855f7" },
+                { icon: "📉", text: "Lower operational overhead", color: "#22c55e" },
+              ].map(({ icon, text, color }, i) => (
+                <motion.div key={text} initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
+                  className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
+                    {icon}
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.88)" }}>{text}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="text-center">
           <a href="#contact" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
-            See What We Build for Your Industry <ArrowRight size={15} />
+            See What We Build for Your Business <ArrowRight size={15} />
           </a>
         </motion.div>
       </section>
+
+      {/* AI WORKFLOW ANIMATION */}
+      {(() => {
+        function WorkflowAnimation() {
+          const [activeStep, setActiveStep] = React.useState(0);
+          const steps = [
+            { icon: "📞", label: "Incoming Call", sublabel: "Customer dials your number", color: "#00d4ff" },
+            { icon: "🤖", label: "AI Answers Instantly", sublabel: "IRIS picks up in under 1 second", color: "#7c3aed" },
+            { icon: "📅", label: "Appointment Booked", sublabel: "Slot confirmed, calendar updated", color: "#a855f7" },
+            { icon: "📊", label: "CRM Updated", sublabel: "Lead data synced automatically", color: "#00d4ff" },
+            { icon: "✉️", label: "Confirmation Sent", sublabel: "Email + SMS in under 30 seconds", color: "#22c55e" },
+          ];
+          React.useEffect(() => {
+            const t = setInterval(() => setActiveStep(s => (s + 1) % steps.length), 1800);
+            return () => clearInterval(t);
+          }, []);
+          return (
+            <div className="flex flex-col md:flex-row items-center justify-center gap-0 max-w-4xl mx-auto">
+              {steps.map((step, i) => (
+                <React.Fragment key={step.label}>
+                  <motion.div
+                    animate={{ scale: activeStep === i ? 1.06 : 1, opacity: activeStep === i ? 1 : activeStep > i ? 0.55 : 0.3 }}
+                    transition={{ duration: 0.35 }}
+                    className="flex flex-col items-center gap-2 text-center"
+                    style={{ minWidth: "100px" }}
+                  >
+                    <motion.div
+                      animate={{
+                        background: activeStep === i
+                          ? [`${step.color}20`, `${step.color}35`, `${step.color}20`]
+                          : activeStep > i ? `${step.color}12` : "rgba(255,255,255,0.04)",
+                        borderColor: activeStep === i ? step.color : activeStep > i ? `${step.color}50` : "rgba(255,255,255,0.1)",
+                        boxShadow: activeStep === i ? [`0 0 0px ${step.color}00`, `0 0 24px ${step.color}50`, `0 0 0px ${step.color}00`] : "none",
+                      }}
+                      transition={{ duration: 0.5, repeat: activeStep === i ? Infinity : 0 }}
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl"
+                      style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                    >
+                      {step.icon}
+                    </motion.div>
+                    <div className="text-xs font-bold leading-tight" style={{ color: activeStep >= i ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)" }}>
+                      {step.label}
+                    </div>
+                    <div className="text-[0.62rem] leading-snug max-w-[100px]" style={{ color: activeStep === i ? step.color : "rgba(255,255,255,0.25)" }}>
+                      {step.sublabel}
+                    </div>
+                  </motion.div>
+                  {i < steps.length - 1 && (
+                    <div className="flex items-center justify-center" style={{ width: "48px", flexShrink: 0, paddingBottom: "30px" }}>
+                      <motion.div
+                        animate={{ opacity: activeStep > i ? 1 : 0.15, scaleX: activeStep > i ? 1 : 0.4 }}
+                        transition={{ duration: 0.4 }}
+                        className="hidden md:block h-px w-full"
+                        style={{ background: `linear-gradient(90deg, ${steps[i].color}, ${steps[i + 1].color})`, transformOrigin: "left" }}
+                      />
+                      <motion.div animate={{ opacity: activeStep > i ? 1 : 0.15 }} className="md:hidden text-lg" style={{ color: "rgba(255,255,255,0.3)" }}>↓</motion.div>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          );
+        }
+        return (
+          <section className="px-[5vw] md:px-[6vw] py-16 md:py-28 bg-background border-t border-border/30 overflow-hidden">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="text-center mb-14">
+              <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Watch It Work</span>
+              <h2 className="font-serif text-4xl md:text-5xl font-light leading-tight text-foreground mt-3 mb-4" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+                30 Seconds. <em>Every Step Automated.</em>
+              </h2>
+              <p className="text-muted-foreground text-base max-w-md mx-auto">This is what happens every time a customer calls your business — from first ring to confirmed appointment — without you lifting a finger.</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}>
+              <div className="rounded-2xl p-8 md:p-12 border border-white/07 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.03), rgba(124,58,237,0.03))" }}>
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(0,212,255,0.04) 0%, transparent 70%)" }} />
+                <WorkflowAnimation />
+                <div className="text-center mt-10">
+                  <p className="text-[0.65rem] font-bold tracking-[0.22em] uppercase text-muted-foreground/40 mb-5">The entire process takes under 30 seconds · Repeats for every single call · Zero human involvement required</p>
+                  <a href="#contact" className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity" style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
+                    Build This for My Business <ArrowRight size={15} />
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          </section>
+        );
+      })()}
 
       {/* TECH STACK / BUILT WITH */}
       <section className="hidden md:block px-[5vw] md:px-[6vw] py-12 md:py-16 border-b border-border/40">
