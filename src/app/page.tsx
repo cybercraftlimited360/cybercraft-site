@@ -405,7 +405,7 @@ export default function Home() {
             className="flex shrink-0 gap-6 pr-6"
             animate={{ x: ["0%", "-50%"] }}
             transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-            style={{ willChange: "transform" }}
+            style={{ willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
           >
             {[...Array(2)].map((_, ri) => (
               <div key={ri} className="flex shrink-0 gap-6">
@@ -440,7 +440,7 @@ export default function Home() {
             className="flex shrink-0 gap-6 pr-6"
             animate={{ x: ["-50%", "0%"] }}
             transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
-            style={{ willChange: "transform" }}
+            style={{ willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
           >
             {[...Array(2)].map((_, ri) => (
               <div key={ri} className="flex shrink-0 gap-6">
