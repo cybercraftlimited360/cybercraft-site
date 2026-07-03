@@ -397,6 +397,79 @@ export default function Home() {
       </DotGlobeHero>
       </div>{/* end hero wrapper */}
 
+      {/* POWER MARQUEE */}
+      <section className="overflow-hidden py-5 bg-[#060810] border-t border-b border-white/5 select-none" style={{ background: "linear-gradient(180deg, #060810 0%, #0a0d18 100%)" }}>
+        {/* Row 1 — scrolls left */}
+        <div className="relative flex mb-3" style={{ maskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)" }}>
+          <motion.div
+            className="flex shrink-0 gap-6 pr-6"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+            style={{ willChange: "transform" }}
+          >
+            {[...Array(2)].map((_, ri) => (
+              <div key={ri} className="flex shrink-0 gap-6">
+                {[
+                  { text: "Your phone answers itself", accent: "#00d4ff" },
+                  { text: "Leads called in 60 seconds", accent: "#7c3aed" },
+                  { text: "Proposals sent while you sleep", accent: "#00d4ff" },
+                  { text: "400 customer questions daily — zero staff", accent: "#e64dff" },
+                  { text: "Close deals at 2am", accent: "#7c3aed" },
+                  { text: "AI trained on your business", accent: "#00d4ff" },
+                  { text: "Never miss another lead", accent: "#22c55e" },
+                  { text: "Your competitors are already doing this", accent: "#e64dff" },
+                ].map(({ text, accent }, i) => (
+                  <div key={i} className="flex items-center gap-6 shrink-0">
+                    <span
+                      className="text-sm font-bold tracking-widest uppercase whitespace-nowrap"
+                      style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "0.18em" }}
+                    >
+                      {text}
+                    </span>
+                    <span style={{ color: accent, fontSize: "1.1rem", opacity: 0.9 }}>✦</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Row 2 — scrolls right */}
+        <div className="relative flex" style={{ maskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)" }}>
+          <motion.div
+            className="flex shrink-0 gap-6 pr-6"
+            animate={{ x: ["-50%", "0%"] }}
+            transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
+            style={{ willChange: "transform" }}
+          >
+            {[...Array(2)].map((_, ri) => (
+              <div key={ri} className="flex shrink-0 gap-6">
+                {[
+                  { text: "Workflows that run themselves", accent: "#7c3aed" },
+                  { text: "Follow up with every lead automatically", accent: "#00d4ff" },
+                  { text: "28 hours saved per week", accent: "#22c55e" },
+                  { text: "Custom built — no templates", accent: "#e64dff" },
+                  { text: "Live in 4–6 weeks", accent: "#00d4ff" },
+                  { text: "AI that learns and gets smarter every month", accent: "#7c3aed" },
+                  { text: "Scale without hiring", accent: "#22c55e" },
+                  { text: "Your business runs 24 / 7 / 365", accent: "#e64dff" },
+                ].map(({ text, accent }, i) => (
+                  <div key={i} className="flex items-center gap-6 shrink-0">
+                    <span
+                      className="text-sm font-bold tracking-widest uppercase whitespace-nowrap"
+                      style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.18em" }}
+                    >
+                      {text}
+                    </span>
+                    <span style={{ color: accent, fontSize: "1.1rem", opacity: 0.7 }}>◆</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* MISSION STRIP */}
       <section className="grid grid-cols-1 md:grid-cols-3 border-t border-b border-border bg-background overflow-hidden">
         {[
