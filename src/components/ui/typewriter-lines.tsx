@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-const LINE1 = "AUTOMATE EVERYTHING.";
-const LINE2 = "SECURE ANYTHING.";
+const LINE1 = "WE BUILD AI EMPLOYEES.";
+const LINE2 = "THEY NEVER SLEEP.";
 const CHAR_DELAY = 55; // ms per character
 const PAUSE_BETWEEN = 400; // pause after line 1 finishes
 const START_DELAY = 900; // wait before typing begins

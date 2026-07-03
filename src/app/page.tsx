@@ -259,18 +259,18 @@ export default function Home() {
 
             {/* Floating stat badges — hidden on mobile */}
             {[
-              { stat: "60+",    label: "AI Deployments",     top: "4%",  left: "2%",  delay: 0 },
-              { stat: "4,200",  label: "Calls / Month",      top: "20%", left: "2%",  delay: 0.5 },
-              { stat: "6 wk",   label: "Deploy Time",        top: "36%", left: "2%",  delay: 1.0 },
-              { stat: "45 min", label: "Strategy Session",   top: "52%", left: "2%",  delay: 1.5 },
-              { stat: "£2.1M",  label: "Saved for Clients",  top: "68%", left: "2%",  delay: 0.8 },
-              { stat: "340%",   label: "Avg. Client ROI",    top: "84%", left: "2%",  delay: 1.3 },
-              { stat: "12×",    label: "Avg. Efficiency",    top: "4%",  right: "2%", delay: 0.3 },
-              { stat: "3×",     label: "Pipeline Growth",    top: "20%", right: "2%", delay: 0.7 },
-              { stat: "24/7",   label: "AI Always On",       top: "36%", right: "2%", delay: 0.2 },
-              { stat: "100%",   label: "Custom Built",       top: "52%", right: "2%", delay: 1.1 },
-              { stat: "98%",    label: "Uptime Guarantee",   top: "68%", right: "2%", delay: 0.6 },
-              { stat: "0",      label: "Templates Used",     top: "84%", right: "2%", delay: 0.9 },
+              { stat: "60+",    label: "AI Deployments",       top: "4%",  left: "2%",  delay: 0 },
+              { stat: "4,200",  label: "Calls Handled / Mo",  top: "20%", left: "2%",  delay: 0.5 },
+              { stat: "6 wk",   label: "Avg Deploy Time",     top: "36%", left: "2%",  delay: 1.0 },
+              { stat: "45 min", label: "Strategy Session",    top: "52%", left: "2%",  delay: 1.5 },
+              { stat: "$2.1M+", label: "Saved for Clients",   top: "68%", left: "2%",  delay: 0.8 },
+              { stat: "340%",   label: "Avg Client ROI*",     top: "84%", left: "2%",  delay: 1.3 },
+              { stat: "12×",    label: "Avg Efficiency Gain", top: "4%",  right: "2%", delay: 0.3 },
+              { stat: "3×",     label: "Pipeline Growth",     top: "20%", right: "2%", delay: 0.7 },
+              { stat: "24/7",   label: "AI Always On",        top: "36%", right: "2%", delay: 0.2 },
+              { stat: "100%",   label: "Custom Built",        top: "52%", right: "2%", delay: 1.1 },
+              { stat: "98%",    label: "Uptime Guarantee",    top: "68%", right: "2%", delay: 0.6 },
+              { stat: "0",      label: "Templates Used",      top: "84%", right: "2%", delay: 0.9 },
             ].map(({ stat, label, delay, ...pos }, i) => (
               <motion.div
                 key={stat}
@@ -348,6 +348,38 @@ export default function Home() {
 
               {/* Typewriter taglines */}
               <TypewriterLines />
+
+              {/* Strong single promise */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 2.8 }}
+                style={{ marginTop: "20px" }}
+              >
+                <p style={{
+                  fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
+                  fontSize: "clamp(1.5rem, 3.2vw, 2.6rem)",
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.88)",
+                  lineHeight: 1.25,
+                  cursor: "default",
+                  letterSpacing: "0.01em",
+                }}>
+                  Your business can hire AI employees<br />
+                  <em style={{ color: "#00d4ff", fontStyle: "italic" }}>that never clock out.</em>
+                </p>
+                <p style={{
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontSize: "clamp(0.75rem, 1.1vw, 0.92rem)",
+                  fontWeight: 400,
+                  color: "rgba(255,255,255,0.38)",
+                  marginTop: "10px",
+                  letterSpacing: "0.04em",
+                  lineHeight: 1.6,
+                }}>
+                  Custom AI receptionists, sales agents, support teams & automation — built for your business.
+                </p>
+              </motion.div>
 
             </motion.div>
           </div>
@@ -574,11 +606,16 @@ export default function Home() {
             <div className="w-8 h-0.5 bg-primary rounded-full" />
           </div>
           <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-4" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-            Meet <em>IRIS</em>
+            Meet <em>IRIS</em> — Your<br />Future AI Receptionist
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-            Our AI voice agent — live, on this page. This is exactly what we build for our clients. Speak with her and experience it for yourself.
+            IRIS is a live AI receptionist running right here on this page. She answers calls, books appointments, qualifies leads, and follows up automatically — this is exactly what we build for your business.
           </p>
+          <div className="flex flex-wrap justify-center gap-4 mt-4 mb-2">
+            {["Answers every call", "Books appointments", "Qualifies leads", "Follows up automatically", "Learns your business"].map(cap => (
+              <span key={cap} className="text-xs font-semibold tracking-widest uppercase px-3 py-1.5 rounded-full" style={{ background: "rgba(0,212,255,0.07)", border: "1px solid rgba(0,212,255,0.2)", color: "#00d4ff" }}>✓ {cap}</span>
+            ))}
+          </div>
           <p className="text-muted-foreground/40 text-xs mt-3 tracking-widest uppercase">Best experienced on Chrome or Edge · Allow microphone access</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7, delay: 0.2 }} className="flex justify-center">
@@ -805,6 +842,58 @@ export default function Home() {
         </div>
       </section>
 
+      {/* COMPARISON TABLE */}
+      <section className="px-[5vw] md:px-[6vw] py-16 md:py-28 bg-muted/30 border-t border-border/30">
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="text-center mb-14">
+          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Why CyberCraft360</span>
+          <h2 className="font-serif text-4xl md:text-5xl font-light leading-tight text-foreground mt-3" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+            Not All AI Is <em>Created Equal</em>
+          </h2>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.15 }} className="overflow-x-auto rounded-2xl border border-white/07">
+          <table className="w-full text-sm" style={{ background: "rgba(255,255,255,0.015)" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <th className="text-left px-6 py-4 text-[0.65rem] font-bold tracking-widest uppercase text-muted-foreground w-[35%]">What You&apos;re Comparing</th>
+                <th className="text-left px-6 py-4 text-[0.65rem] font-bold tracking-widest uppercase text-muted-foreground w-[32%]">
+                  <span className="text-muted-foreground/50">Traditional Agency / Off-the-Shelf</span>
+                </th>
+                <th className="text-left px-6 py-4 text-[0.65rem] font-bold tracking-widest uppercase w-[33%]" style={{ color: "#00d4ff" }}>
+                  CyberCraft360
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["What you actually get", "Generic chatbot or automation template", "Custom AI employee built for your workflows"],
+                ["How it's delivered", "One-time setup, then you're on your own", "Continuous partnership — we optimize every month"],
+                ["What it sounds like", "Robotic, scripted, obvious-AI", "Natural, trained on your voice & brand"],
+                ["Integrations", "Limited, often plug-and-play only", "Deep integration with your CRM, calendar & tools"],
+                ["How it learns", "Doesn't — fixed behavior after launch", "Improves with every customer interaction"],
+                ["What you're buying", "Software license or hours", "An AI employee that delivers business results"],
+                ["Support after go-live", "Ticket system, weeks to respond", "Dedicated team, changes within 48 hours"],
+                ["Pricing model", "Hidden fees, usage caps, seat limits", "Flat monthly partnership — no surprises"],
+              ].map(([label, them, us], i) => (
+                <tr key={label} style={{ borderBottom: i < 7 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                  <td className="px-6 py-4 text-xs font-semibold text-foreground/60 tracking-wide">{label}</td>
+                  <td className="px-6 py-4 text-xs text-muted-foreground/50">
+                    <span className="flex items-center gap-2"><span style={{ color: "#ef4444", fontSize: "0.8rem" }}>✕</span> {them}</span>
+                  </td>
+                  <td className="px-6 py-4 text-xs font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
+                    <span className="flex items-center gap-2"><span style={{ color: "#00d4ff", fontSize: "0.8rem" }}>✓</span> {us}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </motion.div>
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="mt-8 text-center">
+          <a href="#contact" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
+            See What We Build for Your Industry <ArrowRight size={15} />
+          </a>
+        </motion.div>
+      </section>
+
       {/* TECH STACK / BUILT WITH */}
       <section className="hidden md:block px-[5vw] md:px-[6vw] py-12 md:py-16 border-b border-border/40">
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex flex-col items-center gap-8">
@@ -819,119 +908,235 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Pricing */}
+      {/* INDUSTRY SELECTOR */}
+      <section className="px-[5vw] md:px-[6vw] py-16 md:py-24 bg-background border-t border-border/30">
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="text-center mb-12">
+          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Industries We Serve</span>
+          <h2 className="font-serif text-4xl md:text-5xl font-light leading-tight text-foreground mt-3 mb-3" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+            We Build AI For <em>Your Industry</em>
+          </h2>
+          <p className="text-muted-foreground text-base max-w-lg mx-auto">Every AI employee is built around the specific workflows, terminology, and customer expectations of your sector.</p>
+        </motion.div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-4xl mx-auto">
+          {[
+            { name: "Healthcare", emoji: "🏥", color: "#00d4ff" },
+            { name: "Legal", emoji: "⚖️", color: "#7c3aed" },
+            { name: "Real Estate", emoji: "🏠", color: "#10b981" },
+            { name: "Insurance", emoji: "🛡️", color: "#f59e0b" },
+            { name: "Construction", emoji: "🏗️", color: "#e64dff" },
+            { name: "HVAC", emoji: "❄️", color: "#00d4ff" },
+            { name: "Roofing", emoji: "🔨", color: "#7c3aed" },
+            { name: "Accounting", emoji: "📊", color: "#10b981" },
+            { name: "Automotive", emoji: "🚗", color: "#f59e0b" },
+            { name: "E-Commerce", emoji: "🛒", color: "#e64dff" },
+          ].map(({ name, emoji, color }, i) => (
+            <motion.a key={name} href="#contact" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45, delay: i * 0.05 }}
+              className="flex flex-col items-center gap-2 py-5 px-3 rounded-xl no-underline group transition-all duration-200"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${color}0d`; (e.currentTarget as HTMLElement).style.borderColor = `${color}30`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; }}
+            >
+              <span className="text-2xl">{emoji}</span>
+              <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground group-hover:text-white transition-colors duration-200 text-center">{name}</span>
+            </motion.a>
+          ))}
+        </div>
+        <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.4 }} className="text-center text-muted-foreground/50 text-xs mt-8 tracking-widest uppercase">
+          Don&apos;t see your industry? We work with any service-based business. <a href="#contact" className="text-primary hover:underline">Let&apos;s talk.</a>
+        </motion.p>
+      </section>
+
+      {/* BUILD YOUR AI WORKFORCE / PRICING */}
       <section id="pricing" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/20">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
-          className="mb-16"
-        >
-          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Pricing</span>
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mt-3 mb-6">
-            Transparent.<br />No surprises.
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="mb-16">
+          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Investment</span>
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mt-3 mb-4">
+            Build Your<br />AI Workforce.
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl">
-            Every service includes a one-time setup fee and a monthly subscription. All pricing is quoted to your exact requirements — ranges below are starting points.
+            Every AI employee includes an implementation phase and a monthly partnership. Final pricing is scoped to your exact requirements — book a free strategy call for a tailored quote.
           </p>
         </motion.div>
 
-        {[
-          {
-            category: "Conversational AI",
-            color: "cyan",
-            accent: "rgba(0,212,255,0.15)",
-            border: "rgba(0,212,255,0.25)",
-            services: [
-              { name: "Custom AI Chatbot", setup: "$500–$1,500", monthly: "$500–$800/mo", note: "Web, WhatsApp & SMS" },
-              { name: "Voice AI Agent", setup: "$800–$2,000", monthly: "$700–$1,200/mo", note: "Inbound & outbound" },
-              { name: "AI Phone Agent", setup: "$1,000–$2,500", monthly: "$700–$1,200/mo", note: "Appointment booking" },
-            ],
-          },
-          {
-            category: "Revenue & Growth",
-            color: "purple",
-            accent: "rgba(124,58,237,0.15)",
-            border: "rgba(124,58,237,0.3)",
-            services: [
-              { name: "AI Sales Agent", setup: "$1,200–$3,000", monthly: "$900–$1,400/mo", note: "Outbound prospecting" },
-              { name: "AI Ads & Marketing", setup: "$500–$1,500", monthly: "$600–$950/mo", note: "Google & Meta" },
-              { name: "AI Content Engine", setup: "$500–$1,500", monthly: "$600–$950/mo", note: "Multi-channel content" },
-            ],
-          },
-          {
-            category: "Operations & Automation",
-            color: "green",
-            accent: "rgba(34,197,94,0.12)",
-            border: "rgba(34,197,94,0.25)",
-            services: [
-              { name: "Workflow & CRM Automation", setup: "$800–$2,500", monthly: "$600–$950/mo", note: "HubSpot, GHL & more" },
-              { name: "Document Intelligence", setup: "$1,200–$3,000", monthly: "$700–$1,100/mo", note: "OCR + AI extraction" },
-              { name: "Lead Intelligence", setup: "$600–$1,500", monthly: "$600–$900/mo", note: "Predictive scoring" },
-            ],
-          },
-          {
-            category: "Digital & Security",
-            color: "amber",
-            accent: "rgba(245,158,11,0.12)",
-            border: "rgba(245,158,11,0.25)",
-            services: [
-              { name: "Premium Website Design", setup: "$1,500–$4,000", monthly: "$300–$600/mo", note: "Custom, no templates" },
-              { name: "AI Analytics Dashboard", setup: "$1,200–$3,000", monthly: "$800–$1,200/mo", note: "Natural language queries" },
-              { name: "AI Cybersecurity", setup: "$1,500–$4,000", monthly: "$1,000–$1,500/mo", note: "24/7 threat monitoring" },
-            ],
-          },
-        ].map((group, gi) => (
-          <motion.div
-            key={group.category}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.6, delay: gi * 0.1 }}
-            className="mb-10 rounded-2xl overflow-hidden"
-            style={{ border: `1px solid ${group.border}`, background: group.accent }}
-          >
-            <div className="px-6 py-4 border-b" style={{ borderColor: group.border }}>
-              <span className="text-xs font-bold tracking-[0.2em] uppercase" style={{ color: group.color === "cyan" ? "#00d4ff" : group.color === "purple" ? "#a78bfa" : group.color === "green" ? "#22c55e" : "#f59e0b" }}>
-                {group.category}
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b" style={{ borderColor: group.border }}>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">Service</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">One-Time Setup</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground">Monthly</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold tracking-widest uppercase text-muted-foreground hidden sm:table-cell">Includes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.services.map((svc, si) => (
-                    <tr key={svc.name} className={si < group.services.length - 1 ? "border-b" : ""} style={{ borderColor: group.border }}>
-                      <td className="px-6 py-4 font-semibold text-foreground">{svc.name}</td>
-                      <td className="px-6 py-4 font-bold" style={{ color: group.color === "cyan" ? "#00d4ff" : group.color === "purple" ? "#a78bfa" : group.color === "green" ? "#22c55e" : "#f59e0b" }}>{svc.setup}</td>
-                      <td className="px-6 py-4 text-foreground/80">{svc.monthly}</td>
-                      <td className="px-6 py-4 text-muted-foreground hidden sm:table-cell">{svc.note}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Three tiers */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
+          {[
+            {
+              name: "Starter",
+              tagline: "One AI Employee",
+              desc: "Ideal for businesses deploying a single AI solution — a chatbot, a receptionist, or an appointment assistant.",
+              implementation: "$1,500 – $2,500",
+              monthly: "Starting at $499/mo",
+              accent: "#00d4ff",
+              solutions: ["AI Website Chatbot", "WhatsApp AI Assistant", "AI Appointment Booking", "AI Content Marketing"],
+              highlight: false,
+            },
+            {
+              name: "Growth",
+              tagline: "Your AI Workforce",
+              desc: "For businesses automating customer support, lead handling, sales, and core workflows with multiple AI employees.",
+              implementation: "$3,000 – $5,000",
+              monthly: "Starting at $999/mo",
+              accent: "#7c3aed",
+              solutions: ["AI Voice Receptionist", "AI Customer Support", "AI Sales Agent", "CRM & Workflow Automation"],
+              highlight: true,
+            },
+            {
+              name: "Enterprise",
+              tagline: "Full AI Ecosystem",
+              desc: "Designed for organizations needing multiple AI agents, custom integrations, and ongoing strategic optimization.",
+              implementation: "$7,500 – $15,000+",
+              monthly: "Starting at $2,500/mo",
+              accent: "#e64dff",
+              solutions: ["AI Call Center", "Custom AI Integrations", "Enterprise AI Ecosystem", "Dedicated Strategy Team"],
+              highlight: false,
+            },
+          ].map(({ name, tagline, desc, implementation, monthly, accent, solutions, highlight }, i) => (
+            <motion.div key={name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.6, delay: i * 0.1 }}
+              className="relative rounded-2xl flex flex-col overflow-hidden"
+              style={{
+                border: highlight ? `1px solid ${accent}50` : "1px solid rgba(255,255,255,0.08)",
+                background: highlight ? `linear-gradient(135deg, ${accent}0d, rgba(255,255,255,0.02))` : "rgba(255,255,255,0.02)",
+                boxShadow: highlight ? `0 0 40px ${accent}15` : "none",
+              }}>
+              {highlight && (
+                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${accent}, #00d4ff)` }} />
+              )}
+              {highlight && (
+                <div className="absolute top-4 right-4">
+                  <span className="text-[0.6rem] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full" style={{ background: `${accent}20`, color: accent, border: `1px solid ${accent}40` }}>Most Popular</span>
+                </div>
+              )}
+              <div className="p-7 flex flex-col flex-1">
+                <div className="mb-5">
+                  <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase mb-1" style={{ color: accent }}>{tagline}</div>
+                  <div className="text-2xl font-bold text-white">{name}</div>
+                  <p className="text-muted-foreground text-sm leading-relaxed mt-2">{desc}</p>
+                </div>
+
+                <div className="rounded-xl p-4 mb-5" style={{ background: `${accent}08`, border: `1px solid ${accent}18` }}>
+                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-1">AI Implementation & Deployment</div>
+                  <div className="text-lg font-bold text-white">{implementation}</div>
+                  <div className="text-[0.65rem] text-muted-foreground mt-0.5">One-time · Includes strategy, build & launch</div>
+                </div>
+
+                <div className="mb-6">
+                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-1">Monthly Partnership</div>
+                  <div className="text-2xl font-bold" style={{ color: accent }}>{monthly}</div>
+                  <div className="text-[0.65rem] text-muted-foreground mt-0.5">Ongoing optimization, support & improvements</div>
+                </div>
+
+                <div className="mb-6 flex-1">
+                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-3">Includes AI Employees Like</div>
+                  <div className="flex flex-col gap-2">
+                    {solutions.map(s => (
+                      <div key={s} className="flex items-center gap-2">
+                        <span className="text-xs" style={{ color: accent }}>✓</span>
+                        <span className="text-sm text-muted-foreground">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <a href="#contact"
+                  className="text-center py-3 rounded-xl text-sm font-bold tracking-widest uppercase no-underline transition-all hover:opacity-90"
+                  style={highlight
+                    ? { background: `linear-gradient(135deg, ${accent}, #00d4ff)`, color: "#fff" }
+                    : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  Get a Custom Quote
+                </a>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* What implementation covers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
+            className="rounded-2xl p-7 border border-white/07" style={{ background: "rgba(0,212,255,0.03)" }}>
+            <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase text-primary mb-2">AI Implementation & Deployment Includes</div>
+            <p className="text-muted-foreground text-sm mb-5">You&apos;re not paying for setup — you&apos;re paying for expertise. Every implementation covers:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {["Business workflow analysis", "AI strategy session", "Solution architecture", "Prompt engineering", "Knowledge base creation", "CRM & software integrations", "AI training", "Testing & quality assurance", "Deployment", "Team onboarding"].map(item => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="text-primary text-xs">✓</span>
+                  <span className="text-muted-foreground text-sm">{item}</span>
+                </div>
+              ))}
             </div>
           </motion.div>
-        ))}
 
-        <div className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <div className="flex-1">
-            <p className="text-muted-foreground text-sm">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — our founder will scope your project and give an exact figure.</p>
-          </div>
-          <a
-            href="#contact"
-            className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
+            className="rounded-2xl p-7 border border-white/07" style={{ background: "rgba(124,58,237,0.03)" }}>
+            <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase mb-2" style={{ color: "#a78bfa" }}>Monthly Partnership Includes</div>
+            <p className="text-muted-foreground text-sm mb-5">Your AI doesn&apos;t stand still. Every month your subscription covers:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {["AI performance monitoring", "Continuous learning optimization", "Prompt refinement", "Knowledge base updates", "Security monitoring", "CRM & integration maintenance", "Workflow improvements", "Feature enhancements", "Priority support", "Monthly performance review"].map(item => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: "#a78bfa" }}>✓</span>
+                  <span className="text-muted-foreground text-sm">{item}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <p className="text-muted-foreground text-sm flex-1">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — we&apos;ll scope your project and give you an exact figure.</p>
+          <a href="#contact" className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
             Get a Custom Quote <ArrowRight size={15} />
           </a>
+        </div>
+      </section>
+
+      {/* WHAT HAPPENS AFTER YOU BUY */}
+      <section className="px-[5vw] md:px-[6vw] py-16 md:py-28 bg-background border-t border-border/30">
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="text-center mb-14">
+          <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ The Process</span>
+          <h2 className="font-serif text-4xl md:text-5xl font-light leading-tight text-foreground mt-3 mb-3" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+            What Happens After <em>You Sign?</em>
+          </h2>
+          <p className="text-muted-foreground text-base max-w-lg mx-auto">Most clients wonder what they&apos;re walking into. Here&apos;s exactly what the first 5 weeks look like — and what continues every month after.</p>
+        </motion.div>
+        <div className="max-w-4xl mx-auto">
+          {/* Timeline items */}
+          <div className="relative">
+            {/* Vertical line */}
+            <div className="absolute left-[28px] top-8 bottom-8 w-px hidden md:block" style={{ background: "linear-gradient(180deg, #00d4ff, #7c3aed, #e64dff, #10b981)" }} />
+            <div className="flex flex-col gap-6">
+              {[
+                { week: "Week 1", title: "Discovery & Strategy", color: "#00d4ff", desc: "We map your business workflows, pain points, and goals. You receive a written AI strategy document outlining exactly what we'll build, why, and what results you can expect." },
+                { week: "Week 2", title: "Architecture & Design", color: "#4f8fff", desc: "We design the AI's logic, personality, knowledge base, and integrations. You review and approve everything before a single line of code is written." },
+                { week: "Week 3–4", title: "Build & Train", color: "#7c3aed", desc: "We build, train, and integrate your AI employee using your data, your brand voice, and your systems. You get progress updates throughout." },
+                { week: "Week 5", title: "Testing & Deployment", color: "#e64dff", desc: "We run real-world tests, make refinements, and deploy in a controlled rollout. You sign off before anything goes fully live." },
+                { week: "Every Month", title: "Optimization & Growth", color: "#10b981", desc: "We monitor performance, update the AI's knowledge, push improvements, and send you a monthly report. Your AI gets measurably better every single month.", ongoing: true },
+              ].map(({ week, title, color, desc, ongoing }, i) => (
+                <motion.div key={week} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="flex gap-6 items-start">
+                  <div className="flex flex-col items-center shrink-0" style={{ width: "56px" }}>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center text-xs font-bold text-center leading-tight shrink-0 z-10"
+                      style={{ background: `${color}15`, border: `2px solid ${color}`, color, boxShadow: `0 0 20px ${color}25` }}>
+                      {ongoing ? "∞" : `W${i + 1}`}
+                    </div>
+                  </div>
+                  <div className="flex-1 rounded-xl p-6 border border-white/07 mb-1" style={{ background: `${color}05` }}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-[0.6rem] font-bold tracking-widest uppercase px-2 py-0.5 rounded" style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>{week}</span>
+                      {ongoing && <span className="text-[0.6rem] font-bold tracking-widest uppercase px-2 py-0.5 rounded" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}>Included in subscription</span>}
+                    </div>
+                    <div className="font-semibold text-white text-base mb-1">{title}</div>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }} className="mt-10 text-center">
+            <a href="#contact" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
+              Start Your Free Strategy Session <ArrowRight size={15} />
+            </a>
+            <p className="text-muted-foreground/40 text-xs mt-3 tracking-widest uppercase">45 minutes · No obligation · You keep the strategy doc</p>
+          </motion.div>
         </div>
       </section>
 
@@ -1089,7 +1294,7 @@ export default function Home() {
             <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground max-w-xl" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
               What Happens When AI<br />is <em>Truly</em> Built for You
             </h2>
-            <p className="text-muted-foreground text-sm max-w-xs leading-relaxed lg:text-right mb-1">Real results from real clients — no projections, no estimates.</p>
+            <p className="text-muted-foreground text-sm max-w-xs leading-relaxed lg:text-right mb-1">Real results from real client engagements. *ROI figures reflect individual client outcomes — results vary by industry, scope, and implementation.</p>
           </div>
         </motion.div>
 
