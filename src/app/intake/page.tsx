@@ -171,9 +171,11 @@ export default function IntakePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error("Submit failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submit failed");
       setSubmitted(true);
-    } catch {
+    } catch (err) {
+      console.error("Intake submit error:", err);
       setError("Something went wrong. Please try again or email us directly.");
     } finally {
       setSubmitting(false);
