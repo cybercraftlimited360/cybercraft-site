@@ -586,143 +586,223 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* SERVICES */}
+      {/* AI EMPLOYEES */}
       <section id="services" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-[hsl(var(--muted))]">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-        >
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }}>
           <div className="flex items-center gap-3 mb-5">
-            <motion.div
-              initial={{ width: 0 }}
-              whileInView={{ width: 32 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="h-0.5 bg-primary rounded-full"
-            />
-            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Our Services</span>
+            <motion.div initial={{ width: 0 }} whileInView={{ width: 32 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }} className="h-0.5 bg-primary rounded-full" />
+            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Your AI Workforce</span>
           </div>
-          <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-3 max-w-xl" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-            Tailored AI for Every<br /><em>Dimension</em> of Your Business
+          <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-3 max-w-2xl" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+            You&apos;re Not Buying Software.<br /><em>You&apos;re Hiring an AI Team.</em>
           </h2>
-          <p className="text-muted-foreground text-lg mb-16 max-w-lg leading-relaxed">Every system is engineered from first principles — no off-the-shelf templates, no monthly SaaS markups. Built on enterprise-grade infrastructure so you get enterprise-grade reliability at a fraction of the cost.</p>
+          <p className="text-muted-foreground text-lg mb-16 max-w-lg leading-relaxed">Every AI employee is custom-built for your business, trained on your data, and gets smarter every month through real interactions.</p>
         </motion.div>
 
-        {/* Service Groups */}
         {(() => {
-          const groups = [
+          const employees = [
             {
-              label: "Conversational AI",
-              accent: "#00d4ff",
-              desc: "Agents that talk, listen, and convert — engineered from scratch, trained on your business.",
-              services: [
-                { icon: Bot, name: "Custom AI Chatbots", desc: "Self-learning agents trained on your brand voice, FAQs, and CRM data — handling thousands of simultaneous conversations with human-level nuance. The longer they run, the smarter they get.", tag: "Self-Learning" },
-                { icon: Mic, name: "Voice AI Agents", desc: "Lifelike outbound and inbound voice agents built from scratch on our own telephony stack. Available 24/7, never sick, never off — at a fraction of human staffing cost.", tag: "24/7 Always On" },
-                { icon: Phone, name: "AI Phone Agent", desc: "Answers every inbound call instantly — books appointments, qualifies leads, handles FAQs, and escalates to humans only when needed. Built on enterprise-grade infrastructure for 99.9% uptime.", tag: "Inbound Ready" },
-              ],
+              emoji: "🤖", name: "Ava", role: "AI Receptionist", accent: "#00d4ff",
+              headline: "Never Miss Another Customer Call",
+              problem: "Every missed call is a missed opportunity.",
+              desc: "Ava answers every call 24/7 with natural, human-like conversation. She answers questions, books appointments, qualifies leads, routes urgent calls, and integrates directly into your existing systems.",
+              features: ["Answers every incoming call instantly", "Books appointments automatically", "Transfers urgent calls when needed", "Captures every lead", "Learns your business over time", "Works nights, weekends & holidays"],
+              impact: "Never lose another customer because you missed a phone call.",
+              tag: "24/7 Always On",
+              icon: Phone,
             },
             {
-              label: "Revenue & Growth",
-              accent: "#a855f7",
-              desc: "From first impression to closed deal — AI systems that drive pipeline while you focus on delivery.",
-              services: [
-                { icon: TrendingUp, name: "AI Sales Agent", desc: "Autonomous outbound agent that researches prospects, personalises outreach, follows up intelligently, and books qualified calls into your calendar — built from scratch, no third-party CRM dependency.", tag: "Fully Autonomous" },
-                { icon: Zap, name: "AI Ads & Marketing", desc: "AI-generated ad creatives, copy, and targeting strategies that adapt in real time to maximise ROAS. From Google to Meta — campaigns that learn, optimise, and outperform human-managed spend.", tag: "Self-Optimising" },
-                { icon: Brain, name: "AI Content Engine", desc: "On-brand blogs, emails, ads, and social posts at scale — tuned to your tone, audience, and conversion goals. Trained on your existing content so it sounds like you, not ChatGPT.", tag: "Brand-Tuned" },
-              ],
+              emoji: "🎧", name: "Nova", role: "AI Customer Support", accent: "#7c3aed",
+              headline: "Support That Never Takes a Break",
+              problem: "Deliver instant, personalized service around the clock — without increasing payroll.",
+              desc: "Nova answers questions, resolves common issues, provides order updates, and escalates complex cases only when necessary.",
+              features: ["Instant responses", "24/7 availability", "Lower support costs", "Faster customer satisfaction", "Self-learning knowledge base", "Continuous monthly improvements"],
+              impact: "Your customers get help immediately — day or night.",
+              tag: "Self-Learning",
+              icon: MessageSquare,
             },
             {
-              label: "Operations & Automation",
-              accent: "#10b981",
-              desc: "Eliminate manual work. Every process that touches data, documents, or decisions — automated.",
-              services: [
-                { icon: Workflow, name: "Workflow & CRM Automation", desc: "AI that plugs directly into your CRM, ERP, and email — auto-updating records, triggering follow-ups, routing tasks, and eliminating manual data entry entirely.", tag: "CRM Native" },
-                { icon: FileSearch, name: "Document Intelligence", desc: "Extracts, classifies, and routes data from contracts, invoices, and PDFs automatically. Built on open-source OCR — no per-page SaaS fees, your data stays yours.", tag: "Zero SaaS Fees" },
-                { icon: MessageSquare, name: "Lead Intelligence", desc: "Predictive scoring and automated outreach delivering qualified leads directly into your CRM — no manual prospecting, no missed follow-ups, no wasted ad spend.", tag: "Predictive AI" },
-              ],
+              emoji: "💼", name: "Atlas", role: "AI Sales Agent", accent: "#a855f7",
+              headline: "Turn Every Lead Into a Conversation",
+              problem: "Speed matters. Most leads go cold within 5 minutes of submitting a form.",
+              desc: "Atlas contacts new leads within seconds, qualifies prospects, answers questions, follows up automatically, and books meetings directly into your calendar.",
+              features: ["Immediate lead response", "Automatic follow-up", "Appointment scheduling", "CRM updates", "Personalized conversations", "Learns from every interaction"],
+              impact: "Your pipeline keeps growing while you focus on delivery.",
+              tag: "Fully Autonomous",
+              icon: TrendingUp,
             },
             {
-              label: "Digital & Security",
-              accent: "#f59e0b",
-              desc: "Your digital presence and infrastructure — built to the standard your AI deserves.",
-              services: [
-                { icon: Globe, name: "Premium Website Design", desc: "High-converting, visually arresting websites engineered to position your brand as a market leader. Bespoke design, buttery performance, and an experience that justifies your price point.", tag: "Bespoke & Fast" },
-                { icon: BarChart3, name: "AI Analytics Dashboard", desc: "Natural language queries over your own business data — ask questions, get answers in seconds. No SQL, no analyst dependency. Built on your existing stack.", tag: "Natural Language" },
-                { icon: Lock, name: "AI Cybersecurity", desc: "Continuous threat monitoring, anomaly detection, and automated incident response — protecting your data, systems, and clients around the clock with zero human intervention.", tag: "Always Watching" },
-              ],
+              emoji: "💬", name: "Echo", role: "AI Chatbot", accent: "#00d4ff",
+              headline: "Your Best Employee Lives on Your Website",
+              problem: "Most visitors leave without ever contacting you.",
+              desc: "Echo engages visitors instantly, answers questions, recommends services, collects contact information, and converts more website traffic into qualified opportunities. Every chatbot is custom-built for your business.",
+              features: ["Personalized conversations", "Lead qualification", "Appointment booking", "CRM integration", "Self-learning responses", "Monthly optimization"],
+              impact: "Turn passive website visitors into active leads — automatically.",
+              tag: "Always Converting",
+              icon: Bot,
+            },
+            {
+              emoji: "⚙️", name: "Pulse", role: "Workflow Automation", accent: "#10b981",
+              headline: "Eliminate Busy Work Forever",
+              problem: "Imagine eliminating hours of repetitive work every single week.",
+              desc: "Pulse builds intelligent workflows that automate repetitive business processes so your team can focus on growth instead of administration.",
+              features: ["CRM updates", "Email sequences", "Invoice processing", "Data entry", "Document generation", "Internal approvals"],
+              impact: "Save dozens of hours every month and scale without hiring.",
+              tag: "Zero Manual Work",
+              icon: Workflow,
+            },
+            {
+              emoji: "📈", name: "Orion", role: "AI Marketing", accent: "#f59e0b",
+              headline: "Marketing That Never Stops Working",
+              problem: "Generate more content, more campaigns, and more leads — without a larger team.",
+              desc: "Orion handles social media content, email campaigns, SEO content, AI ad copy, and personalized marketing at scale — consistently, on-brand, every day.",
+              features: ["Social media content", "AI video creation", "Email campaigns", "SEO content", "Personalized marketing", "AI ad copy"],
+              impact: "More campaigns. Better engagement. Zero extra headcount.",
+              tag: "Always Publishing",
+              icon: Zap,
+            },
+            {
+              emoji: "🎙️", name: "Lauren", role: "AI Voice Agent", accent: "#e64dff",
+              headline: "Conversations That Feel Human",
+              problem: "Your customers deserve real conversations — not robotic menus.",
+              desc: "Lauren sounds natural, understands context, and delivers professional interactions from the very first call. The more conversations she has, the better she becomes. Perfect for sales, support, scheduling, and follow-up.",
+              features: ["Natural human-like voice", "Context-aware responses", "Sales & qualification", "Appointment scheduling", "24/7 availability", "Self-improving with every call"],
+              impact: "Professional conversations at scale — without hiring a team.",
+              tag: "Sounds Human",
+              icon: Mic,
+            },
+            {
+              emoji: "🛡️", name: "Aegis", role: "AI Cybersecurity", accent: "#ef4444",
+              headline: "Protection That Never Clocks Out",
+              problem: "Cyber threats don't wait for business hours.",
+              desc: "Aegis monitors your systems 24/7, detects anomalies before they become incidents, and responds automatically — protecting your data, your clients, and your reputation around the clock.",
+              features: ["Continuous threat monitoring", "Anomaly detection", "Automated incident response", "Compliance reporting", "Real-time alerts", "Zero human intervention needed"],
+              impact: "Sleep soundly knowing your business is protected around the clock.",
+              tag: "Always Watching",
+              icon: Shield,
             },
           ];
 
           return (
-            <div className="flex flex-col gap-16">
-              {groups.map((group, gi) => (
-                <div key={group.label}>
-                  {/* Group header */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {employees.map(({ emoji, name, role, accent, headline, problem, desc, features, impact, tag, icon: Icon }, i) => (
+                <TiltCard key={name}>
                   <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: "-40px" }}
-                    transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="flex items-center gap-4 mb-6"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-30px" }}
+                    transition={{ duration: 0.55, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="relative overflow-hidden rounded-xl group h-full flex flex-col"
+                    style={{ background: `linear-gradient(135deg, ${accent}07 0%, rgba(255,255,255,0.015) 100%)`, border: "1px solid rgba(255,255,255,0.07)", padding: "1.75rem" }}
                   >
-                    <div className="h-px flex-1 max-w-[40px]" style={{ background: group.accent }} />
-                    <span className="text-[0.65rem] font-bold tracking-[0.3em] uppercase" style={{ color: group.accent }}>{group.label}</span>
-                    <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${group.accent}40, transparent)` }} />
-                  </motion.div>
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                    className="text-muted-foreground text-sm mb-6 max-w-xl"
-                  >{group.desc}</motion.p>
+                    {/* Hover glow */}
+                    <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ background: `linear-gradient(135deg, ${accent}0e, rgba(255,255,255,0.02))` }} />
+                    {/* Bottom sweep */}
+                    <motion.div className="absolute bottom-0 left-0 h-[2px] rounded-b-xl"
+                      style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+                      initial={{ width: 0 }} whileHover={{ width: "100%" }} transition={{ duration: 0.4 }} />
+                    {/* Left accent */}
+                    <div className="absolute left-0 top-6 bottom-6 w-[2px] rounded-full opacity-30" style={{ background: accent }} />
 
-                  {/* Service cards — 3 per group */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {group.services.map(({ icon: Icon, name, desc, tag }, si) => (
-                      <TiltCard key={name}>
-                        <motion.div
-                          initial={{ opacity: 0, y: 30 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, margin: "-30px" }}
-                          transition={{ duration: 0.55, delay: gi * 0.05 + si * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
-                          whileHover={{ y: -4 }}
-                          className="relative overflow-hidden cursor-default rounded-xl group h-full"
-                          style={{
-                            background: `linear-gradient(135deg, ${group.accent}06 0%, rgba(255,255,255,0.02) 100%)`,
-                            border: "1px solid rgba(255,255,255,0.07)",
-                            padding: "2rem",
-                          }}
-                        >
-                          <motion.div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100"
-                            style={{ background: `linear-gradient(135deg, ${group.accent}0d, rgba(255,255,255,0.02))`, transition: "opacity 0.3s" }}
-                          />
-                          <motion.div className="absolute bottom-0 left-0 h-[2px] rounded-b-xl"
-                            style={{ background: `linear-gradient(90deg, ${group.accent}, transparent)` }}
-                            initial={{ width: 0 }} whileHover={{ width: "100%" }} transition={{ duration: 0.4 }}
-                          />
-                          {/* Left accent bar */}
-                          <div className="absolute left-0 top-6 bottom-6 w-[2px] rounded-full opacity-40" style={{ background: group.accent }} />
-                          <div className="relative z-10 pl-3">
-                            <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg mb-4" style={{ background: `${group.accent}12`, border: `1px solid ${group.accent}25` }}>
-                              <Icon className="w-4.5 h-4.5 stroke-[1.5]" style={{ color: group.accent }} />
-                            </div>
-                            <div className="font-semibold text-foreground text-[1.05rem] mb-2 leading-snug">{name}</div>
-                            <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2 md:line-clamp-none">{desc}</p>
-                            <span className="inline-block text-[0.58rem] font-bold tracking-[0.18em] uppercase px-2 py-0.5 rounded-sm"
-                              style={{ color: group.accent, background: `${group.accent}10`, border: `1px solid ${group.accent}22` }}>{tag}</span>
+                    <div className="relative z-10 pl-3 flex flex-col flex-1">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-lg" style={{ background: `${accent}15`, border: `1px solid ${accent}28` }}>
+                            {emoji}
                           </div>
-                        </motion.div>
-                      </TiltCard>
-                    ))}
-                  </div>
-                </div>
+                          <div>
+                            <div className="font-bold text-white text-base leading-none">{name}</div>
+                            <div className="text-[0.65rem] font-semibold tracking-widest uppercase mt-0.5" style={{ color: accent }}>{role}</div>
+                          </div>
+                        </div>
+                        <span className="text-[0.55rem] font-bold tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm shrink-0"
+                          style={{ color: accent, background: `${accent}12`, border: `1px solid ${accent}25` }}>{tag}</span>
+                      </div>
+
+                      {/* Headline */}
+                      <div className="font-semibold text-white text-[1rem] leading-snug mb-1">{headline}</div>
+                      <p className="text-[0.72rem] italic mb-3" style={{ color: `${accent}cc` }}>{problem}</p>
+                      <p className="text-muted-foreground text-sm leading-relaxed mb-4">{desc}</p>
+
+                      {/* Features */}
+                      <div className="flex flex-col gap-1.5 mb-4 flex-1">
+                        {features.map(f => (
+                          <div key={f} className="flex items-center gap-2">
+                            <span className="text-xs shrink-0" style={{ color: accent }}>✓</span>
+                            <span className="text-xs text-muted-foreground">{f}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Impact */}
+                      <div className="mt-auto pt-3 border-t border-white/5">
+                        <p className="text-[0.72rem] font-semibold" style={{ color: accent }}>→ {impact}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </TiltCard>
               ))}
             </div>
           );
         })()}
+      </section>
+
+      {/* GETS SMARTER EVERY MONTH */}
+      <section className="px-[5vw] md:px-[6vw] py-16 md:py-28 bg-background border-t border-border/30 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="text-center mb-14">
+            <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Ongoing Value</span>
+            <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mt-3 mb-5" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+              Your AI Gets <em>Smarter</em><br />Every Month
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+              Unlike one-time software purchases, CyberCraft360 continuously improves your AI systems. Every conversation, customer interaction, and business update makes your AI more accurate, efficient, and valuable.
+            </p>
+            <p className="text-muted-foreground/50 text-sm mt-4 max-w-md mx-auto italic">
+              Think of it as hiring an employee who never stops learning.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+            {[
+              { icon: "🧠", title: "Learns From Every Interaction", desc: "Every customer conversation trains your AI to respond better, handle edge cases, and improve accuracy over time — automatically.", accent: "#00d4ff" },
+              { icon: "📈", title: "Monthly Optimization", desc: "We review performance data, update knowledge bases, fine-tune responses, and push improvements every single month included in your subscription.", accent: "#7c3aed" },
+              { icon: "🔄", title: "Evolves With Your Business", desc: "New products, new services, new policies — your AI is updated to reflect your business as it grows. It never becomes obsolete.", accent: "#22c55e" },
+            ].map(({ icon, title, desc, accent }, i) => (
+              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.55, delay: i * 0.1 }}
+                className="rounded-xl p-7 border border-border/50" style={{ background: `linear-gradient(135deg, ${accent}06, rgba(255,255,255,0.015))` }}>
+                <div className="text-3xl mb-4">{icon}</div>
+                <div className="font-semibold text-white text-base mb-2">{title}</div>
+                <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }}
+            className="rounded-2xl border border-white/08 p-8 md:p-10" style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.04), rgba(124,58,237,0.04))", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <div className="font-semibold text-white text-lg mb-1">Every month includes:</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 mt-4">
+                  {["Performance monitoring", "AI optimization", "Knowledge updates", "New features", "Workflow improvements", "Security updates", "CRM enhancements", "Strategy consultations", "Continuous learning"].map(item => (
+                    <div key={item} className="flex items-center gap-2">
+                      <span className="text-primary text-xs">✓</span>
+                      <span className="text-muted-foreground text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="shrink-0">
+                <a href="#contact" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold tracking-widest uppercase no-underline transition-opacity hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
+                  See How It Works <ArrowRight size={15} />
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* TECH STACK / BUILT WITH */}
