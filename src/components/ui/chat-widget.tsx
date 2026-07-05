@@ -252,7 +252,13 @@ export default function ChatWidget() {
   async function sendChat() {
     const text = chatInput.trim();
     if (!text || chatLoading) return;
-    const context = `Business: ${answers.businessType}, Employees: ${answers.employees}, Challenge: ${answers.challenge}`;
+    const blueprintContext = [
+      answers.businessType && `Business type: ${answers.businessType}`,
+      answers.employees && `Team size: ${answers.employees}`,
+      answers.challenge && `Biggest challenge: ${answers.challenge}`,
+      answers.volume && `Monthly inquiries: ${answers.volume}`,
+      answers.areas?.length && `Areas to automate: ${answers.areas.join(", ")}`,
+    ].filter(Boolean).join("\n");
     const updated: ChatMsg[] = [...chatMsgs, { role: "user", content: text }];
     setChatMsgs(updated);
     setChatInput("");
@@ -262,7 +268,8 @@ export default function ChatWidget() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "system", content: `[CONTEXT: ${context}]` }, ...updated.map(m => ({ role: m.role, content: m.content }))],
+          messages: updated.map(m => ({ role: m.role, content: m.content })),
+          blueprintContext,
         }),
       });
       const data = await res.json();

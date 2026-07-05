@@ -38,18 +38,18 @@ async function trackAnalytics(hasLead: boolean, messageCount: number) {
   } catch { /* non-blocking */ }
 }
 
-async function buildCipherExamples(): Promise<string> {
+async function buildIrisExamples(): Promise<string> {
   const all = await loadConvs();
   const recent = all.slice(-3);
   if (recent.length === 0) return "";
   const examples = recent.map(c => {
-    const turns = c.messages.map(m => `${m.role === "user" ? "Visitor" : "CIPHER"}: ${m.content}`).join("\n");
-    return `--- Successful lead capture ---\n${turns}`;
+    const turns = c.messages.map(m => `${m.role === "user" ? "Visitor" : "IRIS"}: ${m.content}`).join("\n");
+    return `--- Successful lead capture (${c.lead.company || "unknown business"}) ---\n${turns}`;
   }).join("\n\n");
   return `\n\n## LEARNED FROM PAST SUCCESSFUL CONVERSATIONS\nStudy these and replicate what worked:\n\n${examples}`;
 }
 
-const SYSTEM_PROMPT = `You are CIPHER, the intelligent sales and support assistant for CyberCraft360 — a premium bespoke AI automation and cybersecurity agency founded by our founder. You are not a generic chatbot. You think like a senior AI consultant and strategic sales advisor.
+const SYSTEM_PROMPT = `You are IRIS, the AI Business Consultant for CyberCraft360 — a premium bespoke AI automation and cybersecurity agency founded by our founder. You are not a generic chatbot. You think like a senior AI consultant and strategic sales advisor.
 
 ## YOUR MISSION
 Guide every conversation toward one of two outcomes:
@@ -179,7 +179,7 @@ Detect the language the visitor is writing in and respond in that same language 
 - If they write in Spanish → respond fully in Spanish, naturally and fluently
 - If they write in English → respond in English
 - If they switch languages mid-conversation → match them
-- Spanish greeting: "¡Hola! Soy CIPHER, el asistente de CyberCraft360. ¿En qué puedo ayudarte hoy?"
+- Spanish greeting: "¡Hola! Soy IRIS, la consultora de IA de CyberCraft360. ¿En qué puedo ayudarte hoy?"
 - All service names, prices, and links remain the same regardless of language
 
 ## OPENING
@@ -213,25 +213,29 @@ async function groqChat(
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const { messages, blueprintContext } = await req.json();
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "API key not configured." }, { status: 500 });
 
     const userCount = messages.filter((m: { role: string }) => m.role === "user").length;
 
-    const [examples, reply, extractedRaw] = await Promise.all([
-      buildCipherExamples(),
-      groqChat(apiKey, messages, SYSTEM_PROMPT, { maxTokens: 180 }),
+    // Build enriched prompt once — include learned examples + blueprint context if provided
+    const [examples, extractedRaw] = await Promise.all([
+      buildIrisExamples(),
       userCount >= 2
         ? groqChat(apiKey, messages, EXTRACTION_PROMPT, { maxTokens: 80, jsonMode: true, temperature: 0 })
         : Promise.resolve(null),
     ]);
 
-    const enrichedPrompt = SYSTEM_PROMPT + examples;
-    const finalReply = examples
-      ? await groqChat(apiKey, messages, enrichedPrompt, { maxTokens: 180 })
-      : reply;
+    const blueprintSection = blueprintContext
+      ? `\n\n## WHAT THIS VISITOR ALREADY TOLD US (from the guided flow — do NOT ask again)\n${blueprintContext}`
+      : "";
+
+    const enrichedPrompt = SYSTEM_PROMPT + blueprintSection + examples;
+
+    // Single Groq call with full context
+    const finalReply = await groqChat(apiKey, messages, enrichedPrompt, { maxTokens: 180 });
 
     let lead: { name: string; company: string; challenge: string; phone?: string } | null = null;
     if (extractedRaw) {
@@ -250,6 +254,15 @@ export async function POST(req: NextRequest) {
 
     if (lead) {
       saveConv({ id: Date.now().toString(), date: new Date().toISOString(), messages, lead });
+      // Also fire owner notification (non-blocking)
+      fetch(new URL("/api/notify-owner", req.url).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: `💬 New Chat Lead — ${lead.name} @ ${lead.company}`,
+          body: `NEW LEAD CAPTURED VIA WEBSITE CHAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nName: ${lead.name}\nCompany: ${lead.company}\nChallenge: ${lead.challenge}\nPhone: ${lead.phone || "Not provided"}${blueprintContext ? `\n\nGUIDED FLOW ANSWERS\n${blueprintContext}` : ""}\n\n━━━━━━━━━━━━━━━━━━━━���━━━━━━━━\nCaptured by IRIS — CyberCraft360 Chat`,
+        }),
+      }).catch(() => {});
       fetch(new URL("/api/leads", req.url).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
