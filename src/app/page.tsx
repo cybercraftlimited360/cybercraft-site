@@ -167,16 +167,27 @@ function NavBar() {
               {item}
             </motion.a>
           ))}
-          <motion.a
-            href="#contact"
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
             transition={{ duration: 0.3, delay: menuOpen ? navLinks.length * 0.06 : 0 }}
-            onClick={() => setMenuOpen(false)}
-            className="mt-4 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md no-underline"
+            className="mt-4 flex flex-col items-center gap-3 w-full px-8"
           >
-            Book a Call
-          </motion.a>
+            <a
+              href="#contact"
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-center bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md no-underline"
+            >
+              📅 Book a Call
+            </a>
+            <a
+              href="/intake"
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-center border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md no-underline"
+            >
+              💬 Get a Quote
+            </a>
+          </motion.div>
         </motion.div>
       </motion.div>
     </>
