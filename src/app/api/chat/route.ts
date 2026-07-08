@@ -252,6 +252,14 @@ export async function POST(req: NextRequest) {
       } catch { /* malformed JSON — skip */ }
     }
 
+    // Save all conversations to iris:conversations (full history)
+    const irisConv = { id: Date.now().toString(), date: new Date().toISOString(), messages, lead: lead || null, hasLead: !!lead };
+    redis.get<any[]>("iris:conversations").then(existing => {
+      const list = existing ?? [];
+      list.unshift(irisConv);
+      redis.set("iris:conversations", list.slice(0, 200));
+    }).catch(() => {});
+
     if (lead) {
       saveConv({ id: Date.now().toString(), date: new Date().toISOString(), messages, lead });
       // Also fire owner notification (non-blocking)

@@ -143,6 +143,10 @@ export async function POST(req: NextRequest) {
       console.error("Email send failed:", emailErr);
     }
 
+    import("@/lib/activity").then(({ logActivity }) =>
+      logActivity({ type: "booking", title: `Booking confirmed — ${booking.name}`, detail: `${booking.date} at ${booking.time} · ${booking.company}`, clientName: booking.name })
+    ).catch(() => {});
+
     return NextResponse.json({ ok: true, bookingId: booking.id });
   } catch (err) {
     console.error("Booking error:", err);

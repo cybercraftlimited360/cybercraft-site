@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const monthStr = now.toISOString().slice(0, 7);
     const todayStr = now.toISOString().slice(0, 10);
 
-    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys] =
+    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys, irisConvsRaw, laurenConvsRaw, offboardedRaw] =
       await Promise.all([
         getBookings(),
         redis.get<any[]>("leads:all"),
@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
         redis.hgetall("chat:stats"),
         redis.hgetall("lauren:stats"),
         redis.keys("chat:daily:*"),
+        redis.get<any[]>("iris:conversations"),
+        redis.get<any[]>("lauren:transcripts"),
+        redis.get<any[]>("clients:offboarded"),
       ]);
 
     const leads = leadsRaw ?? [];
@@ -176,6 +179,14 @@ export async function GET(req: NextRequest) {
         daily,
       },
       lauren: { totalCalls: Number(laurenStats?.totalCalls ?? 0) },
+      conversations: {
+        iris: (irisConvsRaw ?? []).slice(0, 50),
+        lauren: (laurenConvsRaw ?? []).slice(0, 50).map((c: any) => ({
+          ...c,
+          messages: (c.messages || []).filter((m: any) => m.role !== "system"),
+        })),
+      },
+      offboarded: offboardedRaw ?? [],
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

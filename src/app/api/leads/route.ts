@@ -161,6 +161,10 @@ export async function POST(req: NextRequest) {
     // Send notification email (non-blocking)
     sendLeadEmail(enriched, laurenCalling).catch(err => console.error("Email error:", err));
 
+    import("@/lib/activity").then(({ logActivity }) =>
+      logActivity({ type: "lead", title: `New lead — ${lead.name}`, detail: `${lead.company} · ${lead.challenge}`, clientName: lead.name })
+    ).catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Leads route error:", err);
