@@ -65,9 +65,11 @@ export async function GET(req: NextRequest) {
 
   const nowCT = new Date().toLocaleString("en-US", { timeZone: avail.timezone || "America/Chicago" });
   const todayStr = new Date(nowCT).toISOString().slice(0, 10);
-  const nowMinutes = date === todayStr
-    ? new Date(nowCT).getHours() * 60 + new Date(nowCT).getMinutes() + 60
-    : 0;
+
+  // No same-day bookings — earliest is always tomorrow
+  if (date === todayStr) return NextResponse.json({ slots: [] });
+
+  const nowMinutes = 0;
 
   const available = allSlots.filter(t => {
     const slotMin = timeToMinutes(t);
