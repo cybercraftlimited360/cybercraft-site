@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview", "clients", "pipeline", "finances", "tasks", "activity"] as const;
+const TABS = ["overview", "clients", "pipeline", "finances", "tasks", "convos", "activity"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab, string> = { overview: "📊", clients: "👥", pipeline: "📋", finances: "💰", tasks: "✅", activity: "🔔" };
-const TAB_LABELS: Record<Tab, string> = { overview: "Overview", clients: "Clients", pipeline: "Pipeline", finances: "Finances", tasks: "Tasks", activity: "Activity" };
+const TAB_ICONS: Record<Tab, string> = { overview: "📊", clients: "👥", pipeline: "📋", finances: "💰", tasks: "✅", convos: "💬", activity: "🔔" };
+const TAB_LABELS: Record<Tab, string> = { overview: "Overview", clients: "Clients", pipeline: "Pipeline", finances: "Finances", tasks: "Tasks", convos: "Convos", activity: "Activity" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth: (t: string) => void }) {
@@ -95,6 +95,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             {tab === "pipeline"  && <PipelineTab  data={data} token={token} onRefresh={() => load(true)} />}
             {tab === "finances"  && <FinancesTab  data={data} />}
             {tab === "tasks"     && <TasksTab     data={data} token={token} onRefresh={() => load(true)} />}
+            {tab === "convos"    && <ConvosTab    data={data} />}
             {tab === "activity"  && <ActivityTab  data={data} />}
           </>
         ) : (
@@ -165,36 +166,97 @@ function OverviewTab({ data }: { data: any }) {
 // ── Clients Tab ───────────────────────────────────────────────────────────────
 function ClientsTab({ data, token }: { data: any; token: string }) {
   const [search, setSearch] = useState("");
+  const [offboarding, setOffboarding] = useState<any>(null);
+  const [offboardReason, setOffboardReason] = useState("");
+  const [offboardDone, setOffboardDone] = useState(false);
   const clients: any[] = data.clients ?? [];
+  const offboarded: any[] = data.offboarded ?? [];
+  const offboardedEmails = new Set(offboarded.map((o: any) => o.email?.toLowerCase()));
   const filtered = clients.filter(c =>
     !search || c.name?.toLowerCase().includes(search.toLowerCase()) ||
     c.email?.toLowerCase().includes(search.toLowerCase()) ||
     c.company?.toLowerCase().includes(search.toLowerCase())
   );
+
+  async function confirmOffboard() {
+    if (!offboarding) return;
+    await fetch("/api/admin/offboard", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ clientName: offboarding.name, clientEmail: offboarding.email, reason: offboardReason }) });
+    setOffboardDone(true);
+    setTimeout(() => { setOffboarding(null); setOffboardReason(""); setOffboardDone(false); }, 1500);
+  }
+
   return (
     <div>
-      <SectionTitle>{clients.length} Clients</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Total Clients" value={clients.length} accent="#00d4ff" />
+        <MiniStat label="Churned" value={offboarded.length} accent="#ef4444" sub="left your services" />
+      </div>
+
+      <SectionTitle>Active Clients</SectionTitle>
       <input placeholder="Search by name, email, company…" value={search} onChange={e => setSearch(e.target.value)}
         style={{ width: "100%", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#fff", fontSize: 14, outline: "none", marginBottom: 14 }} />
-      <Card>
-        {filtered.length > 0 ? filtered.map((c, i) => (
-          <Row key={c.email || i} border={i > 0}>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 12, background: "linear-gradient(135deg,#00d4ff22,#7c3aed22)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#00d4ff", flexShrink: 0 }}>
-                {c.name?.charAt(0).toUpperCase()}
+
+      {/* Offboard modal */}
+      {offboarding && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
+          <div style={{ background: "#0f1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24, width: "100%", maxWidth: 360 }}>
+            {offboardDone ? (
+              <p style={{ textAlign: "center", color: "#22c55e", fontSize: 16, fontWeight: 700, margin: 0 }}>✓ Client offboarded</p>
+            ) : (
+              <>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: "0 0 6px" }}>Offboard {offboarding.name}?</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 16px" }}>This will log them as churned and notify you by email.</p>
+                <input placeholder="Reason (optional)" value={offboardReason} onChange={e => setOffboardReason(e.target.value)} style={{ ...miniInputStyle, marginBottom: 12 }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={confirmOffboard} style={{ flex: 1, padding: 11, borderRadius: 10, background: "#ef4444", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Confirm Offboard</button>
+                  <button onClick={() => { setOffboarding(null); setOffboardReason(""); }} style={{ flex: 1, padding: 11, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Card style={{ marginBottom: 24 }}>
+        {filtered.length > 0 ? filtered.map((c, i) => {
+          const isChurned = offboardedEmails.has(c.email?.toLowerCase());
+          return (
+            <Row key={c.email || i} border={i > 0} style={{ opacity: isChurned ? 0.45 : 1 }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div style={{ width: 38, height: 38, borderRadius: 12, background: isChurned ? "rgba(239,68,68,0.1)" : "linear-gradient(135deg,#00d4ff22,#7c3aed22)", border: `1px solid ${isChurned ? "rgba(239,68,68,0.3)" : "rgba(0,212,255,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: isChurned ? "#ef4444" : "#00d4ff", flexShrink: 0 }}>
+                  {c.name?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <Name>{c.name}{isChurned && <span style={{ fontSize: 10, color: "#ef4444", marginLeft: 6, fontWeight: 700 }}>CHURNED</span>}</Name>
+                  <Sub>{c.company || c.email}</Sub>
+                </div>
               </div>
-              <div>
-                <Name>{c.name}</Name>
-                <Sub>{c.company || c.email}</Sub>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                {c.totalSpent > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e", marginBottom: 4 }}>${c.totalSpent.toLocaleString()}</div>}
+                <Sub style={{ marginBottom: 6 }}>{[c.bookings > 0 && `${c.bookings} booking${c.bookings > 1 ? "s" : ""}`, c.invoices > 0 && `${c.invoices} invoice${c.invoices > 1 ? "s" : ""}`].filter(Boolean).join(" · ") || "Lead"}</Sub>
+                {!isChurned && <button onClick={() => setOffboarding(c)} style={{ fontSize: 10, color: "rgba(239,68,68,0.5)", background: "none", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>Offboard</button>}
               </div>
-            </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              {c.totalSpent > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e" }}>${c.totalSpent.toLocaleString()}</div>}
-              <Sub>{[c.bookings > 0 && `${c.bookings} booking${c.bookings > 1 ? "s" : ""}`, c.invoices > 0 && `${c.invoices} invoice${c.invoices > 1 ? "s" : ""}`].filter(Boolean).join(" · ") || "Lead"}</Sub>
-            </div>
-          </Row>
-        )) : <EmptyState>No clients found</EmptyState>}
+            </Row>
+          );
+        }) : <EmptyState>No clients found</EmptyState>}
       </Card>
+
+      {offboarded.length > 0 && (
+        <>
+          <SectionTitle>Churned Clients ({offboarded.length})</SectionTitle>
+          <Card>
+            {offboarded.map((c: any, i: number) => (
+              <Row key={i} border={i > 0} style={{ opacity: 0.5 }}>
+                <div><Name>{c.name}</Name><Sub>{c.email}</Sub></div>
+                <div style={{ textAlign: "right" }}>
+                  <Sub style={{ color: "#ef4444" }}>{c.reason || "Cancelled"}</Sub>
+                  <Sub>{c.date ? new Date(c.date).toLocaleDateString() : ""}</Sub>
+                </div>
+              </Row>
+            ))}
+          </Card>
+        </>
+      )}
     </div>
   );
 }
@@ -451,6 +513,93 @@ function TasksTab({ data, token, onRefresh }: { data: any; token: string; onRefr
           </Card>
         </>
       )}
+    </div>
+  );
+}
+
+// ── Convos Tab ────────────────────────────────────────────────────────────────
+function ConvosTab({ data }: { data: any }) {
+  const [filter, setFilter] = useState<"all" | "iris" | "lauren">("all");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const irisConvs: any[] = data.conversations?.iris ?? [];
+  const laurenConvs: any[] = data.conversations?.lauren ?? [];
+
+  const allConvs = [
+    ...irisConvs.map((c: any) => ({ ...c, _source: "iris" })),
+    ...laurenConvs.map((c: any) => ({ ...c, _source: "lauren" })),
+  ].sort((a, b) => (b.date > a.date ? 1 : -1));
+
+  const visible = allConvs.filter(c => filter === "all" || c._source === filter);
+
+  const sourceColor = (s: string) => s === "iris" ? "#7c3aed" : "#e64dff";
+  const sourceLabel = (s: string) => s === "iris" ? "IRIS" : "Lauren";
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="IRIS Chats" value={irisConvs.length} accent="#7c3aed" />
+        <MiniStat label="Lauren Calls" value={laurenConvs.length} accent="#e64dff" />
+        <MiniStat label="Chat Leads" value={data.chat?.totalLeads ?? 0} accent="#00d4ff" />
+      </div>
+
+      {/* Filter pills */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {(["all", "iris", "lauren"] as const).map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{ padding: "7px 16px", borderRadius: 20, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", background: filter === f ? (f === "iris" ? "#7c3aed" : f === "lauren" ? "#e64dff" : "#00d4ff") : "rgba(255,255,255,0.06)", color: filter === f ? "#fff" : "rgba(255,255,255,0.4)", textTransform: "capitalize" }}>{f === "all" ? `All (${allConvs.length})` : f === "iris" ? `IRIS (${irisConvs.length})` : `Lauren (${laurenConvs.length})`}</button>
+        ))}
+      </div>
+
+      <Card>
+        {visible.length === 0 ? <EmptyState>No conversations yet</EmptyState> : visible.map((c: any, i: number) => {
+          const id = c.id || String(i);
+          const isOpen = expanded === id;
+          const msgs: any[] = c.messages ?? [];
+          const preview = msgs.find((m: any) => m.role === "user")?.content ?? "";
+          const hasLead = c.hasLead || !!c.lead;
+          return (
+            <div key={id} style={{ borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+              <div onClick={() => setExpanded(isOpen ? null : id)} style={{ padding: "14px 16px", cursor: "pointer" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 5 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 6, background: `${sourceColor(c._source)}22`, color: sourceColor(c._source) }}>{sourceLabel(c._source)}</span>
+                      {hasLead && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "rgba(34,197,94,0.12)", color: "#22c55e" }}>LEAD</span>}
+                      {c.lead?.name && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{c.lead.name}</span>}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(preview).slice(0, 80)}{String(preview).length > 80 ? "…" : ""}</p>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <Sub>{c.date ? new Date(c.date).toLocaleDateString() : ""}</Sub>
+                    <Sub style={{ color: "rgba(255,255,255,0.2)" }}>{msgs.length} msg{msgs.length !== 1 ? "s" : ""}</Sub>
+                    <div style={{ fontSize: 14, color: "rgba(255,255,255,0.2)", marginTop: 2 }}>{isOpen ? "▲" : "▼"}</div>
+                  </div>
+                </div>
+              </div>
+              {isOpen && (
+                <div style={{ padding: "0 16px 16px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                  {c.lead && (
+                    <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", marginBottom: 12 }}>
+                      <p style={{ margin: 0, fontSize: 11, color: "#22c55e", fontWeight: 700, letterSpacing: "0.1em", marginBottom: 4 }}>LEAD CAPTURED</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{c.lead.name} · {c.lead.company}{c.lead.phone ? ` · ${c.lead.phone}` : ""}</p>
+                      {c.lead.challenge && <p style={{ margin: "4px 0 0", fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{c.lead.challenge}</p>}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {msgs.filter((m: any) => m.role !== "system").map((m: any, mi: number) => (
+                      <div key={mi} style={{ display: "flex", justifyContent: m.role === "user" || m.role === "caller" ? "flex-end" : "flex-start" }}>
+                        <div style={{ maxWidth: "80%", padding: "9px 12px", borderRadius: 12, background: m.role === "user" || m.role === "caller" ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.05)", border: `1px solid ${m.role === "user" || m.role === "caller" ? "rgba(0,212,255,0.2)" : "rgba(255,255,255,0.07)"}` }}>
+                          <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 3, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.1em" }}>{m.role === "user" || m.role === "caller" ? (c._source === "lauren" ? "Caller" : "Visitor") : (c._source === "lauren" ? "Lauren" : "IRIS")}</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>{String(m.content).slice(0, 500)}{String(m.content).length > 500 ? "…" : ""}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </Card>
     </div>
   );
 }

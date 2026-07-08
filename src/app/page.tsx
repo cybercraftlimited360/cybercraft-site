@@ -27,28 +27,18 @@ import Magnetic from "@/components/ui/magnetic";
 import ExitIntent from "@/components/ui/exit-intent";
 import ScrollTransition from "@/components/ui/scroll-transition";
 
-function NavBar() {
+type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
+
+const TAB_MAP: Record<string, SiteTab> = {
+  about: "about", demo: "demo", services: "services",
+  pricing: "pricing", clients: "results", faq: "faq",
+};
+
+function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
   const { scrollY } = useScroll();
   const height = useTransform(scrollY, [0, 80], [80, 64]);
   const bg = useTransform(scrollY, [0, 80], ["rgba(15,17,23,0.7)", "rgba(15,17,23,0.97)"]);
-  const [activeSection, setActiveSection] = React.useState("");
   const [menuOpen, setMenuOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const sections = ["about", "demo", "services", "pricing", "clients", "faq"];
-    const observers: IntersectionObserver[] = [];
-    sections.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveSection(id); },
-        { rootMargin: "-40% 0px -55% 0px" }
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
-    return () => observers.forEach(o => o.disconnect());
-  }, []);
 
   // Lock body scroll when menu is open
   React.useEffect(() => {
@@ -81,10 +71,11 @@ function NavBar() {
         <ul className="hidden md:flex items-center gap-8 list-none m-0 p-0">
           {navLinks.map((item) => {
             const id = item.toLowerCase();
-            const isActive = activeSection === id;
+            const mapped = TAB_MAP[id] ?? "about";
+            const isActive = tab === mapped;
             return (
               <li key={item}>
-                <a href={`#${id}`} className="relative text-sm font-semibold tracking-widest uppercase no-underline transition-colors duration-200">
+                <button onClick={() => setTab(mapped)} className="relative text-sm font-semibold tracking-widest uppercase transition-colors duration-200 bg-transparent border-0 p-0">
                   <span className={isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}>
                     {item}
                   </span>
@@ -95,7 +86,7 @@ function NavBar() {
                       transition={{ type: "spring", stiffness: 380, damping: 32 }}
                     />
                   )}
-                </a>
+                </button>
               </li>
             );
           })}
@@ -103,9 +94,9 @@ function NavBar() {
               <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all mr-2">
                 Get a Quote
               </a>
-              <a href="#contact" className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:opacity-90 transition-opacity">
+              <button onClick={() => setTab("book")} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity">
                 Book a Call
-              </a>
+              </button>
           </li>
         </ul>
 
@@ -149,37 +140,39 @@ function NavBar() {
           className="flex flex-col items-center justify-center h-full gap-10"
           onClick={e => e.stopPropagation()}
         >
-          {navLinks.map((item, i) => (
-            <motion.a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
-              transition={{ duration: 0.3, delay: menuOpen ? i * 0.06 : 0 }}
-              onClick={() => setMenuOpen(false)}
-              className="font-serif font-light no-underline"
-              style={{
-                fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
-                fontSize: "clamp(2rem, 8vw, 3.5rem)",
-                color: activeSection === item.toLowerCase() ? "#00d4ff" : "rgba(255,255,255,0.85)",
-              }}
-            >
-              {item}
-            </motion.a>
-          ))}
+          {navLinks.map((item, i) => {
+            const mapped = TAB_MAP[item.toLowerCase()] ?? "about";
+            return (
+              <motion.button
+                key={item}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
+                transition={{ duration: 0.3, delay: menuOpen ? i * 0.06 : 0 }}
+                onClick={() => { setTab(mapped); setMenuOpen(false); }}
+                className="font-serif font-light bg-transparent border-0"
+                style={{
+                  fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
+                  fontSize: "clamp(2rem, 8vw, 3.5rem)",
+                  color: tab === mapped ? "#00d4ff" : "rgba(255,255,255,0.85)",
+                  cursor: "pointer",
+                }}
+              >
+                {item}
+              </motion.button>
+            );
+          })}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
             transition={{ duration: 0.3, delay: menuOpen ? navLinks.length * 0.06 : 0 }}
             className="mt-4 flex flex-col items-center gap-3 w-full px-8"
           >
-            <a
-              href="#contact"
-              onClick={() => setMenuOpen(false)}
-              className="w-full text-center bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md no-underline"
+            <button
+              onClick={() => { setTab("book"); setMenuOpen(false); }}
+              className="w-full text-center bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md border-0"
             >
               📅 Book a Call
-            </a>
+            </button>
             <a
               href="/intake"
               onClick={() => setMenuOpen(false)}
@@ -191,6 +184,49 @@ function NavBar() {
         </motion.div>
       </motion.div>
     </>
+  );
+}
+
+function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
+  const tabs: { id: SiteTab; label: string; emoji: string }[] = [
+    { id: "about",    label: "How It Works", emoji: "⚡" },
+    { id: "demo",     label: "Live Demo",    emoji: "🤖" },
+    { id: "services", label: "Services",     emoji: "🧠" },
+    { id: "pricing",  label: "Pricing",      emoji: "💼" },
+    { id: "results",  label: "Results",      emoji: "📈" },
+    { id: "faq",      label: "FAQ",          emoji: "❓" },
+    { id: "book",     label: "Book a Call",  emoji: "📅" },
+  ];
+  return (
+    <div style={{
+      position: "sticky", top: 63, zIndex: 40,
+      background: "rgba(10,12,18,0.97)", backdropFilter: "blur(20px)",
+      borderBottom: "1px solid rgba(255,255,255,0.07)",
+      overflowX: "auto", scrollbarWidth: "none",
+    }}>
+      <div style={{ display: "flex", gap: 0, minWidth: "max-content", padding: "0 4vw" }}>
+        {tabs.map(({ id, label, emoji }) => {
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              style={{
+                padding: "14px 18px",
+                background: "none", border: "none",
+                borderBottom: active ? "2px solid #00d4ff" : "2px solid transparent",
+                color: active ? "#00d4ff" : "rgba(255,255,255,0.4)",
+                fontSize: 12, fontWeight: 700, letterSpacing: "0.08em",
+                textTransform: "uppercase", whiteSpace: "nowrap",
+                cursor: "pointer", transition: "color 0.2s, border-color 0.2s",
+              }}
+            >
+              <span style={{ marginRight: 6 }}>{emoji}</span>{label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -229,6 +265,25 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
 }
 
 export default function Home() {
+  const [tab, setTab] = React.useState<SiteTab>("about");
+
+  React.useEffect(() => {
+    const HASH_TAB: Record<string, SiteTab> = {
+      "#about": "about", "#demo": "demo", "#services": "services",
+      "#pricing": "pricing", "#clients": "results", "#faq": "faq",
+      "#contact": "book", "#proposal": "pricing", "#roi": "pricing",
+    };
+    function handleClick(e: MouseEvent) {
+      const a = (e.target as Element).closest("a[href]") as HTMLAnchorElement | null;
+      if (!a) return;
+      const href = a.getAttribute("href") ?? "";
+      const target = HASH_TAB[href];
+      if (target) { e.preventDefault(); setTab(target); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
   return (
     <main className="min-h-screen bg-background font-sans">
       <LoadingScreen />
@@ -242,7 +297,7 @@ export default function Home() {
       <CursorGlow />
 
       {/* NAV */}
-      <NavBar />
+      <NavBar tab={tab} setTab={setTab} />
 
       {/* HERO — layered: StarWarp → Sphere → Text */}
       <div className="relative w-full h-[100svh] min-h-[600px] overflow-hidden">
@@ -514,6 +569,14 @@ export default function Home() {
         </div>
       </section>
 
+      {/* STICKY TAB BAR */}
+      <TabBar tab={tab} setTab={setTab} />
+
+      {/* TAB CONTENT */}
+      <AnimatePresence mode="wait">
+        <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
+
+      {(tab === "about") && <><ResultsTicker />
       {/* MISSION STRIP */}
       <section className="grid grid-cols-1 md:grid-cols-3 border-t border-b border-border bg-background overflow-hidden">
         {[
@@ -535,8 +598,6 @@ export default function Home() {
           </motion.div>
         ))}
       </section>
-
-      <ResultsTicker />
 
       {/* HOW IT WORKS */}
       <section id="about" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/30 overflow-hidden">
@@ -609,6 +670,9 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* ABOUT TAB END */}</>}
+
+      {tab === "demo" && <>
       {/* IRIS VOICE AGENT DEMO */}
       <section id="demo" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-background border-t border-border/40">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="text-center mb-16">
@@ -635,6 +699,9 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* DEMO TAB END */}</>}
+
+      {tab === "services" && <>
       {/* AI EMPLOYEES */}
       <section id="services" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-[hsl(var(--muted))]">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }}>
@@ -1064,6 +1131,9 @@ export default function Home() {
         </motion.p>
       </section>
 
+      {/* SERVICES TAB END */}</>}
+
+      {tab === "pricing" && <>
       {/* BUILD YOUR AI WORKFORCE / PRICING */}
       <section id="pricing" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/20">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="mb-16">
@@ -1436,6 +1506,9 @@ export default function Home() {
         return <ROISection />;
       })()}
 
+      {/* PRICING TAB END */}</>}
+
+      {tab === "results" && <>
       {/* CASE STUDIES */}
       <section id="clients" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-background">
         <motion.div
@@ -1567,6 +1640,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* RESULTS TAB END */}</>}
+
+      {tab === "faq" && <>
       {/* FAQ */}
       <section id="faq" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-background">
         <motion.div
@@ -1635,6 +1711,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FAQ TAB END */}</>}
+
+      {tab === "book" && <>
       {/* CONTACT */}
       <section id="contact" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/40">
         <motion.div
@@ -1696,6 +1775,11 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* BOOK TAB END */}</>}
+
+        </motion.div>
+      </AnimatePresence>
 
       {/* FOOTER */}
       <motion.footer
