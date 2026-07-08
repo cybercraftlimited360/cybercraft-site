@@ -188,6 +188,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
 }
 
 function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
+  const ref = React.useRef<HTMLDivElement>(null);
   const tabs: { id: SiteTab; label: string; emoji: string }[] = [
     { id: "about",    label: "How It Works", emoji: "⚡" },
     { id: "demo",     label: "Live Demo",    emoji: "🤖" },
@@ -197,8 +198,17 @@ function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
     { id: "faq",      label: "FAQ",          emoji: "❓" },
     { id: "book",     label: "Book a Call",  emoji: "📅" },
   ];
+
+  function handleTab(id: SiteTab) {
+    setTab(id);
+    if (ref.current) {
+      const top = ref.current.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: top - 64, behavior: "smooth" });
+    }
+  }
+
   return (
-    <div style={{
+    <div ref={ref} data-tabbar style={{
       position: "sticky", top: 63, zIndex: 40,
       background: "rgba(10,12,18,0.97)", backdropFilter: "blur(20px)",
       borderBottom: "1px solid rgba(255,255,255,0.07)",
@@ -210,7 +220,7 @@ function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
           return (
             <button
               key={id}
-              onClick={() => setTab(id)}
+              onClick={() => handleTab(id)}
               style={{
                 padding: "14px 18px",
                 background: "none", border: "none",
@@ -278,7 +288,13 @@ export default function Home() {
       if (!a) return;
       const href = a.getAttribute("href") ?? "";
       const target = HASH_TAB[href];
-      if (target) { e.preventDefault(); setTab(target); window.scrollTo({ top: 0, behavior: "smooth" }); }
+      if (target) {
+        e.preventDefault();
+        setTab(target);
+        const tabBar = document.querySelector("[data-tabbar]") as HTMLElement | null;
+        const top = tabBar ? tabBar.getBoundingClientRect().top + window.scrollY - 64 : 0;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
     }
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
