@@ -55,11 +55,13 @@ export async function GET(req: NextRequest) {
     allSlots.push(minutesToTime(m));
   }
 
-  const bookedTimes = new Set(
-    bookings
-      .filter(b => b.date === date && b.status !== "cancelled")
-      .map(b => b.time)
-  );
+  // Build blocked ranges: each booking blocks [start - buffer, start + slotDuration + buffer)
+  const bookedRanges = bookings
+    .filter(b => b.date === date && b.status !== "cancelled")
+    .map(b => {
+      const bStart = timeToMinutes(b.time);
+      return { start: bStart - buffer, end: bStart + slotDuration + buffer };
+    });
 
   const nowCT = new Date().toLocaleString("en-US", { timeZone: avail.timezone || "America/Chicago" });
   const todayStr = new Date(nowCT).toISOString().slice(0, 10);
@@ -67,7 +69,12 @@ export async function GET(req: NextRequest) {
     ? new Date(nowCT).getHours() * 60 + new Date(nowCT).getMinutes() + 60
     : 0;
 
-  const available = allSlots.filter(t => !bookedTimes.has(t) && timeToMinutes(t) >= nowMinutes);
+  const available = allSlots.filter(t => {
+    const slotMin = timeToMinutes(t);
+    if (slotMin < nowMinutes) return false;
+    // Block if this slot overlaps any existing booking's window
+    return !bookedRanges.some(r => slotMin >= r.start && slotMin < r.end);
+  });
 
   return NextResponse.json({ slots: available, timezone: avail.timezone });
 }
