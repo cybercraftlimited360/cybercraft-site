@@ -27,11 +27,11 @@ import Magnetic from "@/components/ui/magnetic";
 import ExitIntent from "@/components/ui/exit-intent";
 import ScrollTransition from "@/components/ui/scroll-transition";
 
-type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
+type SiteTab = "about" | "demo" | "services" | "pricing" | "roi" | "results" | "faq" | "book";
 
 const TAB_MAP: Record<string, SiteTab> = {
   about: "about", demo: "demo", services: "services",
-  pricing: "pricing", clients: "results", faq: "faq",
+  pricing: "pricing", roi: "roi", clients: "results", faq: "faq",
 };
 
 function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
@@ -194,6 +194,7 @@ function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
     { id: "demo",     label: "Live Demo",    emoji: "🤖" },
     { id: "services", label: "Services",     emoji: "🧠" },
     { id: "pricing",  label: "Pricing",      emoji: "💼" },
+    { id: "roi",      label: "ROI Calc",     emoji: "🧮" },
     { id: "results",  label: "Results",      emoji: "📈" },
     { id: "faq",      label: "FAQ",          emoji: "❓" },
     { id: "book",     label: "Book a Call",  emoji: "📅" },
@@ -281,7 +282,7 @@ export default function Home() {
     const HASH_TAB: Record<string, SiteTab> = {
       "#about": "about", "#demo": "demo", "#services": "services",
       "#pricing": "pricing", "#clients": "results", "#faq": "faq",
-      "#contact": "book", "#proposal": "pricing", "#roi": "pricing",
+      "#contact": "book", "#proposal": "pricing", "#roi": "roi",
     };
     function handleClick(e: MouseEvent) {
       const a = (e.target as Element).closest("a[href]") as HTMLAnchorElement | null;
@@ -1457,6 +1458,9 @@ export default function Home() {
         <ProposalForm />
       </section>
 
+      {/* PRICING TAB END (early) */}</>}
+
+      {tab === "roi" && <>
       {/* ROI CALCULATORS */}
       {(() => {
         function ROISection() {
@@ -1522,7 +1526,7 @@ export default function Home() {
         return <ROISection />;
       })()}
 
-      {/* PRICING TAB END */}</>}
+      {/* ROI TAB END */}</>}
 
       {tab === "results" && <>
       {/* CASE STUDIES */}
