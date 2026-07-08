@@ -91,7 +91,10 @@ async function createFirstInvoice(
   });
 
   const invoice = await res.json();
-  if (!res.ok) throw new Error(invoice.message || "Failed to create invoice");
+  if (!res.ok) {
+    console.error("PayPal invoice create error:", JSON.stringify(invoice));
+    throw new Error(invoice.message || invoice.error_description || JSON.stringify(invoice));
+  }
   return invoice.id as string;
 }
 
