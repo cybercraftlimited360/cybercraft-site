@@ -199,7 +199,7 @@ export default function IntakePage() {
             We've received your intake form and our founder will review it personally. Expect a tailored response within <strong className="text-white">24 hours</strong> with specific recommendations for {form.businessName}.
           </p>
           <a
-            href="https://calendly.com/cybercraftlimited/30min"
+            href="/book"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-[#00d4ff] to-[#7c3aed] text-white font-bold text-sm tracking-widest uppercase px-8 py-4 rounded-xl no-underline hover:opacity-90 transition-opacity"
           >
             Book Your Strategy Call Now <ArrowRight size={16} />

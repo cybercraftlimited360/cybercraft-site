@@ -248,9 +248,7 @@ function SuccessState({ email, headline, services }: {
 
       {/* CTA */}
       <motion.a
-        href="https://calendly.com/cybercraftlimited/30min"
-        target="_blank"
-        rel="noreferrer"
+        href="/book"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}

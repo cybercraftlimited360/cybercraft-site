@@ -192,7 +192,7 @@ export default function IrisAgent() {
       const updated = [...messagesRef.current, userMsg];
       setMessages(updated);
 
-      if (spoken.toLowerCase().includes("book") || spoken.toLowerCase().includes("calendly") || spoken.toLowerCase().includes("schedule")) {
+      if (spoken.toLowerCase().includes("book") || spoken.toLowerCase().includes("strategy session") || spoken.toLowerCase().includes("schedule")) {
         setBookedCall(true);
       }
 
@@ -210,7 +210,7 @@ export default function IrisAgent() {
         setMessages(prev => [...prev, { role: "assistant", content: reply }]);
         setAgentText(reply);
 
-        if (reply.toLowerCase().includes("calendly") || reply.toLowerCase().includes("book") || reply.toLowerCase().includes("strategy session")) {
+        if (reply.toLowerCase().includes("book") || reply.toLowerCase().includes("strategy session")) {
           setBookedCall(true);
         }
 
@@ -241,7 +241,7 @@ export default function IrisAgent() {
     const updated = [...messagesRef.current, userMsg];
     setMessages(updated);
 
-    if (text.toLowerCase().includes("book") || text.toLowerCase().includes("calendly") || text.toLowerCase().includes("schedule")) {
+    if (text.toLowerCase().includes("book") || text.toLowerCase().includes("schedule")) {
       setBookedCall(true);
     }
 
@@ -259,7 +259,7 @@ export default function IrisAgent() {
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
       setAgentText(reply);
 
-      if (reply.toLowerCase().includes("calendly") || reply.toLowerCase().includes("book") || reply.toLowerCase().includes("strategy session")) {
+      if (reply.toLowerCase().includes("book") || reply.toLowerCase().includes("strategy session")) {
         setBookedCall(true);
       }
       if (data.lead && (data.lead.name || data.lead.company) && !leadSavedRef.current) {
@@ -443,9 +443,7 @@ export default function IrisAgent() {
                 )}
               </div>
               <a
-                href="https://calendly.com/cybercraftlimited/30min"
-                target="_blank"
-                rel="noreferrer"
+                href="/book"
                 style={{
                   display: "inline-block",
                   padding: "9px 18px",
