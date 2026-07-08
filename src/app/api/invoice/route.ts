@@ -1,240 +1,131 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sendEmail } from "@/lib/mailer";
 
-const PAYPAL_BASE = process.env.PAYPAL_ENV === "production"
-  ? "https://api-m.paypal.com"
-  : "https://api-m.sandbox.paypal.com";
-
-async function getAccessToken(): Promise<string> {
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
-  if (!clientId || !secret) throw new Error("PayPal credentials not configured");
-
-  const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString("base64")}`,
-    },
-    body: "grant_type=client_credentials",
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    console.error("PayPal auth error:", JSON.stringify(data), "ENV:", process.env.PAYPAL_ENV, "BASE:", PAYPAL_BASE);
-    throw new Error(data.error_description || data.error || "PayPal auth failed");
-  }
-  return data.access_token;
+function buildPayPalLink(amount: number, serviceName: string): string {
+  const email = process.env.PAYPAL_BUSINESS_EMAIL || "";
+  return `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(email)}&amount=${amount.toFixed(2)}&currency_code=USD&item_name=${encodeURIComponent(serviceName)}&no_shipping=1`;
 }
 
-async function createFirstInvoice(
-  token: string,
-  { customerName, customerEmail, serviceName, setupFee, monthlyFee, notes }: {
-    customerName: string; customerEmail: string; serviceName: string;
-    setupFee: number; monthlyFee: number; notes?: string;
-  }
-) {
-  const items: object[] = [];
-  if (setupFee > 0) {
-    items.push({
-      name: `${serviceName} — One-Time Setup Fee`,
-      description: "Initial configuration, onboarding, and deployment",
-      quantity: "1",
-      unit_amount: { currency_code: "USD", value: setupFee.toFixed(2) },
-      unit_of_measure: "QUANTITY",
-    });
-  }
-  if (monthlyFee > 0) {
-    items.push({
-      name: `${serviceName} — Month 1 Subscription`,
-      description: "AI system management, monitoring, retraining & support",
-      quantity: "1",
-      unit_amount: { currency_code: "USD", value: monthlyFee.toFixed(2) },
-      unit_of_measure: "QUANTITY",
-    });
-  }
+function buildInvoiceEmail({
+  customerName, serviceName, setupFee, monthlyFee, notes, invoiceNumber, dueDate, payLink,
+}: {
+  customerName: string; serviceName: string; setupFee: number; monthlyFee: number;
+  notes: string; invoiceNumber: string; dueDate: string; payLink: string;
+}) {
+  const total = setupFee + monthlyFee;
+  const firstName = customerName.split(" ")[0];
 
-  const totalAmount = setupFee + monthlyFee;
-  const due = new Date();
-  due.setDate(due.getDate() + 7);
-  const dueDate = due.toISOString().split("T")[0];
+  const rows = [
+    setupFee > 0 && `
+      <tr>
+        <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:14px;font-weight:600;color:#fff;">${serviceName} — One-Time Setup Fee</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px;">Initial configuration, onboarding & deployment</div>
+        </td>
+        <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:right;white-space:nowrap;">
+          <span style="font-size:15px;font-weight:700;color:#00d4ff;">$${setupFee.toLocaleString()}</span>
+        </td>
+      </tr>`,
+    monthlyFee > 0 && `
+      <tr>
+        <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:14px;font-weight:600;color:#fff;">${serviceName} — Month 1 Subscription</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px;">AI system management, monitoring & support</div>
+        </td>
+        <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:right;white-space:nowrap;">
+          <span style="font-size:15px;font-weight:700;color:#7c3aed;">$${monthlyFee.toLocaleString()}</span>
+        </td>
+      </tr>`,
+  ].filter(Boolean).join("");
 
-  const res = await fetch(`${PAYPAL_BASE}/v2/invoicing/invoices`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      detail: {
-        invoice_number: `CC360-${Date.now()}`,
-        invoice_date: new Date().toISOString().split("T")[0],
-        payment_term: { term_type: "DUE_ON_DATE_SPECIFIED", due_date: dueDate },
-        currency_code: "USD",
-        note: notes || "Thank you for choosing CyberCraft360. Your AI system will be live within the agreed timeframe.",
-        memo: "This invoice covers your one-time setup fee and first month. A separate recurring subscription link will be sent for subsequent months.",
-      },
-      invoicer: {
-        name: { given_name: "CyberCraft360" },
-        email_address: process.env.PAYPAL_BUSINESS_EMAIL || "",
-        website: "https://cybercraft360.com",
-      },
-      primary_recipients: [{
-        billing_info: {
-          name: {
-            given_name: customerName.split(" ")[0],
-            surname: customerName.split(" ").slice(1).join(" ") || ".",
-          },
-          email_address: customerEmail,
-        },
-      }],
-      items,
-      amount: {
-        breakdown: {
-          item_total: { currency_code: "USD", value: totalAmount.toFixed(2) },
-        },
-      },
-      configuration: { allow_tip: false, tax_calculated_after_discount: false, tax_inclusive: false },
-    }),
-  });
-
-  const invoice = await res.json();
-  if (!res.ok) {
-    console.error("PayPal invoice create error:", JSON.stringify(invoice));
-    throw new Error(invoice.message || invoice.error_description || JSON.stringify(invoice));
-  }
-  return invoice.id as string;
-}
-
-async function createRecurringSubscription(
-  token: string,
-  { customerName, customerEmail, serviceName, monthlyFee }: {
-    customerName: string; customerEmail: string; serviceName: string; monthlyFee: number;
-  }
-): Promise<string> {
-  // 1. Create a product
-  const productRes = await fetch(`${PAYPAL_BASE}/v1/catalogs/products`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      name: `CyberCraft360 — ${serviceName}`,
-      description: `Monthly AI subscription for ${serviceName}`,
-      type: "SERVICE",
-      category: "SOFTWARE",
-    }),
-  });
-  const product = await productRes.json();
-  if (!productRes.ok) throw new Error(product.message || "Failed to create product");
-
-  // 2. Create a billing plan
-  const planRes = await fetch(`${PAYPAL_BASE}/v1/billing/plans`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      product_id: product.id,
-      name: `${serviceName} Monthly`,
-      description: `Monthly subscription for ${serviceName} — billed automatically every month`,
-      billing_cycles: [
-        {
-          frequency: { interval_unit: "MONTH", interval_count: 1 },
-          tenure_type: "REGULAR",
-          sequence: 1,
-          total_cycles: 0, // 0 = infinite until cancelled
-          pricing_scheme: {
-            fixed_price: { value: monthlyFee.toFixed(2), currency_code: "USD" },
-          },
-        },
-      ],
-      payment_preferences: {
-        auto_bill_outstanding: true,
-        setup_fee_failure_action: "CONTINUE",
-        payment_failure_threshold: 3,
-      },
-    }),
-  });
-  const plan = await planRes.json();
-  if (!planRes.ok) throw new Error(plan.message || "Failed to create billing plan");
-
-  // 3. Create a subscription and get the approval link
-  // Start billing next month (they already paid month 1 in the invoice)
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() + 1);
-
-  const subRes = await fetch(`${PAYPAL_BASE}/v1/billing/agreements`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      name: `${serviceName} — Monthly Subscription`,
-      description: `Auto-billed $${monthlyFee}/month for ${customerName}`,
-      start_date: startDate.toISOString(),
-      plan: { id: plan.id },
-      payer: {
-        payment_method: "paypal",
-        payer_info: {
-          email: customerEmail,
-          first_name: customerName.split(" ")[0],
-          last_name: customerName.split(" ").slice(1).join(" ") || ".",
-        },
-      },
-    }),
-  });
-  const sub = await subRes.json();
-  if (!subRes.ok) throw new Error(sub.message || "Failed to create subscription");
-
-  // Return the approval URL for the client to authorize
-  const approvalLink = sub.links?.find((l: any) => l.rel === "approval_url")?.href;
-  return approvalLink || "";
-}
-
-async function sendSubscriptionEmail(
-  token: string,
-  customerEmail: string,
-  customerName: string,
-  serviceName: string,
-  monthlyFee: number,
-  approvalUrl: string,
-) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || !approvalUrl) return;
-
-  const html = `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"/></head>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
 <body style="margin:0;padding:0;background:#0a0c12;font-family:'Inter',system-ui,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0c12;padding:40px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0c12;padding:40px 16px;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
-        <tr><td style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></td></tr>
-        <tr><td style="padding:36px 36px 24px;">
-          <span style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);">CyberCraft360</span><br/>
-          <span style="font-size:22px;font-weight:700;color:#ffffff;margin-top:8px;display:block;">Set Up Your Monthly Subscription</span>
+      <table width="100%" style="max-width:560px;" cellpadding="0" cellspacing="0">
+
+        <!-- Header -->
+        <tr><td style="background:#0f1117;border-radius:16px 16px 0 0;border:1px solid rgba(255,255,255,0.07);border-bottom:none;padding:32px 32px 24px;">
+          <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);border-radius:2px;margin-bottom:24px;"></div>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);">CyberCraft360</div>
+                <div style="font-size:22px;font-weight:800;color:#fff;margin-top:6px;">Invoice</div>
+              </td>
+              <td align="right" valign="top">
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);">#${invoiceNumber}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;">Due ${dueDate}</div>
+              </td>
+            </tr>
+          </table>
         </td></tr>
-        <tr><td style="padding:0 36px;"><div style="height:1px;background:rgba(255,255,255,0.06);"></div></td></tr>
-        <tr><td style="padding:28px 36px;">
-          <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin:0 0 20px;">
-            Hi ${customerName.split(" ")[0]},<br/><br/>
-            Your first invoice covers your setup and Month 1. To make future payments automatic, please authorize your <strong style="color:#fff;">${serviceName}</strong> monthly subscription below — you'll be charged <strong style="color:#00d4ff;">$${monthlyFee}/month</strong> starting next month.
+
+        <!-- Greeting -->
+        <tr><td style="background:#0f1117;border:1px solid rgba(255,255,255,0.07);border-top:none;border-bottom:none;padding:0 32px 24px;">
+          <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin:0;">
+            Hi ${firstName},<br/><br/>
+            Thank you for choosing CyberCraft360. Please find your invoice details below.
           </p>
-          <p style="font-size:13px;color:rgba(255,255,255,0.35);margin:0 0 28px;">You can cancel anytime from your PayPal account.</p>
-          <a href="${approvalUrl}" style="display:inline-block;padding:14px 32px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-            Authorize Monthly Billing →
-          </a>
         </td></tr>
-        <tr><td style="padding:24px 36px;border-top:1px solid rgba(255,255,255,0.05);">
-          <span style="font-size:11px;color:rgba(255,255,255,0.15);">CyberCraft360 · cybercraft360.com · Houston, TX</span>
+
+        <!-- Line items -->
+        <tr><td style="background:#0f1117;border:1px solid rgba(255,255,255,0.07);border-top:none;border-bottom:none;padding:0 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;">
+            ${rows}
+            <tr style="background:rgba(0,212,255,0.04);">
+              <td style="padding:16px 20px;">
+                <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);">Total Due Now</div>
+              </td>
+              <td style="padding:16px 20px;text-align:right;">
+                <span style="font-size:20px;font-weight:800;color:#00d4ff;">$${total.toLocaleString()}</span>
+              </td>
+            </tr>
+          </table>
         </td></tr>
+
+        <!-- Pay button -->
+        <tr><td style="background:#0f1117;border:1px solid rgba(255,255,255,0.07);border-top:none;border-bottom:none;padding:28px 32px;">
+          <table cellpadding="0" cellspacing="0" width="100%">
+            <tr><td align="center">
+              <a href="${payLink}" style="display:inline-block;padding:15px 40px;border-radius:12px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:14px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
+                Pay $${total.toLocaleString()} via PayPal →
+              </a>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        ${monthlyFee > 0 ? `
+        <!-- Recurring note -->
+        <tr><td style="background:#0f1117;border:1px solid rgba(255,255,255,0.07);border-top:none;border-bottom:none;padding:0 32px 24px;">
+          <div style="padding:14px 18px;border-radius:10px;background:rgba(124,58,237,0.07);border:1px solid rgba(124,58,237,0.18);">
+            <p style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.6;margin:0;">
+              ↻ After this payment, you will receive a separate email to set up your <strong style="color:rgba(255,255,255,0.7);">$${monthlyFee.toLocaleString()}/month</strong> recurring subscription starting Month 2.
+            </p>
+          </div>
+        </td></tr>` : ""}
+
+        ${notes ? `
+        <!-- Notes -->
+        <tr><td style="background:#0f1117;border:1px solid rgba(255,255,255,0.07);border-top:none;border-bottom:none;padding:0 32px 24px;">
+          <p style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.7;margin:0;font-style:italic;">"${notes}"</p>
+        </td></tr>` : ""}
+
+        <!-- Footer -->
+        <tr><td style="background:#0f1117;border-radius:0 0 16px 16px;border:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(255,255,255,0.05);padding:20px 32px;">
+          <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:0;line-height:1.6;">
+            CyberCraft360 · cybercraft360.com · Houston, TX<br/>
+            Questions? Reply to this email or call us directly.
+          </p>
+        </td></tr>
+
       </table>
     </td></tr>
   </table>
 </body>
 </html>`;
-
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "CyberCraft360 <onboarding@resend.dev>",
-      to: [customerEmail],
-      subject: `Authorize your ${serviceName} monthly subscription — CyberCraft360`,
-      html,
-    }),
-  });
 }
 
 export async function POST(req: NextRequest) {
@@ -256,35 +147,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "At least one of setupFee or monthlyFee must be provided" }, { status: 400 });
     }
 
-    const token = await getAccessToken();
+    const total = setup + monthly;
+    const invoiceNumber = `CC360-${Date.now()}`;
+    const due = new Date();
+    due.setDate(due.getDate() + 7);
+    const dueDate = due.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-    // 1. Send first invoice (setup + month 1)
-    const invoiceId = await createFirstInvoice(token, {
-      customerName, customerEmail, serviceName,
-      setupFee: setup, monthlyFee: monthly, notes,
+    const payLink = buildPayPalLink(total, `${serviceName} — CyberCraft360`);
+    const html = buildInvoiceEmail({
+      customerName, serviceName, setupFee: setup, monthlyFee: monthly,
+      notes: notes || "", invoiceNumber, dueDate, payLink,
     });
 
-    await fetch(`${PAYPAL_BASE}/v2/invoicing/invoices/${invoiceId}/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ send_to_invoicer: true, send_to_recipient: true }),
+    // Send invoice to client
+    await sendEmail({
+      to: customerEmail,
+      subject: `Invoice ${invoiceNumber} — CyberCraft360 ($${total.toLocaleString()} due ${dueDate})`,
+      html,
     });
 
-    // 2. If monthly fee, set up recurring subscription
-    let subscriptionApprovalUrl = "";
-    if (monthly > 0) {
-      try {
-        subscriptionApprovalUrl = await createRecurringSubscription(token, {
-          customerName, customerEmail, serviceName, monthlyFee: monthly,
-        });
-        // Email the client their subscription approval link
-        await sendSubscriptionEmail(token, customerEmail, customerName, serviceName, monthly, subscriptionApprovalUrl);
-      } catch (subErr) {
-        console.error("Subscription setup error (non-fatal):", subErr);
-      }
-    }
+    // Notify owner
+    sendEmail({
+      to: "cybercraftlimited@gmail.com",
+      subject: `📄 Invoice sent to ${customerName} — $${total.toLocaleString()} (${serviceName})`,
+      html: `<p style="font-family:sans-serif;color:#333;">Invoice <strong>${invoiceNumber}</strong> sent to <strong>${customerName}</strong> (${customerEmail}).<br/>Service: ${serviceName}<br/>Setup: $${setup.toLocaleString()} · Monthly: $${monthly.toLocaleString()} · Total: $${total.toLocaleString()}<br/>Due: ${dueDate}</p>`,
+    }).catch(() => {});
 
-    return NextResponse.json({ ok: true, invoiceId, subscriptionApprovalUrl });
+    return NextResponse.json({ ok: true, invoiceNumber, total, dueDate });
   } catch (err) {
     console.error("Invoice route error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
