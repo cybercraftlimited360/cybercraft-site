@@ -12,7 +12,7 @@ export async function sendEmail(options: {
   to: string | string[];
   subject: string;
   html: string;
-  attachments?: { filename: string; content: string; encoding: string }[];
+  attachments?: { filename: string; content: string | Buffer; encoding?: string; contentType?: string }[];
 }) {
   return transporter.sendMail({
     from: '"CyberCraft360" <cybercraftlimited@gmail.com>',

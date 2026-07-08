@@ -1,148 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
-import { getBookings } from "@/lib/redis";
+import { redis, getBookings } from "@/lib/redis";
+import { Invoice } from "@/app/api/invoice/route";
+import { PipelineLead } from "@/app/api/admin/pipeline/route";
+import { Task } from "@/app/api/admin/tasks/route";
+import { ActivityEvent } from "@/lib/activity";
 
 function verifyToken(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword || !token) return false;
-  const expected = Buffer.from(`cc360:${adminPassword}:${adminPassword}`).toString("base64");
-  return token === expected;
-}
-
-const PAYPAL_BASE = process.env.PAYPAL_ENV === "production"
-  ? "https://api-m.paypal.com"
-  : "https://api-m.sandbox.paypal.com";
-
-async function getPayPalToken(): Promise<string | null> {
-  try {
-    const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")}`,
-      },
-      body: "grant_type=client_credentials",
-    });
-    const d = await res.json();
-    return d.access_token ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function getPayPalStats(token: string) {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
-  const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
-
-  // Fetch invoices
-  const [monthRes, yearRes, draftRes] = await Promise.all([
-    fetch(`${PAYPAL_BASE}/v2/invoicing/invoices?page_size=100&page=1&total_count_required=true&fields=all`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-    fetch(`${PAYPAL_BASE}/v2/invoicing/invoices?page_size=100&page=1&total_count_required=true&fields=all`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-    fetch(`${PAYPAL_BASE}/v2/invoicing/invoices?page_size=100&page=1&total_count_required=true&fields=all`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  ]);
-
-  const allInvoicesRes = await fetch(
-    `${PAYPAL_BASE}/v2/invoicing/invoices?page_size=100&page=1&total_count_required=true`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  const allInvoicesData = await allInvoicesRes.json();
-  const invoices: any[] = allInvoicesData.items ?? [];
-
-  let totalRevenue = 0;
-  let monthRevenue = 0;
-  let outstanding = 0;
-  let invoicesPaid = 0;
-  let invoicesUnpaid = 0;
-  let invoicesCancelled = 0;
-  const recentInvoices: any[] = [];
-
-  for (const inv of invoices) {
-    const amount = parseFloat(inv.amount?.value ?? inv.detail?.amount?.breakdown?.item_total?.value ?? "0");
-    const status = inv.status;
-    const invoiceDate = inv.detail?.invoice_date ?? "";
-    const recipientName = inv.primary_recipients?.[0]?.billing_info?.name;
-    const name = recipientName
-      ? `${recipientName.given_name ?? ""} ${recipientName.surname ?? ""}`.trim()
-      : "Unknown";
-    const email = inv.primary_recipients?.[0]?.billing_info?.email_address ?? "";
-
-    if (status === "PAID") {
-      totalRevenue += amount;
-      invoicesPaid++;
-      if (invoiceDate >= monthStart) monthRevenue += amount;
-    } else if (status === "SENT" || status === "PARTIALLY_PAID") {
-      outstanding += amount;
-      invoicesUnpaid++;
-    } else if (status === "CANCELLED") {
-      invoicesCancelled++;
-    }
-
-    recentInvoices.push({
-      id: inv.id,
-      number: inv.detail?.invoice_number,
-      client: name,
-      email,
-      amount,
-      status,
-      date: invoiceDate,
-      service: inv.items?.[0]?.name ?? "Service",
-    });
-  }
-
-  // Sort recent invoices newest first
-  recentInvoices.sort((a, b) => (b.date > a.date ? 1 : -1));
-
-  // Fetch subscriptions (new v1 billing subscriptions)
-  let activeSubscriptions = 0;
-  let mrr = 0;
-  let cancelledThisMonth = 0;
-  const subscriptionsList: any[] = [];
-
-  try {
-    // List subscriptions via agreements (legacy) — best effort
-    const subsRes = await fetch(`${PAYPAL_BASE}/v1/billing/subscriptions?page_size=20`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (subsRes.ok) {
-      const subsData = await subsRes.json();
-      const subs: any[] = subsData.subscriptions ?? subsData.agreements ?? [];
-      for (const sub of subs) {
-        const state = sub.status ?? sub.state;
-        const amount = parseFloat(sub.plan?.billing_cycles?.[0]?.pricing_scheme?.fixed_price?.value ?? sub.plan?.payment_definitions?.[0]?.amount?.value ?? "0");
-        if (state === "ACTIVE") {
-          activeSubscriptions++;
-          mrr += amount;
-        }
-        if ((state === "CANCELLED" || state === "SUSPENDED") && sub.update_time?.startsWith(monthStart.slice(0, 7))) {
-          cancelledThisMonth++;
-        }
-        subscriptionsList.push({ id: sub.id, status: state, amount, name: sub.name ?? "" });
-      }
-    }
-  } catch {}
-
-  return {
-    totalRevenue,
-    monthRevenue,
-    outstanding,
-    invoicesPaid,
-    invoicesUnpaid,
-    invoicesCancelled,
-    activeSubscriptions,
-    mrr,
-    cancelledThisMonth,
-    recentInvoices: recentInvoices.slice(0, 10),
-    subscriptionsList: subscriptionsList.slice(0, 10),
-  };
+  const pw = process.env.ADMIN_PASSWORD;
+  if (!pw || !token) return false;
+  return token === Buffer.from(`cc360:${pw}:${pw}`).toString("base64");
 }
 
 export async function GET(req: NextRequest) {
@@ -150,48 +17,127 @@ export async function GET(req: NextRequest) {
 
   try {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const monthStr = now.toISOString().slice(0, 7);
+    const todayStr = now.toISOString().slice(0, 10);
 
-    // ── Redis data ──────────────────────────────────────────────────────────
-    const [bookings, leadsRaw, chatStats, laurenStats, dailyKeys] = await Promise.all([
-      getBookings(),
-      redis.get<any[]>("leads:all"),
-      redis.hgetall("chat:stats"),
-      redis.hgetall("lauren:stats"),
-      redis.keys("chat:daily:*"),
-    ]);
+    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys] =
+      await Promise.all([
+        getBookings(),
+        redis.get<any[]>("leads:all"),
+        redis.get<Invoice[]>("invoices:all"),
+        redis.get<PipelineLead[]>("pipeline:leads"),
+        redis.get<Task[]>("tasks:all"),
+        redis.get<ActivityEvent[]>("activity:feed"),
+        redis.hgetall("chat:stats"),
+        redis.hgetall("lauren:stats"),
+        redis.keys("chat:daily:*"),
+      ]);
 
     const leads = leadsRaw ?? [];
-    const leadsThisMonth = leads.filter(l => (l.capturedAt ?? "").startsWith(monthStart.slice(0, 7))).length;
+    const invoices = invoicesRaw ?? [];
+    const pipeline = pipelineRaw ?? [];
+    const tasks = tasksRaw ?? [];
+    const activity = activityRaw ?? [];
 
-    const upcoming = bookings.filter(b => b.date >= now.toISOString().split("T")[0] && b.status !== "cancelled");
+    // ── Leads ──────────────────────────────────────────────────────────────
+    const leadsThisMonth = leads.filter(l => (l.capturedAt ?? "").startsWith(monthStr));
+    const leadSources = {
+      iris: leads.filter(l => l.source === "iris" || !l.source).length,
+      lauren: leads.filter(l => l.source === "lauren").length,
+      intake: leads.filter(l => l.source === "intake").length,
+    };
+
+    // ── Bookings ───────────────────────────────────────────────────────────
+    const upcoming = bookings.filter(b => b.date >= todayStr && b.status !== "cancelled");
     const cancelledBookings = bookings.filter(b => b.status === "cancelled");
-    const bookingsThisMonth = bookings.filter(b => b.date.startsWith(monthStart.slice(0, 7)));
+    const bookingsThisMonth = bookings.filter(b => b.date.startsWith(monthStr));
 
-    // Daily chat activity (last 14 days)
-    const daily: Record<string, { conversations: number; leads: number }> = {};
-    await Promise.all(
-      dailyKeys
-        .filter(k => k.replace("chat:daily:", "") >= new Date(Date.now() - 14 * 86400000).toISOString().split("T")[0])
-        .map(async k => {
-          const date = k.replace("chat:daily:", "");
-          const rec = await redis.hgetall(k);
-          if (rec) daily[date] = { conversations: Number(rec.conversations ?? 0), leads: Number(rec.leads ?? 0) };
-        })
-    );
+    // ── Invoices / Finances ────────────────────────────────────────────────
+    const totalRevenue = invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.total, 0);
+    const totalSent = invoices.reduce((s, i) => s + i.total, 0);
+    const outstanding = invoices.filter(i => i.status === "sent").reduce((s, i) => s + i.total, 0);
+    const monthInvoices = invoices.filter(i => i.sentAt?.startsWith(monthStr));
+    const monthRevenue = monthInvoices.reduce((s, i) => s + i.total, 0);
+    const mrr = invoices
+      .filter(i => i.status !== "cancelled" && i.monthlyFee > 0)
+      .reduce((s, i) => s + i.monthlyFee, 0);
 
-    // ── PayPal data ─────────────────────────────────────────────────────────
-    let paypal = null;
-    const ppToken = await getPayPalToken();
-    if (ppToken) {
-      paypal = await getPayPalStats(ppToken);
+    // Monthly revenue chart (last 6 months)
+    const revenueByMonth: Record<string, number> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toISOString().slice(0, 7);
+      revenueByMonth[key] = 0;
+    }
+    for (const inv of invoices) {
+      const key = inv.sentAt?.slice(0, 7);
+      if (key && revenueByMonth[key] !== undefined) revenueByMonth[key] += inv.total;
     }
 
+    // ── Pipeline ───────────────────────────────────────────────────────────
+    const pipelineByStage: Record<string, number> = { new: 0, contacted: 0, demo: 0, proposal: 0, won: 0, lost: 0 };
+    const pipelineValueByStage: Record<string, number> = { new: 0, contacted: 0, demo: 0, proposal: 0, won: 0, lost: 0 };
+    for (const l of pipeline) {
+      pipelineByStage[l.stage] = (pipelineByStage[l.stage] ?? 0) + 1;
+      pipelineValueByStage[l.stage] = (pipelineValueByStage[l.stage] ?? 0) + (l.value ?? 0);
+    }
+    const totalPipelineValue = pipeline.filter(l => l.stage !== "lost").reduce((s, l) => s + (l.value ?? 0), 0);
+
+    // ── Clients (unified) ──────────────────────────────────────────────────
+    const clientMap: Record<string, any> = {};
+    for (const lead of leads) {
+      const key = lead.email?.toLowerCase() || lead.name?.toLowerCase();
+      if (key && !clientMap[key]) clientMap[key] = { name: lead.name, email: lead.email, company: lead.company, phone: lead.phone, firstSeen: lead.capturedAt, source: "lead", bookings: 0, invoices: 0, totalSpent: 0 };
+    }
+    for (const b of bookings) {
+      const key = b.email?.toLowerCase();
+      if (key) {
+        if (!clientMap[key]) clientMap[key] = { name: b.name, email: b.email, company: b.company, phone: b.phone, firstSeen: b.createdAt, source: "booking", bookings: 0, invoices: 0, totalSpent: 0 };
+        clientMap[key].bookings = (clientMap[key].bookings || 0) + 1;
+      }
+    }
+    for (const inv of invoices) {
+      const key = inv.customerEmail?.toLowerCase();
+      if (key) {
+        if (!clientMap[key]) clientMap[key] = { name: inv.customerName, email: inv.customerEmail, company: "", phone: "", firstSeen: inv.sentAt, source: "invoice", bookings: 0, invoices: 0, totalSpent: 0 };
+        clientMap[key].invoices = (clientMap[key].invoices || 0) + 1;
+        clientMap[key].totalSpent = (clientMap[key].totalSpent || 0) + inv.total;
+      }
+    }
+    const clients = Object.values(clientMap).sort((a: any, b: any) => (b.firstSeen > a.firstSeen ? 1 : -1));
+
+    // ── Daily chat (last 14 days) ──────────────────────────────────────────
+    const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+    const daily: Record<string, { conversations: number; leads: number }> = {};
+    await Promise.all(
+      dailyKeys.filter(k => k.replace("chat:daily:", "") >= cutoff).map(async k => {
+        const date = k.replace("chat:daily:", "");
+        const rec = await redis.hgetall(k);
+        if (rec) daily[date] = { conversations: Number(rec.conversations ?? 0), leads: Number(rec.leads ?? 0) };
+      })
+    );
+
+    // ── Tasks ──────────────────────────────────────────────────────────────
+    const openTasks = tasks.filter(t => !t.done);
+    const overdueTasks = tasks.filter(t => !t.done && t.dueDate && t.dueDate < todayStr);
+
     return NextResponse.json({
+      overview: {
+        totalClients: clients.length,
+        totalRevenue,
+        mrr,
+        openTasks: openTasks.length,
+        overdueTasks: overdueTasks.length,
+        upcomingBookings: upcoming.length,
+        totalLeads: leads.length,
+        pipelineValue: totalPipelineValue,
+      },
+      clients: clients.slice(0, 50),
       leads: {
         total: leads.length,
-        thisMonth: leadsThisMonth,
+        thisMonth: leadsThisMonth.length,
         withPhone: leads.filter(l => l.phone).length,
+        sources: leadSources,
         recent: leads.slice(-5).reverse(),
       },
       bookings: {
@@ -199,19 +145,37 @@ export async function GET(req: NextRequest) {
         upcoming: upcoming.length,
         thisMonth: bookingsThisMonth.length,
         cancelled: cancelledBookings.length,
-        upcomingList: upcoming.slice(0, 5).sort((a, b) => a.date.localeCompare(b.date)),
+        upcomingList: upcoming.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10),
       },
+      invoices: {
+        total: invoices.length,
+        totalRevenue,
+        totalSent,
+        outstanding,
+        monthRevenue,
+        mrr,
+        revenueByMonth,
+        list: invoices.slice(0, 20),
+      },
+      pipeline: {
+        leads: pipeline,
+        byStage: pipelineByStage,
+        valueByStage: pipelineValueByStage,
+        totalValue: totalPipelineValue,
+      },
+      tasks: {
+        all: tasks,
+        open: openTasks.length,
+        overdue: overdueTasks.length,
+      },
+      activity: activity.slice(0, 30),
       chat: {
         totalConversations: Number(chatStats?.totalConversations ?? 0),
         totalLeads: Number(chatStats?.totalLeads ?? 0),
-        totalMessages: Number(chatStats?.totalMessages ?? 0),
         bookingClicks: Number(chatStats?.bookingClicks ?? 0),
         daily,
       },
-      lauren: {
-        totalCalls: Number(laurenStats?.totalCalls ?? 0),
-      },
-      paypal,
+      lauren: { totalCalls: Number(laurenStats?.totalCalls ?? 0) },
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

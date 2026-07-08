@@ -1,45 +1,35 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
+const TABS = ["overview", "clients", "pipeline", "finances", "tasks", "activity"] as const;
+type Tab = typeof TABS[number];
 
-// ─── Login Screen ─────────────────────────────────────────────────────────────
-function LoginScreen({ onAuth }: { onAuth: (token: string) => void }) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+const TAB_ICONS: Record<Tab, string> = { overview: "📊", clients: "👥", pipeline: "📋", finances: "💰", tasks: "✅", activity: "🔔" };
+const TAB_LABELS: Record<Tab, string> = { overview: "Overview", clients: "Clients", pipeline: "Pipeline", finances: "Finances", tasks: "Tasks", activity: "Activity" };
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError("Wrong password. Try again."); setPassword(""); }
-      else { localStorage.setItem(TOKEN_KEY, data.token); onAuth(data.token); }
-    } catch { setError("Connection error. Try again."); }
-    setLoading(false);
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function LoginScreen({ onAuth }: { onAuth: (t: string) => void }) {
+  const [pw, setPw] = useState(""); const [err, setErr] = useState(""); const [loading, setLoading] = useState(false);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setLoading(true); setErr("");
+    const res = await fetch("/api/admin/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) }).catch(() => null);
+    if (!res || !res.ok) { setErr("Wrong password."); setPw(""); setLoading(false); return; }
+    const d = await res.json(); localStorage.setItem(TOKEN_KEY, d.token); onAuth(d.token); setLoading(false);
   }
-
   return (
-    <div style={{ minHeight: "100dvh", background: "#0a0c12", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: "360px" }}>
+    <div style={{ minHeight: "100dvh", background: "#080a10", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "system-ui,sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 360 }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px", background: "linear-gradient(135deg,#00d4ff22,#7c3aed22)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🔐</div>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", margin: "0 0 8px" }}>CyberCraft360</p>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", margin: 0 }}>Admin Access</h1>
+          <div style={{ width: 64, height: 64, borderRadius: 20, margin: "0 auto 16px", background: "linear-gradient(135deg,#00d4ff,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🔐</div>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: "0 0 8px" }}>CyberCraft360</p>
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fff", margin: 0 }}>Admin Dashboard</h1>
         </div>
-        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <input type="password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)}
-            autoFocus autoComplete="current-password"
-            style={{ width: "100%", padding: "16px 18px", borderRadius: 14, background: "rgba(255,255,255,0.05)", border: `1px solid ${error ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.1)"}`, color: "#fff", fontSize: 16, outline: "none", boxSizing: "border-box", letterSpacing: "0.1em" }} />
-          {error && <p style={{ fontSize: 13, color: "#ef4444", margin: 0, textAlign: "center" }}>{error}</p>}
-          <button type="submit" disabled={loading || !password} style={{ padding: "16px", borderRadius: 14, background: loading || !password ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !password ? "not-allowed" : "pointer" }}>
+        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <input type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} autoFocus autoComplete="current-password"
+            style={{ padding: "16px 18px", borderRadius: 14, background: "rgba(255,255,255,0.06)", border: `1px solid ${err ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.1)"}`, color: "#fff", fontSize: 16, outline: "none", letterSpacing: "0.12em" }} />
+          {err && <p style={{ fontSize: 13, color: "#ef4444", textAlign: "center", margin: 0 }}>{err}</p>}
+          <button type="submit" disabled={loading || !pw} style={{ padding: 16, borderRadius: 14, border: "none", background: loading || !pw ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !pw ? "not-allowed" : "pointer" }}>
             {loading ? "Verifying…" : "Unlock →"}
           </button>
         </form>
@@ -48,273 +38,522 @@ function LoginScreen({ onAuth }: { onAuth: (token: string) => void }) {
   );
 }
 
-// ─── Dashboard ─────────────────────────────────────────────────────────────────
-export default function AdminPage() {
+// ── Root ──────────────────────────────────────────────────────────────────────
+export default function AdminRoot() {
   const [token, setToken] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
+  const [checked, setChecked] = useState(false);
   useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (stored) {
-      fetch("/api/admin/auth", { headers: { "x-admin-token": stored } })
-        .then(r => r.json())
-        .then(d => { if (d.ok) setToken(stored); else localStorage.removeItem(TOKEN_KEY); })
-        .catch(() => {})
-        .finally(() => setAuthChecked(true));
-    } else { setAuthChecked(true); }
+    const t = localStorage.getItem(TOKEN_KEY);
+    if (t) fetch("/api/admin/auth", { headers: { "x-admin-token": t } }).then(r => r.json()).then(d => { if (d.ok) setToken(t); else localStorage.removeItem(TOKEN_KEY); }).catch(() => {}).finally(() => setChecked(true));
+    else setChecked(true);
   }, []);
+  if (!checked) return <Spinner />;
+  if (!token) return <LoginScreen onAuth={setToken} />;
+  return <Dashboard token={token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null); }} />;
+}
 
-  const fetchDashboard = useCallback(async (tok: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/dashboard", { headers: { "x-admin-token": tok } });
-      const d = await res.json();
-      if (!res.ok) setError(d.error || "Failed to load");
-      else setData(d);
-    } catch (e) { setError(String(e)); }
-    setLoading(false);
-  }, []);
+// ── Dashboard Shell ───────────────────────────────────────────────────────────
+function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+  const [tab, setTab] = useState<Tab>("overview");
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { if (token) fetchDashboard(token); }, [token, fetchDashboard]);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true); else setRefreshing(true);
+    const res = await fetch("/api/admin/dashboard", { headers: { "x-admin-token": token } }).catch(() => null);
+    if (res?.ok) setData(await res.json());
+    setLoading(false); setRefreshing(false);
+  }, [token]);
 
-  if (!authChecked) return <Spinner />;
-  if (!token) return <LoginScreen onAuth={t => { setToken(t); }} />;
-
-  function logout() { localStorage.removeItem(TOKEN_KEY); setToken(null); }
+  useEffect(() => { load(); }, [load]);
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#0a0c12", fontFamily: "'Inter', system-ui, sans-serif", paddingBottom: 60 }}>
-
+    <div style={{ minHeight: "100dvh", background: "#080a10", fontFamily: "system-ui,sans-serif", paddingBottom: 80 }}>
       {/* Top bar */}
-      <div style={{ padding: "20px 16px 0", maxWidth: 640, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "rgba(15,17,23,0.95)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(12px)" }}>
         <div>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: "0 0 4px" }}>CyberCraft360</p>
-          <h1 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#fff", margin: 0 }}>Dashboard</h1>
+          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", margin: "0 0 2px" }}>CyberCraft360</p>
+          <h1 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#fff", margin: 0 }}>Admin Dashboard</h1>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => fetchDashboard(token)} style={ghostBtn}>↻ Refresh</button>
-          <button onClick={logout} style={ghostBtn}>Log out</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {refreshing && <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00d4ff", animation: "spin 0.8s linear infinite" }} />}
+          <Btn onClick={() => load(true)}>↻</Btn>
+          <a href="/admin/invoice" style={{ padding: "7px 12px", borderRadius: 8, background: "linear-gradient(135deg,#00d4ff22,#7c3aed22)", border: "1px solid rgba(0,212,255,0.2)", color: "#00d4ff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>📄 Invoice</a>
+          <Btn onClick={onLogout} style={{ color: "rgba(255,255,255,0.3)" }}>Out</Btn>
         </div>
       </div>
 
-      {/* Quick nav */}
-      <div style={{ padding: "16px 16px 0", maxWidth: 640, margin: "0 auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {[
-          { label: "📄 Send Invoice", href: "/admin/invoice" },
-          { label: "📅 Schedule",     href: "/admin/schedule" },
-        ].map(n => (
-          <a key={n.href} href={n.href} style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", color: "#00d4ff", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>{n.label}</a>
+      {/* Content */}
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "20px 14px 0" }}>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "80px 0" }}><Spinner inline /><p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, marginTop: 16 }}>Loading dashboard…</p></div>
+        ) : data ? (
+          <>
+            {tab === "overview"  && <OverviewTab  data={data} />}
+            {tab === "clients"   && <ClientsTab   data={data} token={token} />}
+            {tab === "pipeline"  && <PipelineTab  data={data} token={token} onRefresh={() => load(true)} />}
+            {tab === "finances"  && <FinancesTab  data={data} />}
+            {tab === "tasks"     && <TasksTab     data={data} token={token} onRefresh={() => load(true)} />}
+            {tab === "activity"  && <ActivityTab  data={data} />}
+          </>
+        ) : (
+          <p style={{ color: "#ef4444", textAlign: "center", marginTop: 60 }}>Failed to load dashboard.</p>
+        )}
+      </div>
+
+      {/* Bottom tab bar */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(10,12,18,0.97)", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", backdropFilter: "blur(12px)", zIndex: 50 }}>
+        {TABS.map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "10px 4px 12px", border: "none", background: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", opacity: tab === t ? 1 : 0.4, transition: "opacity 0.15s" }}>
+            <span style={{ fontSize: 18 }}>{TAB_ICONS[t]}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", color: tab === t ? "#00d4ff" : "#fff", textTransform: "uppercase" }}>{TAB_LABELS[t]}</span>
+            {tab === t && <div style={{ position: "absolute", bottom: 0, width: 32, height: 2, background: "#00d4ff", borderRadius: 2 }} />}
+          </button>
         ))}
       </div>
-
-      <div style={{ padding: "20px 16px 0", maxWidth: 640, margin: "0 auto" }}>
-
-        {loading && !data && (
-          <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <Spinner inline />
-            <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, marginTop: 16 }}>Loading stats…</p>
-          </div>
-        )}
-
-        {error && (
-          <div style={{ padding: "16px 20px", borderRadius: 14, background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 20 }}>
-            <p style={{ fontSize: 14, color: "#ef4444", margin: 0 }}>✕ {error}</p>
-          </div>
-        )}
-
-        {data && (
-          <>
-            {/* ── Revenue cards ── */}
-            {data.paypal ? (
-              <>
-                <SectionLabel>Revenue</SectionLabel>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                  <StatCard label="Total Collected" value={`$${data.paypal.totalRevenue.toLocaleString()}`} accent="#22c55e" sub={`${data.paypal.invoicesPaid} paid invoices`} />
-                  <StatCard label="This Month" value={`$${data.paypal.monthRevenue.toLocaleString()}`} accent="#00d4ff" />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-                  <StatCard label="Outstanding" value={`$${data.paypal.outstanding.toLocaleString()}`} accent="#f59e0b" sub={`${data.paypal.invoicesUnpaid} unpaid`} />
-                  <StatCard label="Cancelled Invoices" value={data.paypal.invoicesCancelled} accent="#ef4444" />
-                </div>
-
-                <SectionLabel>Recurring Subscriptions</SectionLabel>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-                  <StatCard label="Active" value={data.paypal.activeSubscriptions} accent="#22c55e" />
-                  <StatCard label="MRR" value={`$${data.paypal.mrr.toLocaleString()}`} accent="#7c3aed" />
-                  <StatCard label="Cancelled (mo)" value={data.paypal.cancelledThisMonth} accent="#ef4444" />
-                </div>
-
-                {data.paypal.recentInvoices?.length > 0 && (
-                  <>
-                    <SectionLabel>Recent Invoices</SectionLabel>
-                    <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)", marginBottom: 24 }}>
-                      {data.paypal.recentInvoices.map((inv: any, i: number) => (
-                        <div key={inv.id} style={{ padding: "14px 18px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.02)" }}>
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{inv.client}</p>
-                            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0 }}>{inv.service} · {inv.date}</p>
-                          </div>
-                          <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
-                            <p style={{ fontSize: 14, fontWeight: 700, color: "#00d4ff", margin: "0 0 2px" }}>${inv.amount.toLocaleString()}</p>
-                            <StatusBadge status={inv.status} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div style={{ padding: "16px 20px", borderRadius: 14, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: "rgba(245,158,11,0.8)", margin: 0 }}>⚠️ PayPal credentials not set — revenue stats unavailable. Add <code>PAYPAL_CLIENT_ID</code>, <code>PAYPAL_CLIENT_SECRET</code>, and <code>PAYPAL_ENV=production</code> to Vercel.</p>
-              </div>
-            )}
-
-            {/* ── Leads & Bookings ── */}
-            <SectionLabel>Leads</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-              <StatCard label="Total Leads" value={data.leads.total} accent="#00d4ff" />
-              <StatCard label="This Month" value={data.leads.thisMonth} accent="#7c3aed" />
-              <StatCard label="With Phone" value={data.leads.withPhone} accent="#22c55e" sub="Lauren called" />
-            </div>
-
-            <SectionLabel>Bookings</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: data.bookings.upcomingList?.length > 0 ? 12 : 24 }}>
-              <StatCard label="Total" value={data.bookings.total} accent="#00d4ff" />
-              <StatCard label="Upcoming" value={data.bookings.upcoming} accent="#22c55e" />
-              <StatCard label="Cancelled" value={data.bookings.cancelled} accent="#ef4444" />
-            </div>
-
-            {data.bookings.upcomingList?.length > 0 && (
-              <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)", marginBottom: 24 }}>
-                {data.bookings.upcomingList.map((b: any, i: number) => (
-                  <div key={b.id} style={{ padding: "14px 18px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none", background: "rgba(255,255,255,0.02)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: "0 0 2px" }}>{b.name}</p>
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0 }}>{b.company}</p>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <p style={{ fontSize: 13, color: "#00d4ff", fontWeight: 600, margin: "0 0 2px" }}>{b.date}</p>
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0 }}>{b.time}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* ── Chat & Lauren ── */}
-            <SectionLabel>AI Activity</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <StatCard label="Chat Conversations" value={data.chat.totalConversations} accent="#7c3aed" />
-              <StatCard label="Chat Leads" value={data.chat.totalLeads} accent="#00d4ff" />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-              <StatCard label="Lauren Calls" value={data.lauren.totalCalls} accent="#e64dff" />
-              <StatCard label="Booking Clicks" value={data.chat.bookingClicks} accent="#22c55e" />
-            </div>
-
-            {/* ── Daily activity ── */}
-            {Object.keys(data.chat.daily).length > 0 && (
-              <>
-                <SectionLabel>Chat Activity — Last 14 Days</SectionLabel>
-                <MiniChart daily={data.chat.daily} />
-              </>
-            )}
-
-            {/* ── Recent leads ── */}
-            {data.leads.recent?.length > 0 && (
-              <>
-                <SectionLabel>Recent Leads</SectionLabel>
-                <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)", marginBottom: 24 }}>
-                  {data.leads.recent.map((lead: any, i: number) => (
-                    <div key={i} style={{ padding: "14px 18px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none", background: "rgba(255,255,255,0.02)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: "0 0 2px" }}>{lead.name}</p>
-                          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0 }}>{lead.company}</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          {lead.phone && <p style={{ fontSize: 11, color: "#22c55e", margin: "0 0 2px" }}>📞 {lead.phone}</p>}
-                          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", margin: 0 }}>{lead.capturedAt ? new Date(lead.capturedAt).toLocaleDateString() : ""}</p>
-                        </div>
-                      </div>
-                      {lead.challenge && <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: "6px 0 0", lineHeight: 1.5 }}>"{lead.challenge}"</p>}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } * { box-sizing: border-box; }`}</style>
     </div>
   );
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
-function StatCard({ label, value, accent, sub }: { label: string; value: string | number; accent: string; sub?: string }) {
+// ── Overview Tab ──────────────────────────────────────────────────────────────
+function OverviewTab({ data }: { data: any }) {
+  const o = data.overview;
   return (
-    <div style={{ padding: "16px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", margin: "0 0 8px" }}>{label}</p>
-      <p style={{ fontSize: "1.4rem", fontWeight: 800, color: accent, margin: sub ? "0 0 4px" : "0", lineHeight: 1 }}>{value}</p>
+    <div>
+      <SectionTitle>At a Glance</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        <BigStatCard label="Total Revenue" value={`$${(o.totalRevenue || 0).toLocaleString()}`} accent="#22c55e" icon="💵" />
+        <BigStatCard label="MRR" value={`$${(o.mrr || 0).toLocaleString()}`} accent="#00d4ff" icon="↻" sub="monthly recurring" />
+        <BigStatCard label="Pipeline Value" value={`$${(o.pipelineValue || 0).toLocaleString()}`} accent="#7c3aed" icon="📋" />
+        <BigStatCard label="Total Clients" value={o.totalClients || 0} accent="#e64dff" icon="👥" />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
+        <MiniStat label="Leads" value={o.totalLeads || 0} accent="#00d4ff" />
+        <MiniStat label="Bookings" value={o.upcomingBookings || 0} accent="#22c55e" sub="upcoming" />
+        <MiniStat label="Tasks" value={o.openTasks || 0} accent={o.overdueTasks > 0 ? "#ef4444" : "#f59e0b"} sub={o.overdueTasks > 0 ? `${o.overdueTasks} overdue` : "open"} />
+      </div>
+
+      <SectionTitle>Upcoming Bookings</SectionTitle>
+      <Card style={{ marginBottom: 20 }}>
+        {data.bookings.upcomingList?.length > 0 ? data.bookings.upcomingList.slice(0, 5).map((b: any, i: number) => (
+          <Row key={b.id} border={i > 0}>
+            <div><Name>{b.name}</Name><Sub>{b.company}</Sub></div>
+            <div style={{ textAlign: "right" }}><Name style={{ color: "#00d4ff" }}>{b.date}</Name><Sub>{b.time}</Sub></div>
+          </Row>
+        )) : <EmptyState>No upcoming bookings</EmptyState>}
+      </Card>
+
+      <SectionTitle>Recent Activity</SectionTitle>
+      <Card>
+        {data.activity?.slice(0, 6).map((e: any, i: number) => (
+          <Row key={e.id} border={i > 0}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 18 }}>{activityIcon(e.type)}</span>
+              <div><Name>{e.title}</Name><Sub>{e.detail}</Sub></div>
+            </div>
+            <Sub style={{ flexShrink: 0, marginLeft: 8 }}>{timeAgo(e.createdAt)}</Sub>
+          </Row>
+        ))}
+        {(!data.activity || data.activity.length === 0) && <EmptyState>No activity yet</EmptyState>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Clients Tab ───────────────────────────────────────────────────────────────
+function ClientsTab({ data, token }: { data: any; token: string }) {
+  const [search, setSearch] = useState("");
+  const clients: any[] = data.clients ?? [];
+  const filtered = clients.filter(c =>
+    !search || c.name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.email?.toLowerCase().includes(search.toLowerCase()) ||
+    c.company?.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div>
+      <SectionTitle>{clients.length} Clients</SectionTitle>
+      <input placeholder="Search by name, email, company…" value={search} onChange={e => setSearch(e.target.value)}
+        style={{ width: "100%", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#fff", fontSize: 14, outline: "none", marginBottom: 14 }} />
+      <Card>
+        {filtered.length > 0 ? filtered.map((c, i) => (
+          <Row key={c.email || i} border={i > 0}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: "linear-gradient(135deg,#00d4ff22,#7c3aed22)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#00d4ff", flexShrink: 0 }}>
+                {c.name?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <Name>{c.name}</Name>
+                <Sub>{c.company || c.email}</Sub>
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              {c.totalSpent > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e" }}>${c.totalSpent.toLocaleString()}</div>}
+              <Sub>{[c.bookings > 0 && `${c.bookings} booking${c.bookings > 1 ? "s" : ""}`, c.invoices > 0 && `${c.invoices} invoice${c.invoices > 1 ? "s" : ""}`].filter(Boolean).join(" · ") || "Lead"}</Sub>
+            </div>
+          </Row>
+        )) : <EmptyState>No clients found</EmptyState>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Pipeline Tab ──────────────────────────────────────────────────────────────
+const STAGES = [
+  { id: "new",       label: "New",       color: "#64748b" },
+  { id: "contacted", label: "Contacted", color: "#3b82f6" },
+  { id: "demo",      label: "Demo",      color: "#8b5cf6" },
+  { id: "proposal",  label: "Proposal",  color: "#f59e0b" },
+  { id: "won",       label: "Won ✓",     color: "#22c55e" },
+  { id: "lost",      label: "Lost",      color: "#ef4444" },
+];
+
+function PipelineTab({ data, token, onRefresh }: { data: any; token: string; onRefresh: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", service: "", value: "", stage: "new" });
+  const [moving, setMoving] = useState<string | null>(null);
+  const pipeline: any[] = data.pipeline.leads ?? [];
+
+  async function addLead() {
+    if (!form.name) return;
+    await fetch("/api/admin/pipeline", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ action: "add", ...form, value: form.value ? Number(form.value) : undefined }) });
+    setForm({ name: "", company: "", email: "", phone: "", service: "", value: "", stage: "new" }); setAdding(false); onRefresh();
+  }
+
+  async function moveStage(id: string, stage: string) {
+    setMoving(id);
+    await fetch("/api/admin/pipeline", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ action: "update_stage", id, stage }) });
+    setMoving(null); onRefresh();
+  }
+
+  async function deleteLead(id: string) {
+    await fetch("/api/admin/pipeline", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ action: "delete", id }) });
+    onRefresh();
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <SectionTitle style={{ margin: 0 }}>Sales Pipeline</SectionTitle>
+        <button onClick={() => setAdding(!adding)} style={{ padding: "8px 14px", borderRadius: 10, background: "linear-gradient(135deg,#00d4ff,#7c3aed)", border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add Lead</button>
+      </div>
+
+      {/* Stage summary */}
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
+        {STAGES.map(s => (
+          <div key={s.id} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: `1px solid ${s.color}33`, textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{data.pipeline.byStage[s.id] || 0}</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {adding && (
+        <Card style={{ marginBottom: 16, padding: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 12px" }}>New Lead</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[["Name *", "name", "text"], ["Company", "company", "text"], ["Email", "email", "email"], ["Phone", "phone", "tel"], ["Service", "service", "text"], ["Deal Value ($)", "value", "number"]].map(([label, key, type]) => (
+              <input key={key} type={type} placeholder={label as string} value={(form as any)[key as string]} onChange={e => setForm(f => ({ ...f, [key as string]: e.target.value }))} style={miniInputStyle} />
+            ))}
+            <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))} style={miniInputStyle}>
+              {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={addLead} style={{ flex: 1, padding: "10px", borderRadius: 10, background: "linear-gradient(135deg,#00d4ff,#7c3aed)", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add</button>
+              <button onClick={() => setAdding(false)} style={{ flex: 1, padding: "10px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {STAGES.filter(s => pipeline.some(l => l.stage === s.id)).map(s => (
+        <div key={s.id} style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: s.color, textTransform: "uppercase", letterSpacing: "0.1em" }}>{s.label}</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>({pipeline.filter(l => l.stage === s.id).length})</span>
+          </div>
+          <Card>
+            {pipeline.filter(l => l.stage === s.id).map((lead, i) => (
+              <div key={lead.id} style={{ padding: "14px 16px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <div>
+                    <Name>{lead.name}</Name>
+                    <Sub>{[lead.company, lead.service].filter(Boolean).join(" · ")}</Sub>
+                    {lead.phone && <Sub style={{ color: "#22c55e" }}>📞 {lead.phone}</Sub>}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    {lead.value > 0 && <div style={{ fontSize: 14, fontWeight: 700, color: "#22c55e", marginBottom: 4 }}>${lead.value.toLocaleString()}</div>}
+                    <button onClick={() => deleteLead(lead.id)} style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>✕ Remove</button>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  {STAGES.filter(st => st.id !== lead.stage).map(st => (
+                    <button key={st.id} onClick={() => moveStage(lead.id, st.id)} disabled={moving === lead.id}
+                      style={{ padding: "4px 10px", borderRadius: 6, background: `${st.color}18`, border: `1px solid ${st.color}44`, color: st.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      → {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      ))}
+
+      {pipeline.length === 0 && <EmptyState>No leads in pipeline yet. Add one above.</EmptyState>}
+    </div>
+  );
+}
+
+// ── Finances Tab ──────────────────────────────────────────────────────────────
+function FinancesTab({ data }: { data: any }) {
+  const inv = data.invoices;
+  const months = Object.entries(inv.revenueByMonth ?? {}).sort(([a], [b]) => a.localeCompare(b));
+  const maxRev = Math.max(...months.map(([, v]) => v as number), 1);
+  const list: any[] = inv.list ?? [];
+
+  return (
+    <div>
+      <SectionTitle>Financial Overview</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+        <BigStatCard label="Total Collected" value={`$${(inv.totalRevenue || 0).toLocaleString()}`} accent="#22c55e" icon="💵" />
+        <BigStatCard label="MRR" value={`$${(inv.mrr || 0).toLocaleString()}`} accent="#00d4ff" icon="↻" sub="monthly recurring" />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+        <BigStatCard label="Outstanding" value={`$${(inv.outstanding || 0).toLocaleString()}`} accent="#f59e0b" icon="⏳" />
+        <BigStatCard label="This Month" value={`$${(inv.monthRevenue || 0).toLocaleString()}`} accent="#7c3aed" icon="📅" />
+      </div>
+
+      {months.length > 0 && (
+        <>
+          <SectionTitle>Revenue — Last 6 Months</SectionTitle>
+          <Card style={{ padding: "20px 16px", marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
+              {months.map(([month, value]) => (
+                <div key={month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", width: "100%" }}>
+                    <div style={{ background: "linear-gradient(180deg,#00d4ff,#7c3aed)", borderRadius: "4px 4px 0 0", height: `${((value as number) / maxRev) * 100}%`, minHeight: (value as number) > 0 ? 4 : 0 }} />
+                  </div>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{month.slice(5)}</span>
+                  {(value as number) > 0 && <span style={{ fontSize: 9, color: "#00d4ff", fontWeight: 700 }}>${(value as number).toLocaleString()}</span>}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </>
+      )}
+
+      <SectionTitle>Invoice History ({list.length})</SectionTitle>
+      <Card>
+        {list.length > 0 ? list.map((inv: any, i: number) => (
+          <Row key={inv.invoiceNumber} border={i > 0}>
+            <div>
+              <Name>{inv.customerName}</Name>
+              <Sub>{inv.serviceName} · #{inv.invoiceNumber}</Sub>
+              <Sub>{inv.sentAt ? new Date(inv.sentAt).toLocaleDateString() : ""}</Sub>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#00d4ff", marginBottom: 4 }}>${inv.total.toLocaleString()}</div>
+              <InvoiceStatusBadge status={inv.status} />
+            </div>
+          </Row>
+        )) : <EmptyState>No invoices sent yet</EmptyState>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Tasks Tab ─────────────────────────────────────────────────────────────────
+function TasksTab({ data, token, onRefresh }: { data: any; token: string; onRefresh: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ title: "", clientName: "", dueDate: "", priority: "medium" });
+  const tasks: any[] = data.tasks.all ?? [];
+  const open = tasks.filter(t => !t.done);
+  const done = tasks.filter(t => t.done);
+
+  async function addTask() {
+    if (!form.title) return;
+    await fetch("/api/admin/tasks", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ action: "add", ...form }) });
+    setForm({ title: "", clientName: "", dueDate: "", priority: "medium" }); setAdding(false); onRefresh();
+  }
+  async function toggle(id: string) {
+    await fetch("/api/admin/tasks", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ action: "toggle", id }) });
+    onRefresh();
+  }
+  async function del(id: string) {
+    await fetch("/api/admin/tasks", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-token": token }, body: JSON.stringify({ action: "delete", id }) });
+    onRefresh();
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const PRIORITY_COLOR: Record<string, string> = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e" };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <SectionTitle style={{ margin: 0 }}>Tasks ({open.length} open)</SectionTitle>
+        <button onClick={() => setAdding(!adding)} style={{ padding: "8px 14px", borderRadius: 10, background: "linear-gradient(135deg,#00d4ff,#7c3aed)", border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add Task</button>
+      </div>
+
+      {adding && (
+        <Card style={{ marginBottom: 16, padding: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input placeholder="Task description *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={miniInputStyle} />
+            <input placeholder="Client name (optional)" value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} style={miniInputStyle} />
+            <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} style={miniInputStyle} />
+            <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} style={miniInputStyle}>
+              <option value="high">🔴 High Priority</option>
+              <option value="medium">🟡 Medium Priority</option>
+              <option value="low">🟢 Low Priority</option>
+            </select>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={addTask} style={{ flex: 1, padding: 10, borderRadius: 10, background: "linear-gradient(135deg,#00d4ff,#7c3aed)", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add Task</button>
+              <button onClick={() => setAdding(false)} style={{ flex: 1, padding: 10, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Card style={{ marginBottom: 20 }}>
+        {open.length > 0 ? open.map((task, i) => {
+          const overdue = task.dueDate && task.dueDate < today;
+          return (
+            <Row key={task.id} border={i > 0}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flex: 1 }}>
+                <button onClick={() => toggle(task.id)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${PRIORITY_COLOR[task.priority]}`, background: "none", cursor: "pointer", flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1 }}>
+                  <Name>{task.title}</Name>
+                  {task.clientName && <Sub>👤 {task.clientName}</Sub>}
+                  {task.dueDate && <Sub style={{ color: overdue ? "#ef4444" : "rgba(255,255,255,0.3)" }}>{overdue ? "⚠️ Overdue · " : "Due "}{task.dueDate}</Sub>}
+                </div>
+              </div>
+              <button onClick={() => del(task.id)} style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>✕</button>
+            </Row>
+          );
+        }) : <EmptyState>No open tasks 🎉</EmptyState>}
+      </Card>
+
+      {done.length > 0 && (
+        <>
+          <SectionTitle>Completed ({done.length})</SectionTitle>
+          <Card>
+            {done.map((task, i) => (
+              <Row key={task.id} border={i > 0} style={{ opacity: 0.45 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid #22c55e", background: "#22c55e22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#22c55e", flexShrink: 0 }}>✓</div>
+                  <Name style={{ textDecoration: "line-through" }}>{task.title}</Name>
+                </div>
+                <button onClick={() => del(task.id)} style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+              </Row>
+            ))}
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Activity Tab ──────────────────────────────────────────────────────────────
+function ActivityTab({ data }: { data: any }) {
+  const events: any[] = data.activity ?? [];
+  return (
+    <div>
+      <SectionTitle>Activity Feed</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+        <MiniStat label="Conversations" value={data.chat.totalConversations} accent="#7c3aed" />
+        <MiniStat label="Chat Leads" value={data.chat.totalLeads} accent="#00d4ff" />
+        <MiniStat label="Lauren Calls" value={data.lauren.totalCalls} accent="#e64dff" />
+      </div>
+      <Card>
+        {events.length > 0 ? events.map((e, i) => (
+          <Row key={e.id} border={i > 0}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: activityBg(e.type), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{activityIcon(e.type)}</div>
+              <div>
+                <Name>{e.title}</Name>
+                <Sub>{e.detail}</Sub>
+                {e.amount > 0 && <Sub style={{ color: "#22c55e", fontWeight: 700 }}>${e.amount.toLocaleString()}</Sub>}
+              </div>
+            </div>
+            <Sub style={{ flexShrink: 0, marginLeft: 8 }}>{timeAgo(e.createdAt)}</Sub>
+          </Row>
+        )) : <EmptyState>No activity recorded yet. Activity will appear here as leads come in, bookings are made, and invoices are sent.</EmptyState>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Shared UI Components ──────────────────────────────────────────────────────
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden", ...style }}>{children}</div>;
+}
+function Row({ children, border, style }: { children: React.ReactNode; border?: boolean; style?: React.CSSProperties }) {
+  return <div style={{ padding: "14px 16px", borderTop: border ? "1px solid rgba(255,255,255,0.05)" : "none", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, ...style }}>{children}</div>;
+}
+function BigStatCard({ label, value, accent, icon, sub }: { label: string; value: string | number; accent: string; icon: string; sub?: string }) {
+  return (
+    <div style={{ padding: "18px 16px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", margin: 0 }}>{label}</p>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+      </div>
+      <p style={{ fontSize: "1.5rem", fontWeight: 800, color: accent, margin: sub ? "0 0 3px" : 0, lineHeight: 1 }}>{value}</p>
       {sub && <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", margin: 0 }}>{sub}</p>}
     </div>
   );
 }
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: "0 0 10px" }}>{children}</p>;
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = { PAID: "#22c55e", SENT: "#f59e0b", CANCELLED: "#ef4444", PARTIALLY_PAID: "#f59e0b" };
+function MiniStat({ label, value, accent, sub }: { label: string; value: string | number; accent: string; sub?: string }) {
   return (
-    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: colors[status] ?? "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>{status}</span>
-  );
-}
-
-function MiniChart({ daily }: { daily: Record<string, { conversations: number; leads: number }> }) {
-  const days = Object.keys(daily).sort().slice(-14);
-  const maxConv = Math.max(...days.map(d => daily[d].conversations), 1);
-  return (
-    <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", padding: "16px", marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 60 }}>
-        {days.map(d => (
-          <div key={d} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, height: "100%" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", width: "100%" }}>
-              <div style={{ background: "#7c3aed", borderRadius: "3px 3px 0 0", height: `${(daily[d].conversations / maxConv) * 100}%`, minHeight: daily[d].conversations > 0 ? 3 : 0 }} />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>{days[0]?.slice(5)}</span>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>{days[days.length - 1]?.slice(5)}</span>
-      </div>
-      <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}><span style={{ color: "#7c3aed" }}>■</span> Conversations</span>
-      </div>
+    <div style={{ padding: "14px 12px", borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: "0 0 6px" }}>{label}</p>
+      <p style={{ fontSize: "1.3rem", fontWeight: 800, color: accent, margin: sub ? "0 0 3px" : 0, lineHeight: 1 }}>{value}</p>
+      {sub && <p style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", margin: 0 }}>{sub}</p>}
     </div>
   );
 }
-
+function SectionTitle({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", margin: "0 0 10px", ...style }}>{children}</p>;
+}
+function Name({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: "0 0 2px", ...style }}>{children}</p>;
+}
+function Sub({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: "0 0 2px", ...style }}>{children}</p>;
+}
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return <p style={{ padding: "28px 20px", textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.25)", margin: 0, lineHeight: 1.6 }}>{children}</p>;
+}
+function Btn({ children, onClick, style }: { children: React.ReactNode; onClick?: () => void; style?: React.CSSProperties }) {
+  return <button onClick={onClick} style={{ padding: "7px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", fontSize: 12, cursor: "pointer", ...style }}>{children}</button>;
+}
+function InvoiceStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { color: string; label: string }> = { sent: { color: "#f59e0b", label: "Sent" }, paid: { color: "#22c55e", label: "Paid" }, overdue: { color: "#ef4444", label: "Overdue" }, cancelled: { color: "#64748b", label: "Cancelled" } };
+  const s = map[status] ?? { color: "#64748b", label: status };
+  return <span style={{ fontSize: 10, fontWeight: 700, color: s.color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.label}</span>;
+}
 function Spinner({ inline }: { inline?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: inline ? undefined : "100dvh", background: inline ? undefined : "#0a0c12" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: inline ? undefined : "100dvh", background: inline ? undefined : "#080a10" }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00d4ff", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-const ghostBtn: React.CSSProperties = {
-  padding: "8px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)",
-  fontSize: 12, cursor: "pointer",
-};
+function activityIcon(type: string) {
+  return ({ lead: "🎯", booking: "📅", invoice: "📄", call: "📞", cancellation: "❌", payment: "💵" } as any)[type] ?? "🔔";
+}
+function activityBg(type: string) {
+  return ({ lead: "rgba(0,212,255,0.08)", booking: "rgba(34,197,94,0.08)", invoice: "rgba(124,58,237,0.08)", call: "rgba(230,77,255,0.08)", payment: "rgba(34,197,94,0.12)" } as any)[type] ?? "rgba(255,255,255,0.04)";
+}
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+const miniInputStyle: React.CSSProperties = { width: "100%", padding: "11px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", fontSize: 14, outline: "none" };
