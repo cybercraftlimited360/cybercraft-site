@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 export type PipelineStage = "new" | "contacted" | "demo" | "proposal" | "won" | "lost";
@@ -19,7 +19,7 @@ export interface PipelineLead {
 
 function verifyToken(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
-  const pw = process.env.ADMIN_PASSWORD;
+  const pw = process.env.ADMIN_SECRET;
   if (!pw || !token) return false;
   return token === Buffer.from(`cc360:${pw}:${pw}`).toString("base64");
 }
@@ -84,3 +84,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }
+

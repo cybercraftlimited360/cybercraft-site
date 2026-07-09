@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis, getBookings } from "@/lib/redis";
 import { Invoice } from "@/app/api/invoice/route";
 import { PipelineLead } from "@/app/api/admin/pipeline/route";
@@ -7,7 +7,7 @@ import { ActivityEvent } from "@/lib/activity";
 
 function verifyToken(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
-  const pw = process.env.ADMIN_PASSWORD;
+  const pw = process.env.ADMIN_SECRET;
   if (!pw || !token) return false;
   return token === Buffer.from(`cc360:${pw}:${pw}`).toString("base64");
 }
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const tasks = tasksRaw ?? [];
     const activity = activityRaw ?? [];
 
-    // ── Leads ──────────────────────────────────────────────────────────────
+    // â”€â”€ Leads â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const leadsThisMonth = leads.filter(l => (l.capturedAt ?? "").startsWith(monthStr));
     const leadSources = {
       iris: leads.filter(l => l.source === "iris" || !l.source).length,
@@ -50,12 +50,12 @@ export async function GET(req: NextRequest) {
       intake: leads.filter(l => l.source === "intake").length,
     };
 
-    // ── Bookings ───────────────────────────────────────────────────────────
+    // â”€â”€ Bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const upcoming = bookings.filter(b => b.date >= todayStr && b.status !== "cancelled");
     const cancelledBookings = bookings.filter(b => b.status === "cancelled");
     const bookingsThisMonth = bookings.filter(b => b.date.startsWith(monthStr));
 
-    // ── Invoices / Finances ────────────────────────────────────────────────
+    // â”€â”€ Invoices / Finances â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const totalRevenue = invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.total, 0);
     const totalSent = invoices.reduce((s, i) => s + i.total, 0);
     const outstanding = invoices.filter(i => i.status === "sent").reduce((s, i) => s + i.total, 0);
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       if (key && revenueByMonth[key] !== undefined) revenueByMonth[key] += inv.total;
     }
 
-    // ── Pipeline ───────────────────────────────────────────────────────────
+    // â”€â”€ Pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const pipelineByStage: Record<string, number> = { new: 0, contacted: 0, demo: 0, proposal: 0, won: 0, lost: 0 };
     const pipelineValueByStage: Record<string, number> = { new: 0, contacted: 0, demo: 0, proposal: 0, won: 0, lost: 0 };
     for (const l of pipeline) {
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
     }
     const totalPipelineValue = pipeline.filter(l => l.stage !== "lost").reduce((s, l) => s + (l.value ?? 0), 0);
 
-    // ── Clients (unified) ──────────────────────────────────────────────────
+    // â”€â”€ Clients (unified) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const clientMap: Record<string, any> = {};
     for (const lead of leads) {
       const key = lead.email?.toLowerCase() || lead.name?.toLowerCase();
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     }
     const clients = Object.values(clientMap).sort((a: any, b: any) => (b.firstSeen > a.firstSeen ? 1 : -1));
 
-    // ── Daily chat (last 14 days) ──────────────────────────────────────────
+    // â”€â”€ Daily chat (last 14 days) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
     const daily: Record<string, { conversations: number; leads: number }> = {};
     await Promise.all(
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    // ── Tasks ──────────────────────────────────────────────────────────────
+    // â”€â”€ Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const openTasks = tasks.filter(t => !t.done);
     const overdueTasks = tasks.filter(t => !t.done && t.dueDate && t.dueDate < todayStr);
 
@@ -192,3 +192,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+
