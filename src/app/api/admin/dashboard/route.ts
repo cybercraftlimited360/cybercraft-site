@@ -38,11 +38,17 @@ export async function GET(req: NextRequest) {
         redis.hgetall("visits:daily"),
       ]);
 
-    const leads = leadsRaw ?? [];
-    const invoices = invoicesRaw ?? [];
-    const pipeline = pipelineRaw ?? [];
-    const tasks = tasksRaw ?? [];
-    const activity = activityRaw ?? [];
+    const toArr = (v: any) => (Array.isArray(v) ? v : []);
+    const leads = toArr(leadsRaw);
+    const invoices = toArr(invoicesRaw);
+    const pipeline = toArr(pipelineRaw);
+    const tasks = toArr(tasksRaw);
+    const activity = toArr(activityRaw);
+    const irisConvs = toArr(irisConvsRaw);
+    const laurenConvs = toArr(laurenConvsRaw);
+    const recentVisits = toArr(recentVisitsRaw);
+    const offboarded = toArr(offboardedRaw);
+    const dKeys = Array.isArray(dailyKeys) ? dailyKeys : [];
 
     // â”€â”€ Leads â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const leadsThisMonth = leads.filter(l => (l.capturedAt ?? "").startsWith(monthStr));
@@ -115,7 +121,7 @@ export async function GET(req: NextRequest) {
     const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
     const daily: Record<string, { conversations: number; leads: number }> = {};
     await Promise.all(
-      dailyKeys.filter(k => k.replace("chat:daily:", "") >= cutoff).map(async k => {
+      dKeys.filter(k => k.replace("chat:daily:", "") >= cutoff).map(async k => {
         const date = k.replace("chat:daily:", "");
         const rec = await redis.hgetall(k);
         if (rec) daily[date] = { conversations: Number(rec.conversations ?? 0), leads: Number(rec.leads ?? 0) };
@@ -182,15 +188,15 @@ export async function GET(req: NextRequest) {
       },
       lauren: { totalCalls: Number(laurenStats?.totalCalls ?? 0) },
       conversations: {
-        iris: (irisConvsRaw ?? []).slice(0, 50),
-        lauren: (laurenConvsRaw ?? []).slice(0, 50).map((c: any) => ({
+        iris: irisConvs.slice(0, 50),
+        lauren: laurenConvs.slice(0, 50).map((c: any) => ({
           ...c,
           messages: (c.messages || []).filter((m: any) => m.role !== "system"),
         })),
       },
-      offboarded: offboardedRaw ?? [],
+      offboarded,
       visitors: {
-        recent: (recentVisitsRaw ?? []).slice(0, 50),
+        recent: recentVisits.slice(0, 50),
         today: Number((visitsDailyRaw ?? {})[todayStr] ?? 0),
         total: Object.values(visitsDailyRaw ?? {}).reduce((s, v) => s + Number(v), 0),
       },
