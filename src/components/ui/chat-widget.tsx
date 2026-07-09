@@ -205,12 +205,6 @@ export default function ChatWidget() {
     setOpen(true);
   }, [proactiveTriggered]);
 
-  useEffect(() => {
-    const timer = setTimeout(triggerProactive, 30000);
-    const onLeave = (e: MouseEvent) => { if (e.clientY <= 5) triggerProactive(); };
-    document.addEventListener("mouseleave", onLeave);
-    return () => { clearTimeout(timer); document.removeEventListener("mouseleave", onLeave); };
-  }, [triggerProactive]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
