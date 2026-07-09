@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ProposalDocument } from "@/components/proposal/ProposalDocument";
+import { sendEmail } from "@/lib/mailer";
 import React from "react";
 
 const OWNER_EMAIL = "cybercraftlimited@gmail.com";
@@ -21,43 +22,24 @@ const SERVICE_PRICES: Record<string, string> = {
   "Premium Website Design": "from $1,500/mo",
 };
 
-const WHY_AI_SECTION = `
-Why Replace Human Overhead with AI
-
-In today's business landscape, human labour for repetitive, rule-based tasks is the single largest drain on profit margins. Here is what the data shows:
-
-• The average business loses 6–10 hours per employee per week on tasks AI can do in seconds — answering FAQs, routing calls, updating CRMs, sending follow-ups.
-
-• Missed calls cost businesses an average of $1,200 per missed lead. An AI phone agent answers every call, 24/7, for a fraction of that cost.
-
-• Human customer service agents handle 50–80 queries per day. An AI handles unlimited queries simultaneously with zero fatigue, zero sick days, and zero overtime.
-
-• AI-powered follow-up sequences contact new leads in under 60 seconds. Human follow-up averages 42 hours. Studies show contacting a lead within 5 minutes increases conversion by 900%.
-
-• Most businesses that deploy AI in their first year save between $80,000 and $300,000 in annual operational costs while simultaneously growing revenue.
-
-AI does not replace your team — it removes the work that was preventing your team from doing what humans do best: building relationships, making strategic decisions, and growing the business.
-`;
+const WHY_AI_BULLETS = [
+  "The average business loses 6–10 hours per employee per week on tasks AI handles in seconds — answering FAQs, routing calls, updating CRMs, sending follow-ups.",
+  "Missed calls cost businesses an average of $1,200 per missed lead. An AI phone agent answers every call, 24/7, for a fraction of that cost.",
+  "Human agents handle 50–80 queries per day. AI handles unlimited queries simultaneously — zero fatigue, zero sick days, zero overtime.",
+  "AI follow-up contacts new leads within 60 seconds. Human follow-up averages 42 hours. Responding within 5 minutes increases conversions by 900%.",
+  "Most businesses that deploy AI in year one save $80,000–$300,000 in operational costs while simultaneously growing revenue.",
+];
 
 async function generateQuoteContent(
   company: string,
   industry: string,
   challenge: string,
   services: string[]
-): Promise<{
-  headline: string;
-  executiveSummary: string;
-  services: { name: string; why: string; price: string }[];
-  roiEstimate: string;
-  timeline: string;
-  nextStep: string;
-}> {
+) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY not set");
 
-  const serviceList = services.length
-    ? services.join(", ")
-    : "AI automation solutions";
+  const serviceList = services.length ? services.join(", ") : "AI automation solutions";
 
   const prompt = `You are a senior AI consultant at CyberCraft360, a premium bespoke AI agency. Generate a personalised quote for:
 
@@ -101,7 +83,6 @@ Match services to their selected ones where possible, then fill with the best fi
   }
   const parsed = JSON.parse(data.choices[0].message.content);
 
-  // Ensure prices are populated
   parsed.services = (parsed.services || []).map((s: { name: string; why: string; price: string }) => ({
     ...s,
     price: SERVICE_PRICES[s.name] ?? s.price ?? "from $500/mo",
@@ -110,21 +91,10 @@ Match services to their selected ones where possible, then fill with the best fi
   return parsed;
 }
 
-async function saveIntake(intake: object) {
-  try {
-    const all = await redis.get<object[]>("intakes:all") ?? [];
-    all.push(intake);
-    await redis.set("intakes:all", all);
-  } catch (err) {
-    console.error("Redis intake save error:", err);
-  }
-}
-
 async function sendClientQuoteEmail(form: Record<string, unknown>, pdfBuffer: Buffer) {
-  const name = String(form.name ?? "").split(" ")[0] || "there";
+  const firstName = String(form.name ?? "").split(" ")[0] || "there";
   const company = String(form.businessName ?? "your business");
 
-  const { sendEmail } = await import("@/lib/mailer");
   await sendEmail({
     to: String(form.email),
     subject: `Your AI Quote is Ready — ${company}`,
@@ -134,12 +104,12 @@ async function sendClientQuoteEmail(form: Record<string, unknown>, pdfBuffer: Bu
     <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></div>
     <div style="padding:36px;">
       <p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin:0 0 12px;">CyberCraft360</p>
-      <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 16px;">Hi ${name}, your AI quote is attached.</h1>
+      <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 16px;">Hi ${firstName}, your AI quote is attached.</h1>
       <p style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.6;margin:0 0 20px;">
-        We've reviewed your submission for <strong style="color:rgba(255,255,255,0.85);">${company}</strong> and put together a bespoke AI quote with our recommended solutions, estimated ROI, and a clear deployment timeline.
+        We reviewed your submission for <strong style="color:rgba(255,255,255,0.85);">${company}</strong> and put together a bespoke quote with recommended solutions, estimated ROI, and a clear deployment timeline.
       </p>
       <p style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.6;margin:0 0 28px;">
-        The PDF is attached — feel free to share it with your team. It explains exactly which AI solutions we recommend for your challenges and why replacing manual work with AI will pay for itself within months.
+        The PDF is attached — share it with your team. It explains exactly which AI solutions we recommend and why replacing manual work with AI will pay for itself within months.
       </p>
       <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
         Book Your Free Strategy Call →
@@ -154,7 +124,7 @@ async function sendClientQuoteEmail(form: Record<string, unknown>, pdfBuffer: Bu
     attachments: [
       {
         filename: `CyberCraft360-Quote-${company.replace(/\s+/g, "-")}.pdf`,
-        content: pdfBuffer,
+        content: pdfBuffer.toString("base64"),
         encoding: "base64",
         contentType: "application/pdf",
       },
@@ -163,7 +133,9 @@ async function sendClientQuoteEmail(form: Record<string, unknown>, pdfBuffer: Bu
 }
 
 async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
-  const time = new Date().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago" });
+  const time = new Date().toLocaleString("en-US", {
+    dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago",
+  });
 
   const row = (label: string, value: string, color = "#00d4ff") => `
     <tr style="border-top:1px solid rgba(255,255,255,0.05);">
@@ -183,35 +155,31 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
   <tr><td style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></td></tr>
   <tr><td style="padding:32px 36px 20px;">
     <span style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);">CyberCraft360</span><br/>
-    <span style="font-size:22px;font-weight:700;color:#ffffff;margin-top:6px;display:block;">📋 New Quote Request + PDF Sent to Client</span>
+    <span style="font-size:22px;font-weight:700;color:#ffffff;margin-top:6px;display:block;">📋 New Quote Request — PDF Sent to Client</span>
   </td></tr>
-  <tr><td style="padding:0 36px;"><div style="height:1px;background:rgba(255,255,255,0.06);"></div></td></tr>
-  <tr><td style="padding:16px 36px 8px;"><span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.2);">Contact</span></td></tr>
   <tr><td style="padding:0 36px 16px;">
     <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
       ${row("Name", String(form.name))}
       ${row("Email", String(form.email))}
       ${row("Phone", String(form.phone || "Not provided"))}
-      ${row("Prefers", String(form.preferredContact))}
+      ${row("Contact via", String(form.preferredContact || "Email"))}
     </table>
   </td></tr>
   <tr><td style="padding:0 36px 16px;">
     <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
       ${row("Company", String(form.businessName), "#ffffff")}
       ${row("Industry", String(form.industry), "#a78bfa")}
-      ${row("Team", String(form.teamSize), "#ffffff")}
+      ${row("Team size", String(form.teamSize), "#ffffff")}
       ${row("Budget", String(form.budget), "#f59e0b")}
       ${row("Timeline", String(form.timeline), "#22c55e")}
     </table>
   </td></tr>
-  <tr><td style="padding:0 36px 16px;">
+  ${((form.servicesInterested as string[]) || []).length ? `<tr><td style="padding:0 36px 16px;">
     <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 20px;">
       <p style="margin:0 0 8px;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Services Requested</p>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${((form.servicesInterested as string[]) || []).map(s => `<span style="display:inline-block;padding:3px 10px;border-radius:999px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.25);font-size:11px;font-weight:600;color:#00d4ff;">${s}</span>`).join("")}
-      </div>
+      <p style="margin:0;font-size:12px;color:#00d4ff;font-weight:600;">${((form.servicesInterested as string[]) || []).join(" · ")}</p>
     </div>
-  </td></tr>
+  </td></tr>` : ""}
   ${form.biggestChallenge ? `<tr><td style="padding:0 36px 16px;">
     <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 20px;">
       <p style="margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Biggest Challenge</p>
@@ -224,13 +192,12 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
     </a>
   </td></tr>
   <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.05);">
-    <span style="font-size:11px;color:rgba(255,255,255,0.15);">CyberCraft360 · Intake Form · ${time} · PDF quote sent to client ✓</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.15);">CyberCraft360 · Intake Form · ${time} · PDF sent to client ✓</span>
   </td></tr>
 </table>
 </td></tr></table>
 </body></html>`;
 
-  const { sendEmail } = await import("@/lib/mailer");
   await sendEmail({
     to: OWNER_EMAIL,
     subject: `📋 New Quote Request: ${form.name} — ${form.businessName} (${form.industry})`,
@@ -246,13 +213,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Save to Redis (non-blocking, don't await)
     const record = { ...form, submittedAt: new Date().toISOString() };
-    saveIntake(record).catch(() => {});
+    redis.get<object[]>("intakes:all").then(all => {
+      const list = all ?? [];
+      list.push(record);
+      return redis.set("intakes:all", list);
+    }).catch(err => console.error("Redis save error:", err));
 
-    // Send owner notification immediately (non-blocking)
-    sendOwnerNotificationEmail(form).catch(err => console.error("Owner email error:", err));
-
-    // Fire lead to dashboard
+    // Fire lead to dashboard (non-blocking)
     const baseUrl = req.nextUrl.origin;
     fetch(`${baseUrl}/api/leads`, {
       method: "POST",
@@ -266,40 +235,49 @@ export async function POST(req: NextRequest) {
       }),
     }).catch(() => {});
 
-    // Generate AI quote content + PDF + send to client (async, non-blocking so response is fast)
-    (async () => {
-      try {
-        const content = await generateQuoteContent(
-          String(form.businessName),
-          String(form.industry),
-          String(form.biggestChallenge || (form.painPoints as string[])?.join(", ") || "business automation"),
-          (form.servicesInterested as string[]) || []
-        );
+    // Send owner notification (non-blocking)
+    sendOwnerNotificationEmail(form).catch(err =>
+      console.error("Owner notification error:", err)
+    );
 
-        const proposalData = {
-          company: String(form.businessName),
-          industry: String(form.industry),
-          challenge: String(form.biggestChallenge || (form.painPoints as string[])?.join(", ") || ""),
-          email: String(form.email),
-          ...content,
-          // Append the why-AI section into the executive summary
-          executiveSummary: content.executiveSummary + "\n\n" + WHY_AI_SECTION,
-        };
+    // Generate AI quote → PDF → email to client (awaited so Vercel doesn't kill it)
+    try {
+      const content = await generateQuoteContent(
+        String(form.businessName),
+        String(form.industry),
+        String(form.biggestChallenge || (form.painPoints as string[])?.join(", ") || "business automation"),
+        (form.servicesInterested as string[]) || []
+      );
 
-        const pdfBuffer = Buffer.from(
-          await renderToBuffer(React.createElement(ProposalDocument, { data: proposalData }) as any)
-        );
+      // Append why-AI bullets to executive summary
+      const whyAI = "\n\nWhy AI replaces human overhead:\n" +
+        WHY_AI_BULLETS.map(b => `• ${b}`).join("\n");
 
-        await sendClientQuoteEmail(form, pdfBuffer);
-        console.log(`Quote PDF sent to ${form.email}`);
-      } catch (err) {
-        console.error("Quote PDF generation/send error:", err);
-      }
-    })();
+      const proposalData = {
+        company: String(form.businessName),
+        industry: String(form.industry),
+        challenge: String(form.biggestChallenge || (form.painPoints as string[])?.join(", ") || ""),
+        email: String(form.email),
+        ...content,
+        executiveSummary: content.executiveSummary + whyAI,
+      };
+
+      const pdfBuffer = Buffer.from(
+        await renderToBuffer(
+          React.createElement(ProposalDocument, { data: proposalData }) as never
+        )
+      );
+
+      await sendClientQuoteEmail(form, pdfBuffer);
+      console.log(`[intake] Quote PDF sent to ${form.email}`);
+    } catch (err) {
+      // Log but don't fail the whole request — client already submitted successfully
+      console.error("[intake] Quote PDF/email error:", err);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Intake route error:", err);
+    console.error("[intake] Route error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

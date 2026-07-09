@@ -126,19 +126,17 @@
     font-family: var(--font-jakarta), system-ui, sans-serif;
     font-size: 17px;
     line-height: 1.7;
-    cursor: none;
   }
   html {
     font-family: var(--font-jakarta), system-ui, sans-serif;
-    cursor: none;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
     line-height: 1.1;
     letter-spacing: -0.01em;
   }
-  a, button, [role="button"], input, textarea, select, label {
-    cursor: none;
+  a, button, [role="button"] {
+    cursor: pointer;
   }
   input, textarea, select {
     color: #0a0c12 !important;
