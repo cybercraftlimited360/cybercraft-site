@@ -136,6 +136,25 @@ function OverviewTab({ data }: { data: any }) {
         <MiniStat label="Tasks" value={o.openTasks || 0} accent={o.overdueTasks > 0 ? "#ef4444" : "#f59e0b"} sub={o.overdueTasks > 0 ? `${o.overdueTasks} overdue` : "open"} />
       </div>
 
+      {/* Visitors */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+        <MiniStat label="Visitors Today" value={data.visitors?.today || 0} accent="#00d4ff" sub="page loads" />
+        <MiniStat label="Total Visitors" value={data.visitors?.total || 0} accent="#a78bfa" sub="all time" />
+      </div>
+
+      <SectionTitle>Recent Visitors</SectionTitle>
+      <Card style={{ marginBottom: 20 }}>
+        {data.visitors?.recent?.length > 0 ? data.visitors.recent.slice(0, 8).map((v: any, i: number) => (
+          <Row key={i} border={i > 0}>
+            <div>
+              <Name style={{ color: "#00d4ff" }}>{v.page || "/"}</Name>
+              <Sub>{v.referrer ? `from ${v.referrer.replace(/^https?:\/\//, "").slice(0, 40)}` : "Direct / unknown"}</Sub>
+            </div>
+            <Sub style={{ flexShrink: 0, marginLeft: 8 }}>{timeAgo(v.time)}</Sub>
+          </Row>
+        )) : <EmptyState>No visitors tracked yet — will appear after next page load</EmptyState>}
+      </Card>
+
       <SectionTitle>Upcoming Bookings</SectionTitle>
       <Card style={{ marginBottom: 20 }}>
         {data.bookings.upcomingList?.length > 0 ? data.bookings.upcomingList.slice(0, 5).map((b: any, i: number) => (

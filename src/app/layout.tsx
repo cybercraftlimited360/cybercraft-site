@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import VisitTracker from "@/components/ui/visit-tracker";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-jakarta",
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${cormorant.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <VisitTracker />
+        {children}
+      </body>
     </html>
   );
 }

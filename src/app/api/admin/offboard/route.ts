@@ -7,7 +7,7 @@ function verifyToken(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
   const pw = process.env.ADMIN_SECRET;
   if (!pw || !token) return false;
-  return token === Buffer.from(`cc360:${pw}:${pw}`).toString("base64");
+  return token === Buffer.from(`cc360:${pw}:v2`).toString("base64");
 }
 
 export async function POST(req: NextRequest) {
@@ -43,4 +43,5 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
 

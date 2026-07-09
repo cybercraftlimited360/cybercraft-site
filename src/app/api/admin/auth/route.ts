@@ -1,30 +1,30 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+function makeToken(secret: string) {
+  return Buffer.from(`cc360:${secret}:v2`).toString("base64");
+}
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
   const adminPassword = process.env.ADMIN_SECRET;
 
   if (!adminPassword) {
-    return NextResponse.json({ error: "ADMIN_SECRET not set" }, { status: 500 });
+    return NextResponse.json({ error: "ADMIN_SECRET env var not configured on server." }, { status: 500 });
   }
 
-  if (password !== adminPassword) {
-    return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+  // Trim whitespace — password managers often add trailing spaces
+  if (password?.trim() !== adminPassword.trim()) {
+    return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 
-  // Return a token the client stores â€” just the password hashed with a server secret
-  const token = Buffer.from(`cc360:${adminPassword}:${process.env.ADMIN_SECRET}`).toString("base64");
-  return NextResponse.json({ ok: true, token });
+  return NextResponse.json({ ok: true, token: makeToken(adminPassword) });
 }
 
 export async function GET(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
   const adminPassword = process.env.ADMIN_SECRET;
   if (!adminPassword || !token) return NextResponse.json({ ok: false }, { status: 401 });
-
-  const expected = Buffer.from(`cc360:${adminPassword}:${adminPassword}`).toString("base64");
-  return token === expected
+  return token === makeToken(adminPassword)
     ? NextResponse.json({ ok: true })
     : NextResponse.json({ ok: false }, { status: 401 });
 }
-

@@ -9,7 +9,7 @@ function verifyToken(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
   const pw = process.env.ADMIN_SECRET;
   if (!pw || !token) return false;
-  return token === Buffer.from(`cc360:${pw}:${pw}`).toString("base64");
+  return token === Buffer.from(`cc360:${pw}:v2`).toString("base64");
 }
 
 export async function GET(req: NextRequest) {
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const monthStr = now.toISOString().slice(0, 7);
     const todayStr = now.toISOString().slice(0, 10);
 
-    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys, irisConvsRaw, laurenConvsRaw, offboardedRaw] =
+    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys, irisConvsRaw, laurenConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw] =
       await Promise.all([
         getBookings(),
         redis.get<any[]>("leads:all"),
@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
         redis.get<any[]>("iris:conversations"),
         redis.get<any[]>("lauren:transcripts"),
         redis.get<any[]>("clients:offboarded"),
+        redis.get<any[]>("visits:recent"),
+        redis.hgetall("visits:daily"),
       ]);
 
     const leads = leadsRaw ?? [];
@@ -187,9 +189,15 @@ export async function GET(req: NextRequest) {
         })),
       },
       offboarded: offboardedRaw ?? [],
+      visitors: {
+        recent: (recentVisitsRaw ?? []).slice(0, 50),
+        today: Number((visitsDailyRaw ?? {})[todayStr] ?? 0),
+        total: Object.values(visitsDailyRaw ?? {}).reduce((s, v) => s + Number(v), 0),
+      },
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+
 
