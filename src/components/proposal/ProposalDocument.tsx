@@ -326,7 +326,7 @@ export function ProposalDocument({ data }: { data: ProposalData }) {
           <View style={styles.ctaBox}>
             <Text style={styles.ctaLabel}>Your Next Step</Text>
             <Text style={styles.ctaText}>{data.nextStep}</Text>
-            <Text style={styles.ctaUrl}>calendly.com/cybercraftlimited/30min</Text>
+            <Text style={styles.ctaUrl}>cybercraft360.com/book</Text>
           </View>
 
           {/* Footer */}
