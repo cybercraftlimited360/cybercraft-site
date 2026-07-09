@@ -11,9 +11,12 @@ const TAB_LABELS: Record<Tab, string> = { overview: "Overview", clients: "Client
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth: (t: string) => void }) {
   const [pw, setPw] = useState(""); const [err, setErr] = useState(""); const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setErr("");
-    const res = await fetch("/api/admin/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) }).catch(() => null);
+    // Read directly from the DOM in case autofill didn't fire onChange
+    const actual = inputRef.current?.value || pw;
+    const res = await fetch("/api/admin/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: actual }) }).catch(() => null);
     if (!res || !res.ok) { setErr("Wrong password."); setPw(""); setLoading(false); return; }
     const d = await res.json(); localStorage.setItem(TOKEN_KEY, d.token); onAuth(d.token); setLoading(false);
   }
@@ -26,10 +29,10 @@ function LoginScreen({ onAuth }: { onAuth: (t: string) => void }) {
           <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fff", margin: 0 }}>Admin Dashboard</h1>
         </div>
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <input type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} autoFocus autoComplete="current-password"
+          <input ref={inputRef} type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} autoFocus autoComplete="current-password"
             style={{ padding: "16px 18px", borderRadius: 14, background: "rgba(255,255,255,0.06)", border: `1px solid ${err ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.1)"}`, color: "#fff", fontSize: 16, outline: "none", letterSpacing: "0.12em" }} />
           {err && <p style={{ fontSize: 13, color: "#ef4444", textAlign: "center", margin: 0 }}>{err}</p>}
-          <button type="submit" disabled={loading || !pw} style={{ padding: 16, borderRadius: 14, border: "none", background: loading || !pw ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading || !pw ? "not-allowed" : "pointer" }}>
+          <button type="submit" disabled={loading} style={{ padding: 16, borderRadius: 14, border: "none", background: loading ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
             {loading ? "Verifying…" : "Unlock →"}
           </button>
         </form>
