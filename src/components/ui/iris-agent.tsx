@@ -44,13 +44,14 @@ const LANG_VOICES: Record<string, string[]> = {
   "ru-RU": ["Microsoft Svetlana Online (Natural)", "Microsoft Svetlana", "Google русский"],
 };
 
-type CapturedLead = { name: string | null; company: string | null; challenge: string | null };
+type CapturedLead = { name: string | null; company: string | null; challenge: string | null; phone?: string | null; email?: string | null; phoneVerified?: boolean; emailVerified?: boolean };
 
 export default function IrisAgent() {
   const [activePersona, setActivePersona] = useState<PersonaKey>("IRIS");
   const [phase, setPhase] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
   const [messages, setMessages] = useState<Message[]>([]);
   const [transcript, setTranscript] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
   const [agentText, setAgentText] = useState("");
   const [started, setStarted] = useState(false);
   const [bookedCall, setBookedCall] = useState(false);
@@ -100,6 +101,9 @@ export default function IrisAgent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePersona]);
 
+  const capturedLeadRef = useRef<CapturedLead | null>(null);
+  useEffect(() => { capturedLeadRef.current = capturedLead; }, [capturedLead]);
+
   const saveConversation = useCallback(async () => {
     if (messagesRef.current.length === 0) return;
     await fetch("/api/iris", {
@@ -110,6 +114,7 @@ export default function IrisAgent() {
         messages: messagesRef.current,
         bookedCall: bookedRef.current,
         leadCaptured: leadSavedRef.current,
+        lead: capturedLeadRef.current,
         persona: activePersona,
       }),
     });
@@ -174,17 +179,35 @@ export default function IrisAgent() {
     if (!SR) return;
 
     const recognition = new SR();
-    // Use the current language for recognition so Urdu/Arabic etc. are recognised correctly
     recognition.lang = currentLangRef.current;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
+    recognition.continuous = false;
     recognitionRef.current = recognition;
 
     setPhase("listening");
     setTranscript("");
+    setInterimTranscript("");
 
     recognition.onresult = async (e) => {
-      const spoken = e.results[0][0].transcript;
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          final += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+
+      // Show live speech as they speak
+      if (interim) setInterimTranscript(interim);
+
+      // Only process when they've fully stopped talking
+      if (!final) return;
+
+      const spoken = final.trim();
+      setInterimTranscript("");
       setTranscript(spoken);
       setPhase("thinking");
 
@@ -227,8 +250,8 @@ export default function IrisAgent() {
       }
     };
 
-    recognition.onerror = () => setPhase("idle");
-    recognition.onend = () => { if (phase === "listening") setPhase("idle"); };
+    recognition.onerror = () => { setPhase("idle"); setInterimTranscript(""); };
+    recognition.onend = () => { setInterimTranscript(""); if (phase === "listening") setPhase("idle"); };
     recognition.start();
   }, [activePersona, phase, speakText]);
 
@@ -292,6 +315,7 @@ export default function IrisAgent() {
     setMessages([]);
     setAgentText("");
     setTranscript("");
+    setInterimTranscript("");
     setCapturedLead(null);
     leadSavedRef.current = false;
   };
@@ -432,13 +456,23 @@ export default function IrisAgent() {
                   You&apos;re on our radar
                 </span>
               </div>
-              <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", lineHeight: 1.6, marginBottom: "14px" }}>
+              <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", lineHeight: 1.7, marginBottom: "14px" }}>
                 {capturedLead.name && <span style={{ color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>{capturedLead.name}</span>}
                 {capturedLead.name && capturedLead.company && " · "}
                 {capturedLead.company && <span>{capturedLead.company}</span>}
                 {capturedLead.challenge && (
                   <span style={{ display: "block", marginTop: "4px", fontSize: "0.72rem" }}>
                     Challenge: {capturedLead.challenge}
+                  </span>
+                )}
+                {capturedLead.email && (
+                  <span style={{ display: "block", fontSize: "0.72rem", color: capturedLead.emailVerified ? "#22c55e" : "rgba(255,255,255,0.4)" }}>
+                    ✉ {capturedLead.email}{capturedLead.emailVerified ? " ✓" : " (unconfirmed)"}
+                  </span>
+                )}
+                {capturedLead.phone && (
+                  <span style={{ display: "block", fontSize: "0.72rem", color: capturedLead.phoneVerified ? "#22c55e" : "rgba(255,255,255,0.4)" }}>
+                    📞 {capturedLead.phone}{capturedLead.phoneVerified ? " ✓" : " (unconfirmed)"}
                   </span>
                 )}
               </div>
@@ -464,7 +498,22 @@ export default function IrisAgent() {
         )}
       </AnimatePresence>
 
-      {/* User transcript */}
+      {/* Live interim transcript — shown while user is still speaking */}
+      <AnimatePresence>
+        {interimTranscript && phase === "listening" && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
+            style={{ maxWidth: "520px", width: "100%", padding: "10px 18px", borderRadius: "14px",
+              background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.15)" }}>
+            <p style={{ fontSize: "0.78rem", lineHeight: 1.5, color: "rgba(255,255,255,0.3)", margin: 0, fontStyle: "italic" }}>
+              <span style={{ color: "rgba(34,197,94,0.5)", fontWeight: 700, fontSize: "0.62rem", letterSpacing: "0.15em", textTransform: "uppercase", marginRight: "8px" }}>Listening</span>
+              {interimTranscript}
+              <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.8, repeat: Infinity }} style={{ marginLeft: 2 }}>▌</motion.span>
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Final user transcript */}
       <AnimatePresence>
         {transcript && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
