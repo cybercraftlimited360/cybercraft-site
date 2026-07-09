@@ -456,10 +456,25 @@ export default function ChatWidget() {
               {/* Free chat phase */}
               {stepIdx === 6 && (
                 <>
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     <div style={{ padding: "10px 14px", borderRadius: "14px 14px 14px 4px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)", fontSize: "0.8rem", lineHeight: 1.55, color: "rgba(255,255,255,0.8)" }}>
-                      I&apos;d love to tell you more. What questions do you have about implementing AI in your business?
+                      Happy to dig deeper. What would you like to do next?
                     </div>
+                    <a
+                      href="/book"
+                      onClick={() => setOpen(false)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 14px", borderRadius: "12px", background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.06em", textDecoration: "none", textTransform: "uppercase" }}
+                    >
+                      📅 Book a Free Strategy Call
+                    </a>
+                    <a
+                      href="/intake"
+                      onClick={() => setOpen(false)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 14px", borderRadius: "12px", background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)", color: "#a78bfa", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.06em", textDecoration: "none", textTransform: "uppercase" }}
+                    >
+                      📋 Get My AI Quote (2 min)
+                    </a>
+                    <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.3)", textAlign: "center", paddingTop: "2px" }}>or ask me anything below ↓</div>
                   </motion.div>
                   {chatMsgs.map((m, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
