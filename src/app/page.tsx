@@ -27,11 +27,11 @@ import Magnetic from "@/components/ui/magnetic";
 import ExitIntent from "@/components/ui/exit-intent";
 import ScrollTransition from "@/components/ui/scroll-transition";
 
-type SiteTab = "about" | "demo" | "services" | "pricing" | "roi" | "results" | "faq" | "book";
+type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
 
 const TAB_MAP: Record<string, SiteTab> = {
   about: "about", demo: "demo", services: "services",
-  pricing: "pricing", roi: "roi", clients: "results", faq: "faq",
+  pricing: "pricing", clients: "results", faq: "faq",
 };
 
 function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
@@ -194,7 +194,6 @@ function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
     { id: "demo",     label: "Live Demo",    emoji: "🤖" },
     { id: "services", label: "Services",     emoji: "🧠" },
     { id: "pricing",  label: "Pricing",      emoji: "💼" },
-    { id: "roi",      label: "ROI Calc",     emoji: "🧮" },
     { id: "results",  label: "Results",      emoji: "📈" },
     { id: "faq",      label: "FAQ",          emoji: "❓" },
     { id: "book",     label: "Book a Call",  emoji: "📅" },
@@ -282,7 +281,7 @@ export default function Home() {
     const HASH_TAB: Record<string, SiteTab> = {
       "#about": "about", "#demo": "demo", "#services": "services",
       "#pricing": "pricing", "#clients": "results", "#faq": "faq",
-      "#contact": "book", "#proposal": "pricing", "#roi": "roi",
+      "#contact": "book", "#proposal": "pricing", "#roi": "pricing",
     };
     function handleClick(e: MouseEvent) {
       const a = (e.target as Element).closest("a[href]") as HTMLAnchorElement | null;
@@ -1151,6 +1150,71 @@ export default function Home() {
       {/* SERVICES TAB END */}</>}
 
       {tab === "pricing" && <>
+      {/* ROI CALCULATORS */}
+      {(() => {
+        function ROISection() {
+          const [activeCalc, setActiveCalc] = React.useState<"revenue" | "productivity">("revenue");
+          const calcs = [
+            { id: "revenue" as const, label: "Revenue & Calls", icon: "📞", desc: "Calculate revenue recovered from missed calls & opportunities" },
+            { id: "productivity" as const, label: "Team Productivity", icon: "⏱️", desc: "Calculate payroll savings from automating repetitive tasks" },
+          ];
+          return (
+            <section id="roi" className="px-[5vw] md:px-[6vw] py-16 md:py-24 bg-muted/30 border-b border-border/40">
+              <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="text-center mb-10">
+                <div className="flex items-center justify-center gap-3 mb-5">
+                  <div className="w-8 h-0.5 bg-primary rounded-full" />
+                  <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ ROI Calculator</span>
+                  <div className="w-8 h-0.5 bg-primary rounded-full" />
+                </div>
+                <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-4" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+                  How Much Could AI Save<br /><em>Your Business?</em>
+                </h2>
+                <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+                  Discover how much time, payroll, and revenue your business could recover every month. Pick the calculator that fits your question.
+                </p>
+              </motion.div>
+
+              {/* Calculator switcher */}
+              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} className="flex justify-center mb-12">
+                <div className="inline-flex gap-2 p-1.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  {calcs.map(({ id, label, icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => setActiveCalc(id)}
+                      className="relative flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-200"
+                      style={{
+                        background: activeCalc === id ? "linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,58,237,0.12))" : "transparent",
+                        border: activeCalc === id ? "1px solid rgba(0,212,255,0.3)" : "1px solid transparent",
+                        color: activeCalc === id ? "#00d4ff" : "rgba(255,255,255,0.4)",
+                        cursor: "pointer",
+                        boxShadow: activeCalc === id ? "0 0 20px rgba(0,212,255,0.1)" : "none",
+                      }}
+                    >
+                      <span>{icon}</span>
+                      <span>{label}</span>
+                      {activeCalc === id && (
+                        <motion.span layoutId="calc-indicator-pricing" className="absolute inset-0 rounded-xl" style={{ border: "1px solid rgba(0,212,255,0.3)" }} transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Active calculator */}
+              <AnimatePresence mode="wait">
+                <motion.div key={activeCalc} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
+                  <p className="text-center text-muted-foreground/50 text-sm mb-10 tracking-wide">
+                    {calcs.find(c => c.id === activeCalc)?.desc}
+                  </p>
+                  {activeCalc === "revenue" ? <ROICalculator /> : <ProductivityCalculator />}
+                </motion.div>
+              </AnimatePresence>
+            </section>
+          );
+        }
+        return <ROISection />;
+      })()}
+
       {/* BUILD YOUR AI WORKFORCE / PRICING */}
       <section id="pricing" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/20">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="mb-16">
@@ -1460,73 +1524,6 @@ export default function Home() {
 
       {/* PRICING TAB END (early) */}</>}
 
-      {tab === "roi" && <>
-      {/* ROI CALCULATORS */}
-      {(() => {
-        function ROISection() {
-          const [activeCalc, setActiveCalc] = React.useState<"revenue" | "productivity">("revenue");
-          const calcs = [
-            { id: "revenue" as const, label: "Revenue & Calls", icon: "📞", desc: "Calculate revenue recovered from missed calls & opportunities" },
-            { id: "productivity" as const, label: "Team Productivity", icon: "⏱️", desc: "Calculate payroll savings from automating repetitive tasks" },
-          ];
-          return (
-            <section id="roi" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/30 border-t border-border/40">
-              <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="text-center mb-10">
-                <div className="flex items-center justify-center gap-3 mb-5">
-                  <div className="w-8 h-0.5 bg-primary rounded-full" />
-                  <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ ROI Calculator</span>
-                  <div className="w-8 h-0.5 bg-primary rounded-full" />
-                </div>
-                <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-4" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-                  How Much Could AI Save<br /><em>Your Business?</em>
-                </h2>
-                <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-                  Discover how much time, payroll, and revenue your business could recover every month. Pick the calculator that fits your question.
-                </p>
-              </motion.div>
-
-              {/* Calculator switcher */}
-              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} className="flex justify-center mb-12">
-                <div className="inline-flex gap-2 p-1.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  {calcs.map(({ id, label, icon }) => (
-                    <button
-                      key={id}
-                      onClick={() => setActiveCalc(id)}
-                      className="relative flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-200"
-                      style={{
-                        background: activeCalc === id ? "linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,58,237,0.12))" : "transparent",
-                        border: activeCalc === id ? "1px solid rgba(0,212,255,0.3)" : "1px solid transparent",
-                        color: activeCalc === id ? "#00d4ff" : "rgba(255,255,255,0.4)",
-                        cursor: "pointer",
-                        boxShadow: activeCalc === id ? "0 0 20px rgba(0,212,255,0.1)" : "none",
-                      }}
-                    >
-                      <span>{icon}</span>
-                      <span>{label}</span>
-                      {activeCalc === id && (
-                        <motion.span layoutId="calc-indicator" className="absolute inset-0 rounded-xl" style={{ border: "1px solid rgba(0,212,255,0.3)" }} transition={{ type: "spring", stiffness: 400, damping: 30 }} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Active calculator description */}
-              <AnimatePresence mode="wait">
-                <motion.div key={activeCalc} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-                  <p className="text-center text-muted-foreground/50 text-sm mb-10 tracking-wide">
-                    {calcs.find(c => c.id === activeCalc)?.desc}
-                  </p>
-                  {activeCalc === "revenue" ? <ROICalculator /> : <ProductivityCalculator />}
-                </motion.div>
-              </AnimatePresence>
-            </section>
-          );
-        }
-        return <ROISection />;
-      })()}
-
-      {/* ROI TAB END */}</>}
 
       {tab === "results" && <>
       {/* CASE STUDIES */}
