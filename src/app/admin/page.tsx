@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview", "clients", "pipeline", "finances", "tasks", "convos", "activity"] as const;
+const TABS = ["overview", "clients", "pipeline", "finances", "tasks", "convos", "activity", "lauren"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab, string> = { overview: "📊", clients: "👥", pipeline: "📋", finances: "💰", tasks: "✅", convos: "💬", activity: "🔔" };
-const TAB_LABELS: Record<Tab, string> = { overview: "Overview", clients: "Clients", pipeline: "Pipeline", finances: "Finances", tasks: "Tasks", convos: "Convos", activity: "Activity" };
+const TAB_ICONS: Record<Tab, string> = { overview: "📊", clients: "👥", pipeline: "📋", finances: "💰", tasks: "✅", convos: "💬", activity: "🔔", lauren: "📞" };
+const TAB_LABELS: Record<Tab, string> = { overview: "Overview", clients: "Clients", pipeline: "Pipeline", finances: "Finances", tasks: "Tasks", convos: "Convos", activity: "Activity", lauren: "Lauren" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth: (t: string) => void }) {
@@ -100,6 +100,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             {tab === "tasks"     && <TasksTab     data={data} token={token} onRefresh={() => load(true)} />}
             {tab === "convos"    && <ConvosTab    data={data} />}
             {tab === "activity"  && <ActivityTab  data={data} />}
+            {tab === "lauren"    && <LaurenTab    data={data} token={token} />}
           </>
         ) : (
           <p style={{ color: "#ef4444", textAlign: "center", marginTop: 60 }}>Failed to load dashboard.</p>
@@ -728,3 +729,129 @@ function timeAgo(iso: string) {
 }
 
 const miniInputStyle: React.CSSProperties = { width: "100%", padding: "11px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", fontSize: 14, outline: "none" };
+
+// ── Lauren Dialer Tab ─────────────────────────────────────────────────────────
+function LaurenTab({ data, token }: { data: any; token: string }) {
+  const leads: any[] = data.leads?.recent ?? [];
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
+  const [challenge, setChallenge] = useState("");
+  const [calling, setCalling] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  function fillFromLead(lead: any) {
+    setPhone(lead.phone || "");
+    setName(lead.name || "");
+    setCompany(lead.company || "");
+    setChallenge(lead.challenge || "");
+    setResult(null);
+  }
+
+  async function dial() {
+    if (!phone) return;
+    setCalling(true); setResult(null);
+    try {
+      const res = await fetch("/api/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ phone, name: name || "there", company: company || "your business", challenge }),
+      });
+      const d = await res.json();
+      if (d.ok) setResult({ ok: true, message: `✅ Lauren is calling ${phone} now. Call SID: ${d.callSid}` });
+      else setResult({ ok: false, message: `❌ ${d.error || "Call failed"}` });
+    } catch (e: any) {
+      setResult({ ok: false, message: `❌ ${e.message}` });
+    } finally {
+      setCalling(false);
+    }
+  }
+
+  const accent = "#e64dff";
+  const sectionStyle: React.CSSProperties = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 20, marginBottom: 16 };
+  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 6, display: "block" };
+  const inp: React.CSSProperties = { ...miniInputStyle, marginBottom: 0 };
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}15`, border: `1px solid ${accent}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🎙️</div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>Lauren — AI Voice Agent</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Dial any lead or number. Lauren handles the conversation.</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dialer */}
+      <div style={sectionStyle}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: accent, marginBottom: 16 }}>📞 Place a Call</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <label style={labelStyle}>Phone Number *</label>
+            <input style={inp} placeholder="e.g. 8321234567 or +18321234567" value={phone} onChange={e => { setPhone(e.target.value); setResult(null); }} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div>
+              <label style={labelStyle}>Lead Name</label>
+              <input style={inp} placeholder="Monty" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <label style={labelStyle}>Company / Business</label>
+              <input style={inp} placeholder="Beauty Salon" value={company} onChange={e => setCompany(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Challenge / Context for Lauren</label>
+            <input style={inp} placeholder="e.g. Interested in AI chatbot and call agent" value={challenge} onChange={e => setChallenge(e.target.value)} />
+          </div>
+          <button
+            onClick={dial}
+            disabled={calling || !phone}
+            style={{ padding: "13px 20px", borderRadius: 11, border: "none", fontWeight: 700, fontSize: 14, cursor: calling || !phone ? "not-allowed" : "pointer", background: calling || !phone ? "rgba(255,255,255,0.05)" : `linear-gradient(135deg, ${accent}, #7c3aed)`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {calling ? "⏳ Dialing…" : "📞 Have Lauren Call Now"}
+          </button>
+          {result && (
+            <div style={{ padding: "12px 16px", borderRadius: 10, background: result.ok ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${result.ok ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`, fontSize: 13, color: result.ok ? "#22c55e" : "#ef4444" }}>
+              {result.message}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent leads quick-dial */}
+      {leads.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 14 }}>⚡ Quick Dial from Recent Leads</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {leads.filter((l: any) => l.phone).slice(0, 10).map((lead: any, i: number) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{lead.name || "Unknown"}</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{lead.company || ""} · {lead.phone}</div>
+                </div>
+                <button
+                  onClick={() => fillFromLead(lead)}
+                  style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${accent}40`, background: `${accent}10`, color: accent, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  Fill →
+                </button>
+              </div>
+            ))}
+            {leads.filter((l: any) => l.phone).length === 0 && (
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center", padding: "20px 0" }}>No leads with phone numbers yet</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div style={sectionStyle}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 14 }}>📈 Call Stats</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: accent }}>{data.lauren?.totalCalls ?? 0}</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>Total calls placed by Lauren</div>
+      </div>
+    </div>
+  );
+}
