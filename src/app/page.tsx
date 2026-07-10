@@ -27,6 +27,9 @@ import EbookForm from "@/components/ui/ebook-form";
 import Magnetic from "@/components/ui/magnetic";
 import ExitIntent from "@/components/ui/exit-intent";
 import ScrollTransition from "@/components/ui/scroll-transition";
+import BeforeAfter from "@/components/demo/BeforeAfter";
+import DemoIrisChat from "@/components/demo/DemoIrisChat";
+import LaurenCallDemo from "@/components/demo/LaurenCallDemo";
 
 type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
 
@@ -721,6 +724,15 @@ export default function Home() {
           <IrisAgent />
         </motion.div>
       </section>
+
+      {/* Before / After */}
+      <BeforeAfter />
+
+      {/* Interactive IRIS Chat Demo */}
+      <DemoIrisChat />
+
+      {/* Lauren Live Call Demo */}
+      <LaurenCallDemo />
 
       {/* DEMO TAB END */}</>}
 
