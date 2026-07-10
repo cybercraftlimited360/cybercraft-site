@@ -17,9 +17,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // IP geolocation (free, no key needed)
+    let geo: { city?: string; region?: string; country?: string; isp?: string } = {};
+    if (ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp,status`, { signal: AbortSignal.timeout(2000) });
+        const geoData = await geoRes.json();
+        if (geoData.status === "success") {
+          geo = { city: geoData.city, region: geoData.regionName, country: geoData.country, isp: geoData.isp };
+        }
+      } catch { /* non-blocking */ }
+    }
+
+    const location = [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "Unknown location";
+    const isp = geo.isp || "";
+
     const now = new Date();
     const visit = {
       ip,
+      location,
+      isp,
       page: page || "/",
       referrer: referrer || "",
       ua: ua.slice(0, 120),
@@ -61,6 +78,18 @@ export async function POST(req: NextRequest) {
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);width:90px;">Page</td>
           <td style="padding:9px 0;font-size:13px;font-weight:600;color:#00d4ff;">${page || "/"}</td>
+        </tr>
+        <tr style="border-top:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Location</td>
+          <td style="padding:9px 0;font-size:13px;font-weight:600;color:#a78bfa;">${location}</td>
+        </tr>
+        <tr style="border-top:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">ISP</td>
+          <td style="padding:9px 0;font-size:13px;color:rgba(255,255,255,0.6);">${isp || "—"}</td>
+        </tr>
+        <tr style="border-top:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">IP</td>
+          <td style="padding:9px 0;font-size:13px;color:rgba(255,255,255,0.4);font-family:monospace;">${ip}</td>
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Referrer</td>
