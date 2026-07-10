@@ -23,6 +23,7 @@ import ROICalculator from "@/components/ui/roi-calculator";
 import ProductivityCalculator from "@/components/ui/productivity-calculator";
 import AIBackground from "@/components/ui/ai-background";
 import ProposalForm from "@/components/ui/proposal-form";
+import EbookForm from "@/components/ui/ebook-form";
 import Magnetic from "@/components/ui/magnetic";
 import ExitIntent from "@/components/ui/exit-intent";
 import ScrollTransition from "@/components/ui/scroll-transition";
@@ -280,6 +281,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
 
 export default function Home() {
   const [tab, setTab] = React.useState<SiteTab>("about");
+  const [showEbook, setShowEbook] = React.useState(false);
 
   React.useEffect(() => {
     const HASH_TAB: Record<string, SiteTab> = {
@@ -312,6 +314,7 @@ export default function Home() {
       <ChatWidget />
       <ExitIntent />
       <ScrollTransition />
+      <AnimatePresence>{showEbook && <EbookForm onClose={() => setShowEbook(false)} />}</AnimatePresence>
 
       <ScrollProgress />
       <CursorGlow />
@@ -817,11 +820,22 @@ export default function Home() {
               tag: "Always Watching",
               icon: Shield,
             },
+            {
+              emoji: "📖", name: "Sage", role: "AI eBook Generator", accent: "#f97316",
+              headline: "Turn Your Expertise Into a Lead Magnet",
+              problem: "Your knowledge is your best marketing tool — but writing takes time you don't have.",
+              desc: "Sage transforms your ideas into a professionally written, fully designed eBook in under 60 seconds. Use it as a lead magnet, authority builder, or client onboarding asset. Every eBook is unique to your business.",
+              features: ["AI-written in 60 seconds", "Professionally designed PDF", "Delivered straight to inbox", "Custom to your industry & tone", "5 full chapters + conclusion", "Free — no credit card needed"],
+              impact: "Build authority, capture leads, and grow your email list — automatically.",
+              tag: "Instant PDF",
+              icon: FileSearch,
+              cta: true,
+            },
           ];
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {employees.map(({ emoji, name, role, accent, headline, problem, desc, features, impact, tag, icon: Icon }, i) => (
+              {employees.map(({ emoji, name, role, accent, headline, problem, desc, features, impact, tag, icon: Icon, cta }: any, i: number) => (
                 <TiltCard key={name}>
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -875,6 +889,12 @@ export default function Home() {
                       {/* Impact */}
                       <div className="mt-auto pt-3 border-t border-white/5">
                         <p className="text-[0.72rem] font-semibold" style={{ color: accent }}>→ {impact}</p>
+                        {cta && (
+                          <button onClick={() => setShowEbook(true)}
+                            style={{ marginTop: 12, width: "100%", padding: "10px 16px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, #f97316, #ec4899)`, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em" }}>
+                            📖 Generate Free eBook →
+                          </button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -1868,7 +1888,7 @@ export default function Home() {
           {/* Col 2 — Services */}
           <div className="flex flex-col gap-4">
             <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Services</p>
-            {["AI Chatbots", "Voice AI Agents", "Workflow Automation", "Lead Intelligence", "AI Cybersecurity", "Premium Websites", "AI Ads & Marketing"].map(s => (
+            {["AI Chatbots", "Voice AI Agents", "AI eBook Generator", "Workflow Automation", "Lead Intelligence", "AI Cybersecurity", "Premium Websites", "AI Ads & Marketing"].map(s => (
               <a key={s} href="#services" style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
                 onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
