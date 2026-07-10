@@ -71,9 +71,9 @@ export default function LaurenCallDemo() {
           </p>
         </motion.div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {stage === "idle" && (
-            <motion.div key="idle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <motion.div key="idle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               {/* What to expect */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
                 {[
@@ -107,7 +107,7 @@ export default function LaurenCallDemo() {
           )}
 
           {stage === "form" && (
-            <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <motion.div key="form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               <div style={{
                 background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: 20, padding: "28px 24px",
@@ -185,7 +185,7 @@ export default function LaurenCallDemo() {
           )}
 
           {stage === "calling" && (
-            <motion.div key="calling" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "48px 24px" }}>
+            <motion.div key="calling" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} style={{ textAlign: "center", padding: "48px 24px" }}>
               <div style={{ position: "relative", width: 80, height: 80, margin: "0 auto 24px" }}>
                 <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid rgba(230,77,255,0.3)", animation: "ping 1.5s cubic-bezier(0,0,0.2,1) infinite" }} />
                 <div style={{ position: "absolute", inset: 8, borderRadius: "50%", border: "2px solid rgba(230,77,255,0.5)", animation: "ping 1.5s cubic-bezier(0,0,0.2,1) 0.4s infinite" }} />
@@ -199,7 +199,7 @@ export default function LaurenCallDemo() {
           )}
 
           {stage === "success" && (
-            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "48px 24px" }}>
+            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} style={{ textAlign: "center", padding: "48px 24px" }}>
               <div style={{ fontSize: 56, marginBottom: 20 }}>📲</div>
               <p style={{ fontSize: 20, fontWeight: 700, color: "#22c55e", margin: "0 0 10px" }}>Your phone should be ringing!</p>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>
@@ -218,7 +218,7 @@ export default function LaurenCallDemo() {
           )}
 
           {stage === "error" && (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "40px 24px" }}>
+            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} style={{ textAlign: "center", padding: "40px 24px" }}>
               <p style={{ fontSize: 16, color: "#ef4444", margin: "0 0 8px" }}>⚠️ {error}</p>
               <button onClick={() => setStage("form")} style={{ padding: "11px 24px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>← Try Again</button>
             </motion.div>
