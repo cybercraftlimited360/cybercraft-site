@@ -177,7 +177,8 @@
 
 /* ── Scroll performance ────────────────────────────────────────────────────── */
 html {
-  scroll-behavior: smooth;
+  /* scroll-behavior: smooth removed — Lenis handles smooth scrolling on desktop;
+     native smooth here conflicts with Lenis by double-animating every scrollTo() call */
   -webkit-overflow-scrolling: touch;
 }
 
