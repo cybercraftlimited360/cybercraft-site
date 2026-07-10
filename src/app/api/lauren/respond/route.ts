@@ -172,9 +172,21 @@ Now give a natural, warm opening. Introduce yourself briefly, give ONE honest se
     history.push({ role: "assistant", content: reply });
     await redis.set(historyKey, history.slice(-24), { ex: 3600 });
 
-    // Track call in Redis
+    // Track call in Redis and log history
     if (shouldEnd) {
       redis.hincrby("lauren:stats", "totalCalls", 1).catch(() => {});
+      const log = await redis.get<any[]>("lauren:call-log") ?? [];
+      log.push({
+        callSid,
+        to: name,
+        name,
+        company,
+        challenge,
+        status: "completed",
+        messages: history.length,
+        loggedAt: new Date().toISOString(),
+      });
+      redis.set("lauren:call-log", log.slice(-500)).catch(() => {});
     }
 
     return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName), { headers: { "Content-Type": "text/xml" } });
