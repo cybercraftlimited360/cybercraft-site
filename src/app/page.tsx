@@ -35,6 +35,7 @@ const TAB_MAP: Record<string, SiteTab> = {
 };
 
 function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   const { scrollY } = useScroll();
   const height = useTransform(scrollY, [0, 80], [80, 64]);
   const bg = useTransform(scrollY, [0, 80], ["rgba(15,17,23,0.7)", "rgba(15,17,23,0.97)"]);
@@ -51,7 +52,10 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
   return (
     <>
       <motion.nav
-        style={{ height, backgroundColor: bg, backdropFilter: "blur(20px)" }}
+        style={isTouch
+          ? { height: 64, backgroundColor: "rgba(15,17,23,0.97)" }
+          : { height, backgroundColor: bg, backdropFilter: "blur(20px)" }
+        }
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-[5vw] md:px-[6vw] border-b border-border/50"
       >
         <motion.a href="/" className="flex items-center gap-2 text-foreground font-bold text-3xl tracking-tight no-underline" style={{ cursor: "none" }}>
