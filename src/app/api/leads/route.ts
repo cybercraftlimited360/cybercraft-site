@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     // Save lead to Redis list
     const allLeads = await redis.get<any[]>("leads:all") ?? [];
     allLeads.push(enriched);
-    await redis.set("leads:all", JSON.stringify(allLeads));
+    await redis.set("leads:all", allLeads);
 
     // Auto-trigger Lauren if phone number provided
     let laurenCalling = false;
