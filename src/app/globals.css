@@ -175,6 +175,13 @@
   scrollbar-color: #00d4ff oklch(0.10 0.004 240);
 }
 
+/* Hide native cursor on desktop — CursorGlow provides the custom one */
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
 /* ── Scroll performance ────────────────────────────────────────────────────── */
 html {
   /* scroll-behavior: smooth removed — Lenis handles smooth scrolling on desktop;

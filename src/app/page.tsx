@@ -6,7 +6,6 @@ import { DotGlobeHero } from "@/components/ui/globe-hero";
 import { ArrowRight, Zap, Shield, Bot, Mic, Workflow, Brain, Lock, Phone, TrendingUp, FileSearch, Globe, BarChart3, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import StarWarp from "@/components/ui/star-warp";
-import CursorGlow from "@/components/ui/cursor-glow";
 import TypewriterLines from "@/components/ui/typewriter-lines";
 import NavTypewriter from "@/components/ui/nav-typewriter";
 import ScrollProgress from "@/components/ui/scroll-progress";
@@ -14,7 +13,6 @@ import CountUp from "@/components/ui/count-up";
 import ResultsTicker from "@/components/ui/results-ticker";
 import TiltCard from "@/components/ui/tilt-card";
 import Scheduler from "@/components/ui/scheduler";
-import SmoothScroll from "@/components/ui/smooth-scroll";
 import NoiseTexture from "@/components/ui/noise-texture";
 import ChatWidget from "@/components/ui/chat-widget";
 import IrisAgent from "@/components/ui/iris-agent";
@@ -62,7 +60,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
         }
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-[5vw] md:px-[6vw] border-b border-border/50"
       >
-        <motion.a href="/" className="flex items-center gap-2 text-foreground font-bold text-3xl tracking-tight no-underline" style={{ cursor: "none" }}>
+        <motion.a href="/" className="flex items-center gap-2 text-foreground font-bold text-3xl tracking-tight no-underline" style={{}}>
           <motion.img
             src="/logo-icon.svg"
             alt="CyberCraft360"
@@ -312,7 +310,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background font-sans">
       <LoadingScreen />
-      <SmoothScroll />
       <NoiseTexture />
       <ChatWidget />
       <ExitIntent />
@@ -320,7 +317,6 @@ export default function Home() {
       <AnimatePresence>{showEbook && <EbookForm onClose={() => setShowEbook(false)} />}</AnimatePresence>
 
       <ScrollProgress />
-      <CursorGlow />
 
       {/* NAV */}
       <NavBar tab={tab} setTab={setTab} />
