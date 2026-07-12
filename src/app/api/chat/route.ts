@@ -21,7 +21,7 @@ async function saveConv(conv: ConvRecord) {
     const key = `${conv.lead.name}:${conv.lead.company}`.toLowerCase();
     if (all.some(c => `${c.lead.name}:${c.lead.company}`.toLowerCase() === key)) return;
     const trimmed = [...all, conv].slice(-150);
-    await redis.set("chat:conversations", JSON.stringify(trimmed));
+    await redis.set("chat:conversations", trimmed);
   } catch { /* non-blocking */ }
 }
 

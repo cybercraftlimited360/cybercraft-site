@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
         name: form.name,
         company: form.businessName,
         challenge: (form.painPoints as string[])?.join(", ") || form.biggestChallenge || "Intake form",
-        source: "Intake Form",
+        source: "intake",
         ...(form.phone ? { phone: form.phone } : {}),
       }),
     }).catch(() => {});

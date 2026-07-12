@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   const [irisRaw, laurenRaw] = await Promise.all([
     redis.get<any[]>("iris:conversations"),
-    redis.get<any[]>("lauren:transcripts"),
+    redis.get<any[]>("lauren:call-log"),
   ]);
 
   const iris = (irisRaw ?? []).map(c => ({

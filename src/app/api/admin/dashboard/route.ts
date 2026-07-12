@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         redis.hgetall("lauren:stats"),
         redis.keys("chat:daily:*"),
         redis.get<any[]>("iris:conversations"),
-        redis.get<any[]>("lauren:transcripts"),
+        redis.get<any[]>("lauren:call-log"),
         redis.get<any[]>("clients:offboarded"),
         redis.get<any[]>("visits:recent"),
         redis.hgetall("visits:daily"),
@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
       iris: leads.filter(l => l.source === "iris" || !l.source).length,
       lauren: leads.filter(l => l.source === "lauren").length,
       intake: leads.filter(l => l.source === "intake").length,
+      ebook: leads.filter(l => l.source === "ebook").length,
     };
 
     // â”€â”€ Bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

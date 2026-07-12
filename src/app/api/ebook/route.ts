@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         name, email, company: businessName,
         challenge: `eBook: ${topic}`,
-        source: "ebook-generator",
+        source: "ebook",
       }),
     }).catch(() => {});
 
