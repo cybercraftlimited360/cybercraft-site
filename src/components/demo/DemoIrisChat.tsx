@@ -26,11 +26,12 @@ export default function DemoIrisChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, loading]);
 
   function selectPersona(p: typeof PERSONAS[0]) {
@@ -167,7 +168,7 @@ export default function DemoIrisChat() {
           </div>
 
           {/* Messages */}
-          <div style={{ height: 380, overflowY: "auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div ref={scrollRef} style={{ height: 380, overflowY: "auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
             <AnimatePresence initial={false}>
               {!started ? (
                 <motion.div
@@ -230,7 +231,6 @@ export default function DemoIrisChat() {
                 </>
               )}
             </AnimatePresence>
-            <div ref={bottomRef} />
           </div>
 
           {/* Starter chips */}
