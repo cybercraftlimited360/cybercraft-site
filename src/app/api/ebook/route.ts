@@ -7,6 +7,63 @@ import React from "react";
 
 const OWNER_EMAIL = "cybercraftlimited@gmail.com";
 
+async function generateSocialContent(title: string, subtitle: string, chapters: { title: string; content: string }[], businessName: string, industry: string): Promise<{
+  linkedin: string[];
+  instagram: string[];
+  emails: { subject: string; body: string }[];
+}> {
+  const summary = chapters.map((c, i) => `Chapter ${i + 1}: ${c.title}\n${c.content.slice(0, 300)}…`).join("\n\n");
+  const prompt = `You are a social media and email marketing expert. Based on this eBook, create a content package for ${businessName} (${industry}).
+
+eBook: "${title}" — ${subtitle}
+
+Chapter summaries:
+${summary}
+
+Return ONLY valid JSON:
+{
+  "linkedin": [
+    "Full LinkedIn post 1 (150-200 words, professional tone, ends with a question or CTA, include 3-5 relevant hashtags)",
+    "Full LinkedIn post 2 (different angle from post 1)",
+    "Full LinkedIn post 3 (story-driven, personal insight)",
+    "Full LinkedIn post 4 (data/stat focused)",
+    "Full LinkedIn post 5 (contrarian or myth-busting take)"
+  ],
+  "instagram": [
+    "Instagram caption 1 with 15-20 hashtags (punchy, 2-3 lines max)",
+    "Instagram caption 2",
+    "Instagram caption 3",
+    "Instagram caption 4",
+    "Instagram caption 5",
+    "Instagram caption 6",
+    "Instagram caption 7",
+    "Instagram caption 8",
+    "Instagram caption 9",
+    "Instagram caption 10"
+  ],
+  "emails": [
+    { "subject": "Email subject line 1", "body": "Full email body 1 (conversational, 150-200 words, one clear CTA)" },
+    { "subject": "Email subject line 2", "body": "Full email body 2 (different angle)" },
+    { "subject": "Email subject line 3", "body": "Full email body 3 (story-based)" }
+  ]
+}`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 3000,
+      temperature: 0.75,
+      response_format: { type: "json_object" },
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "Social content generation failed");
+  return JSON.parse(data.choices[0].message.content);
+}
+
 async function generateEbookContent(form: {
   name: string; email: string; businessName: string; industry: string;
   topic: string; audience: string; tone: string; keyPoints: string;
@@ -64,10 +121,38 @@ export async function POST(req: NextRequest) {
     // Generate eBook content via Groq
     const content = await generateEbookContent({ name, email, businessName, industry, topic, audience, tone, keyPoints });
 
-    // Render PDF
-    const pdfBuffer = await renderToBuffer(
-      React.createElement(EbookDocument, { content, author: name, businessName, email })
-    );
+    // Render PDF + generate social content in parallel
+    const [pdfBuffer, social] = await Promise.all([
+      renderToBuffer(React.createElement(EbookDocument, { content, author: name, businessName, email })),
+      generateSocialContent(content.title, content.subtitle, content.chapters, businessName, industry).catch(() => null),
+    ]);
+
+    const socialHtml = social ? `
+      <div style="margin-top:28px;padding:20px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.07);">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#f97316;margin:0 0 14px;">🚀 Your Social Content Pack</p>
+        <p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 18px;line-height:1.6;">We turned your eBook into a full month of content. Copy, paste, and post.</p>
+
+        <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;text-transform:uppercase;margin:0 0 10px;">LinkedIn Posts (5)</p>
+        ${(social.linkedin ?? []).map((p: string, i: number) => `
+          <div style="margin-bottom:10px;padding:14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:2px solid #0077b5;">
+            <p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);margin:0 0 6px;">Post ${i + 1}</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.7);margin:0;line-height:1.6;white-space:pre-line;">${p}</p>
+          </div>`).join("")}
+
+        <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;text-transform:uppercase;margin:18px 0 10px;">Instagram Captions (10)</p>
+        ${(social.instagram ?? []).map((p: string, i: number) => `
+          <div style="margin-bottom:8px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:2px solid #e1306c;">
+            <p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);margin:0 0 5px;">Caption ${i + 1}</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.7);margin:0;line-height:1.6;">${p}</p>
+          </div>`).join("")}
+
+        <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;text-transform:uppercase;margin:18px 0 10px;">Email Newsletter Drafts (3)</p>
+        ${(social.emails ?? []).map((e: any, i: number) => `
+          <div style="margin-bottom:10px;padding:14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:2px solid #22c55e;">
+            <p style="font-size:11px;font-weight:700;color:#22c55e;margin:0 0 4px;">Subject: ${e.subject}</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.7);margin:0;line-height:1.6;white-space:pre-line;">${e.body}</p>
+          </div>`).join("")}
+      </div>` : "";
 
     // Email PDF to client
     await sendEmail({
@@ -89,6 +174,7 @@ export async function POST(req: NextRequest) {
       <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
         Book a Free Strategy Call →
       </a>
+      ${socialHtml}
       <p style="font-size:12px;color:rgba(255,255,255,0.2);margin:24px 0 0;">Want a full AI content engine for ${businessName}? We automate blog posts, social content, emails, and more — every week, hands-free.</p>
       <p style="font-size:11px;color:rgba(255,255,255,0.15);margin:16px 0 0;">CyberCraft360 · Houston, TX · cybercraft360.com</p>
     </div>
@@ -148,7 +234,7 @@ export async function POST(req: NextRequest) {
     // Save to Redis log
     redis.get<any[]>("ebooks:all").then(all => {
       const list = all ?? [];
-      list.push({ name, email, businessName, topic, title: content.title, createdAt: new Date().toISOString() });
+      list.push({ name, email, businessName, topic, title: content.title, social: social ?? null, createdAt: new Date().toISOString() });
       return redis.set("ebooks:all", list.slice(-500));
     }).catch(() => {});
 

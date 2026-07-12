@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -101,6 +101,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="lauren"    &&<LaurenTab    data={data} token={token} h={h}/>}
             {tab==="analytics" &&<AnalyticsTab data={data}/>}
             {tab==="calendar"  &&<CalendarTab  data={data}/>}
+            {tab==="ebooks"    &&<EbooksTab    token={token} h={h}/>}
           </>
         ):(
           <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
@@ -1269,6 +1270,114 @@ function CalendarTab({data}:{data:any}) {
             <div style={{textAlign:"right"}}><Name style={{color:"#00d4ff"}}>{b.date}</Name><Sub>{b.time}</Sub></div>
           </Row>
         )):<EmptyState>No upcoming bookings</EmptyState>}
+      </Card>
+    </div>
+  );
+}
+
+// ── eBooks Tab ────────────────────────────────────────────────────────────────
+function EbooksTab({token,h}:{token:string;h:ReturnType<typeof useAdminApi>}) {
+  const [ebooks,setEbooks]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState<any|null>(null);
+  const [socialTab,setSocialTab]=useState<"linkedin"|"instagram"|"emails">("linkedin");
+
+  useEffect(()=>{
+    h.get("/api/admin/ebooks").then(d=>{
+      if(d?.ebooks) setEbooks(d.ebooks);
+      setLoading(false);
+    });
+  },[]);
+
+  if(loading) return <div style={{textAlign:"center",padding:"60px 0",color:"rgba(255,255,255,0.3)"}}>Loading eBooks…</div>;
+
+  if(selected) return (
+    <div>
+      <button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",fontSize:13,cursor:"pointer",padding:"0 0 16px",display:"flex",alignItems:"center",gap:6}}>← Back to all eBooks</button>
+      <Card style={{marginBottom:14}}>
+        <Row><div>
+          <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#f97316",margin:"0 0 4px"}}>📖 eBook</p>
+          <Name>{selected.title||selected.topic}</Name>
+          <Sub>{selected.businessName} · {selected.email}</Sub>
+          <Sub>{new Date(selected.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</Sub>
+        </div></Row>
+      </Card>
+
+      {selected.social ? (
+        <div>
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {(["linkedin","instagram","emails"] as const).map(t=>(
+              <button key={t} onClick={()=>setSocialTab(t)} style={{padding:"8px 14px",borderRadius:20,border:`1px solid ${socialTab===t?"#f97316":"rgba(255,255,255,0.08)"}`,background:socialTab===t?"rgba(249,115,22,0.1)":"none",color:socialTab===t?"#f97316":"rgba(255,255,255,0.4)",fontSize:12,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                {t==="linkedin"?"LinkedIn (5)":t==="instagram"?"Instagram (10)":"Email Drafts (3)"}
+              </button>
+            ))}
+          </div>
+
+          {socialTab==="linkedin" && (selected.social.linkedin??[]).map((p:string,i:number)=>(
+            <Card key={i} style={{marginBottom:10}}>
+              <Row><div style={{width:"100%"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <p style={{fontSize:10,fontWeight:700,color:"#0077b5",margin:0,letterSpacing:"0.1em",textTransform:"uppercase"}}>Post {i+1}</p>
+                  <button onClick={()=>navigator.clipboard.writeText(p)} style={{background:"none",border:"none",color:"rgba(255,255,255,0.3)",fontSize:11,cursor:"pointer"}}>Copy</button>
+                </div>
+                <p style={{fontSize:13,color:"rgba(255,255,255,0.7)",margin:0,lineHeight:1.65,whiteSpace:"pre-line"}}>{p}</p>
+              </div></Row>
+            </Card>
+          ))}
+
+          {socialTab==="instagram" && (selected.social.instagram??[]).map((p:string,i:number)=>(
+            <Card key={i} style={{marginBottom:10}}>
+              <Row><div style={{width:"100%"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <p style={{fontSize:10,fontWeight:700,color:"#e1306c",margin:0,letterSpacing:"0.1em",textTransform:"uppercase"}}>Caption {i+1}</p>
+                  <button onClick={()=>navigator.clipboard.writeText(p)} style={{background:"none",border:"none",color:"rgba(255,255,255,0.3)",fontSize:11,cursor:"pointer"}}>Copy</button>
+                </div>
+                <p style={{fontSize:13,color:"rgba(255,255,255,0.7)",margin:0,lineHeight:1.65}}>{p}</p>
+              </div></Row>
+            </Card>
+          ))}
+
+          {socialTab==="emails" && (selected.social.emails??[]).map((e:any,i:number)=>(
+            <Card key={i} style={{marginBottom:10}}>
+              <Row><div style={{width:"100%"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#22c55e",margin:0}}>Subject: {e.subject}</p>
+                  <button onClick={()=>navigator.clipboard.writeText(`Subject: ${e.subject}\n\n${e.body}`)} style={{background:"none",border:"none",color:"rgba(255,255,255,0.3)",fontSize:11,cursor:"pointer"}}>Copy</button>
+                </div>
+                <p style={{fontSize:13,color:"rgba(255,255,255,0.7)",margin:0,lineHeight:1.65,whiteSpace:"pre-line"}}>{e.body}</p>
+              </div></Row>
+            </Card>
+          ))}
+        </div>
+      ):(
+        <Card><EmptyState>Social content not available for this eBook — was generated before the social pipeline was added.</EmptyState></Card>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <SectionTitle style={{margin:0}}>All Generated eBooks</SectionTitle>
+        <span style={{fontSize:11,color:"rgba(255,255,255,0.25)"}}>{ebooks.length} total</span>
+      </div>
+      <Card>
+        {ebooks.length===0
+          ? <EmptyState>No eBooks generated yet. The form on the website will populate this.</EmptyState>
+          : ebooks.map((eb,i)=>(
+            <Row key={i} border={i>0} style={{cursor:"pointer"}} onClick={()=>{setSelected(eb);setSocialTab("linkedin");}}>
+              <div style={{flex:1,minWidth:0}}>
+                <Name style={{fontSize:12}}>{eb.title||eb.topic}</Name>
+                <Sub>{eb.businessName} · {eb.email}</Sub>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <p style={{fontSize:10,color:"rgba(255,255,255,0.25)",margin:"0 0 4px"}}>{new Date(eb.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</p>
+                {eb.social
+                  ? <span style={{fontSize:9,fontWeight:700,color:"#22c55e",letterSpacing:"0.1em",textTransform:"uppercase"}}>✓ Social</span>
+                  : <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>No social</span>}
+              </div>
+            </Row>
+          ))}
       </Card>
     </div>
   );
