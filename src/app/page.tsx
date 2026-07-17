@@ -692,6 +692,118 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* FOUNDER SECTION */}
+      <section className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-background border-t border-border/30 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="mb-16">
+            <div className="flex items-center gap-3 mb-5">
+              <motion.div initial={{ width: 0 }} whileInView={{ width: 32 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }} className="h-0.5 bg-primary rounded-full" />
+              <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ The Founder</span>
+            </div>
+            <h2 className="font-serif text-4xl md:text-5xl font-light leading-tight text-foreground" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
+              Built by Someone Who <em>Knows Your Problem</em>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left — Photo / Video */}
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7 }} className="relative">
+              {/* VIDEO — replace src with your HeyGen/YouTube embed URL */}
+              {/* To use a video: uncomment the iframe below and remove the photo div */}
+              {/*
+              <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <iframe
+                  src="YOUR_VIDEO_EMBED_URL_HERE"
+                  className="absolute inset-0 w-full h-full"
+                  frameBorder="0"
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                />
+              </div>
+              */}
+
+              {/* PHOTO — replace /founder.jpg with your actual image path */}
+              <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: "4/5", border: "1px solid rgba(255,255,255,0.08)", background: "linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.08))" }}>
+                {/* Swap this img src for your real photo. Recommended: 800×1000px, professional headshot */}
+                <img
+                  src="/founder.jpg"
+                  alt="Saad Imran — Founder, CyberCraft360"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                {/* Placeholder shown when no photo is present yet */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.04), rgba(124,58,237,0.06))" }}>
+                  <div style={{ width: 96, height: 96, borderRadius: "50%", background: "rgba(0,212,255,0.1)", border: "2px dashed rgba(0,212,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>👤</div>
+                  <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Add photo → /public/founder.jpg</p>
+                </div>
+                {/* Gradient overlay at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(10,12,18,0.7), transparent)" }} />
+              </div>
+
+              {/* Floating trust badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="absolute -bottom-5 -right-4 md:-right-8"
+                style={{ background: "rgba(10,12,18,0.95)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: 14, padding: "14px 18px", backdropFilter: "blur(20px)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
+              >
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#00d4ff", lineHeight: 1 }}>60+</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3 }}>AI Systems Built</div>
+              </motion.div>
+            </motion.div>
+
+            {/* Right — Bio */}
+            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.7, delay: 0.1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#00d4ff", marginBottom: 10 }}>Houston, Texas</div>
+              <h3 className="font-serif text-3xl md:text-4xl font-light text-white mb-1" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>Saad Imran</h3>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 28 }}>Founder & AI Systems Architect</p>
+
+              <div className="flex flex-col gap-5 mb-10">
+                <p className="text-muted-foreground leading-relaxed text-base">
+                  I started CyberCraft360 after watching businesses lose thousands of dollars every month to missed calls, slow follow-ups, and repetitive tasks that should have been automated years ago.
+                </p>
+                <p className="text-muted-foreground leading-relaxed text-base">
+                  I've built AI systems for businesses across industries — from local service companies to growing agencies — and the transformation is always the same: more leads captured, faster responses, and hours of admin work wiped out every single week.
+                </p>
+                <p className="text-muted-foreground leading-relaxed text-base">
+                  Everything we build is custom. No templates. No off-the-shelf tools. Just AI engineered specifically for your business, trained on your data, and built to get smarter every month.
+                </p>
+              </div>
+
+              {/* Trust signals */}
+              <div className="grid grid-cols-3 gap-4 mb-10">
+                {[
+                  { stat: "60+", label: "AI Deployments" },
+                  { stat: "$2.1M+", label: "Saved for Clients" },
+                  { stat: "4–6 wk", label: "Average Live Time" },
+                ].map(({ stat, label }) => (
+                  <div key={label} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "#00d4ff", lineHeight: 1 }}>{stat}</div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 5 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <motion.a href="#contact" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold tracking-widest uppercase no-underline hover:opacity-90 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
+                  Book a Call with Saad <ArrowRight size={15} />
+                </motion.a>
+                <motion.a href="/intake" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold tracking-widest uppercase no-underline transition-colors duration-200"
+                  style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
+                  Get a Quote
+                </motion.a>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* ABOUT TAB END */}</>}
 
       {tab === "demo" && <>
