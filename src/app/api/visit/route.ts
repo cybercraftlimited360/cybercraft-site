@@ -18,25 +18,29 @@ export async function POST(req: NextRequest) {
     }
 
     // IP geolocation (free, no key needed)
-    let geo: { city?: string; region?: string; country?: string; isp?: string } = {};
+    let geo: { city?: string; region?: string; country?: string; isp?: string; proxy?: boolean; hosting?: boolean } = {};
     if (ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
       try {
-        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp,status`, { signal: AbortSignal.timeout(2000) });
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp,proxy,hosting,status`, { signal: AbortSignal.timeout(2000) });
         const geoData = await geoRes.json();
         if (geoData.status === "success") {
-          geo = { city: geoData.city, region: geoData.regionName, country: geoData.country, isp: geoData.isp };
+          geo = { city: geoData.city, region: geoData.regionName, country: geoData.country, isp: geoData.isp, proxy: geoData.proxy, hosting: geoData.hosting };
         }
       } catch { /* non-blocking */ }
     }
 
     const location = [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "Unknown location";
     const isp = geo.isp || "";
+    const isVpn = geo.proxy === true;
+    const isDatacenter = geo.hosting === true;
 
     const now = new Date();
     const visit = {
       ip,
       location,
       isp,
+      isVpn,
+      isDatacenter,
       page: page || "/",
       referrer: referrer || "",
       ua: ua.slice(0, 120),

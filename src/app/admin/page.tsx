@@ -1316,6 +1316,10 @@ function WebsiteTab({data}:{data:any}) {
   for(const v of recent) { const r = v.referrer||"Direct"; refCounts[r]=(refCounts[r]??0)+1; }
   const topRefs = Object.entries(refCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
+  // VPN stats
+  const vpnCount = recent.filter(v=>v.isVpn||v.isDatacenter).length;
+  const realCount = recent.filter(v=>!v.isVpn&&!v.isDatacenter).length;
+
   const [view,setView]=useState<"recent"|"pages"|"locations"|"referrers">("recent");
 
   return (
@@ -1337,6 +1341,33 @@ function WebsiteTab({data}:{data:any}) {
           </div>
         ))}
       </div>
+
+      {/* VPN vs Real */}
+      {recent.length>0&&(
+        <Card>
+          <Row>
+            <div style={{flex:1}}>
+              <SectionTitle style={{margin:"0 0 10px"}}>Visitor Quality</SectionTitle>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <div style={{flex:1,background:"rgba(255,255,255,0.04)",borderRadius:8,overflow:"hidden",height:10}}>
+                  <div style={{height:"100%",background:"linear-gradient(90deg,#22c55e,#00d4ff)",width:`${recent.length>0?(realCount/recent.length)*100:0}%`,transition:"width 0.4s"}}/>
+                </div>
+                <span style={{fontSize:11,color:"rgba(255,255,255,0.4)",flexShrink:0,minWidth:70}}>{realCount} / {recent.length}</span>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:16,flexShrink:0,marginLeft:16}}>
+              <div style={{textAlign:"center"}}>
+                <p style={{fontSize:"1.2rem",fontWeight:800,color:"#22c55e",margin:"0 0 2px"}}>{realCount}</p>
+                <p style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.25)",margin:0,textTransform:"uppercase",letterSpacing:"0.1em"}}>Real</p>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <p style={{fontSize:"1.2rem",fontWeight:800,color:"#f59e0b",margin:"0 0 2px"}}>{vpnCount}</p>
+                <p style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.25)",margin:0,textTransform:"uppercase",letterSpacing:"0.1em"}}>VPN/Bot</p>
+              </div>
+            </div>
+          </Row>
+        </Card>
+      )}
 
       {/* 30-day bar chart */}
       <Card>
@@ -1378,7 +1409,17 @@ function WebsiteTab({data}:{data:any}) {
             : recent.slice(0,40).map((v,i)=>(
               <Row key={i} border={i>0}>
                 <div style={{flex:1,minWidth:0}}>
-                  <Name style={{fontSize:12}}>{v.location||"Unknown location"}</Name>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                    <Name style={{fontSize:12,margin:0}}>{v.location||"Unknown location"}</Name>
+                    {(v.isVpn||v.isDatacenter)&&(
+                      <span style={{fontSize:9,fontWeight:700,color:"#f59e0b",background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.25)",borderRadius:4,padding:"1px 5px",letterSpacing:"0.08em",flexShrink:0}}>
+                        {v.isVpn?"VPN":"DC"}
+                      </span>
+                    )}
+                    {!v.isVpn&&!v.isDatacenter&&v.location!=="Unknown location"&&(
+                      <span style={{fontSize:9,fontWeight:700,color:"#22c55e",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:4,padding:"1px 5px",letterSpacing:"0.08em",flexShrink:0}}>REAL</span>
+                    )}
+                  </div>
                   <Sub>{v.page||"/"} {v.referrer?`· from ${v.referrer}`:""}</Sub>
                 </div>
                 <div style={{textAlign:"right",flexShrink:0}}>
