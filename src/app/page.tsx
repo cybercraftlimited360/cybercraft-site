@@ -726,16 +726,10 @@ export default function Home() {
               <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: "4/5", border: "1px solid rgba(255,255,255,0.08)", background: "linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.08))" }}>
                 {/* Swap this img src for your real photo. Recommended: 800×1000px, professional headshot */}
                 <img
-                  src="/founder.jpg"
+                  src="/founder.png"
                   alt="Saad Imran — Founder, CyberCraft360"
                   className="absolute inset-0 w-full h-full object-cover object-center"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
-                {/* Placeholder shown when no photo is present yet */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.04), rgba(124,58,237,0.06))" }}>
-                  <div style={{ width: 96, height: 96, borderRadius: "50%", background: "rgba(0,212,255,0.1)", border: "2px dashed rgba(0,212,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>👤</div>
-                  <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Add photo → /public/founder.jpg</p>
-                </div>
                 {/* Gradient overlay at bottom */}
                 <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(10,12,18,0.7), transparent)" }} />
               </div>
