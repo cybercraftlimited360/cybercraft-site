@@ -200,6 +200,7 @@ export async function GET(req: NextRequest) {
         recent: recentVisits.slice(0, 50),
         today: Number((visitsDailyRaw ?? {})[todayStr] ?? 0),
         total: Object.values(visitsDailyRaw ?? {}).reduce((s, v) => s + Number(v), 0),
+        dailyRaw: Object.fromEntries(Object.entries(visitsDailyRaw ?? {}).map(([k,v])=>[k,Number(v)])),
       },
     });
   } catch (err) {

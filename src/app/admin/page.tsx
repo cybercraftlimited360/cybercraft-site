@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -102,6 +102,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="analytics" &&<AnalyticsTab data={data}/>}
             {tab==="calendar"  &&<CalendarTab  data={data}/>}
             {tab==="ebooks"    &&<EbooksTab    token={token} h={h}/>}
+            {tab==="website"   &&<WebsiteTab   data={data}/>}
           </>
         ):(
           <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
@@ -1271,6 +1272,192 @@ function CalendarTab({data}:{data:any}) {
           </Row>
         )):<EmptyState>No upcoming bookings</EmptyState>}
       </Card>
+    </div>
+  );
+}
+
+// ── Website Tab ───────────────────────────────────────────────────────────────
+function WebsiteTab({data}:{data:any}) {
+  const visitors = data.visitors ?? {};
+  const recent: any[] = visitors.recent ?? [];
+  const dailyRaw: Record<string,number> = visitors.dailyRaw ?? {};
+
+  // Build last 30 days array
+  const days30 = Array.from({length:30},(_,i)=>{
+    const d = new Date(); d.setDate(d.getDate()-i);
+    return d.toISOString().slice(0,10);
+  }).reverse();
+
+  // Build last 7 days and current month
+  const today = new Date().toISOString().slice(0,10);
+  const week7 = days30.slice(-7);
+  const monthStr = today.slice(0,7);
+
+  const totalToday = dailyRaw[today] ?? 0;
+  const totalWeek = week7.reduce((s,d)=>s+(dailyRaw[d]??0),0);
+  const totalMonth = Object.entries(dailyRaw).filter(([k])=>k.startsWith(monthStr)).reduce((s,[,v])=>s+v,0);
+  const totalAll = visitors.total ?? 0;
+
+  // Bar chart max
+  const barMax = Math.max(...days30.map(d=>dailyRaw[d]??0), 1);
+
+  // Top pages
+  const pageCounts: Record<string,number> = {};
+  for(const v of recent) { const p = v.page||"/"; pageCounts[p]=(pageCounts[p]??0)+1; }
+  const topPages = Object.entries(pageCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  // Top locations
+  const locCounts: Record<string,number> = {};
+  for(const v of recent) { const l = v.location||"Unknown"; locCounts[l]=(locCounts[l]??0)+1; }
+  const topLocs = Object.entries(locCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Top referrers
+  const refCounts: Record<string,number> = {};
+  for(const v of recent) { const r = v.referrer||"Direct"; refCounts[r]=(refCounts[r]??0)+1; }
+  const topRefs = Object.entries(refCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const [view,setView]=useState<"recent"|"pages"|"locations"|"referrers">("recent");
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Stats row */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+        {[
+          {label:"Today",value:totalToday,accent:"#00d4ff",icon:"☀️"},
+          {label:"This Week",value:totalWeek,accent:"#7c3aed",icon:"📅"},
+          {label:"This Month",value:totalMonth,accent:"#f97316",icon:"📆"},
+          {label:"All Time",value:totalAll,accent:"#22c55e",icon:"🌐"},
+        ].map(s=>(
+          <div key={s.label} style={{padding:"14px 12px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",margin:0}}>{s.label}</p>
+              <span style={{fontSize:14}}>{s.icon}</span>
+            </div>
+            <p style={{fontSize:"1.4rem",fontWeight:800,color:s.accent,margin:0,lineHeight:1}}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 30-day bar chart */}
+      <Card>
+        <Row><SectionTitle style={{margin:0}}>Daily Visitors — Last 30 Days</SectionTitle></Row>
+        <div style={{padding:"0 16px 16px",display:"flex",alignItems:"flex-end",gap:3,height:80}}>
+          {days30.map(d=>{
+            const val = dailyRaw[d]??0;
+            const pct = barMax>0 ? val/barMax : 0;
+            const isToday = d===today;
+            return(
+              <div key={d} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={`${d}: ${val} visitors`}>
+                <div style={{width:"100%",borderRadius:"2px 2px 0 0",background:isToday?"#00d4ff":pct>0?"rgba(0,212,255,0.4)":"rgba(255,255,255,0.05)",height:`${Math.max(pct*56,pct>0?4:2)}px`,transition:"height 0.3s"}}/>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{padding:"0 16px 10px",display:"flex",justifyContent:"space-between"}}>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>{days30[0]}</span>
+          <span style={{fontSize:10,color:"#00d4ff",fontWeight:700}}>Today: {totalToday}</span>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>{today}</span>
+        </div>
+      </Card>
+
+      {/* Sub-tabs */}
+      <div style={{display:"flex",gap:6}}>
+        {(["recent","pages","locations","referrers"] as const).map(t=>(
+          <button key={t} onClick={()=>setView(t)} style={{padding:"7px 14px",borderRadius:20,border:`1px solid ${view===t?"#00d4ff":"rgba(255,255,255,0.08)"}`,background:view===t?"rgba(0,212,255,0.08)":"none",color:view===t?"#00d4ff":"rgba(255,255,255,0.35)",fontSize:12,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+            {t==="recent"?"Recent Visitors":t==="pages"?"Top Pages":t==="locations"?"Locations":"Referrers"}
+          </button>
+        ))}
+      </div>
+
+      {/* Recent visitors */}
+      {view==="recent" && (
+        <Card>
+          <Row><SectionTitle style={{margin:0}}>Recent Visitors</SectionTitle><span style={{fontSize:11,color:"rgba(255,255,255,0.2)"}}>{recent.length} stored</span></Row>
+          {recent.length===0
+            ? <EmptyState>No visitors recorded yet.</EmptyState>
+            : recent.slice(0,40).map((v,i)=>(
+              <Row key={i} border={i>0}>
+                <div style={{flex:1,minWidth:0}}>
+                  <Name style={{fontSize:12}}>{v.location||"Unknown location"}</Name>
+                  <Sub>{v.page||"/"} {v.referrer?`· from ${v.referrer}`:""}</Sub>
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <p style={{fontSize:10,color:"rgba(255,255,255,0.25)",margin:"0 0 3px"}}>{timeAgo(v.time)}</p>
+                  {v.isp&&<p style={{fontSize:10,color:"rgba(255,255,255,0.2)",margin:0}}>{v.isp.slice(0,24)}</p>}
+                </div>
+              </Row>
+            ))}
+        </Card>
+      )}
+
+      {/* Top pages */}
+      {view==="pages" && (
+        <Card>
+          <Row><SectionTitle style={{margin:0}}>Top Pages</SectionTitle></Row>
+          {topPages.length===0
+            ? <EmptyState>No page data yet.</EmptyState>
+            : topPages.map(([page,count],i)=>{
+              const pct = topPages[0][1]>0?count/topPages[0][1]:0;
+              return(
+                <Row key={i} border={i>0}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <Name style={{fontSize:12}}>{page}</Name>
+                    <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.06)",marginTop:6}}>
+                      <div style={{height:"100%",borderRadius:2,background:"#00d4ff",width:`${pct*100}%`}}/>
+                    </div>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:700,color:"#00d4ff",marginLeft:12,flexShrink:0}}>{count}</span>
+                </Row>
+              );
+            })}
+        </Card>
+      )}
+
+      {/* Top locations */}
+      {view==="locations" && (
+        <Card>
+          <Row><SectionTitle style={{margin:0}}>Top Locations</SectionTitle></Row>
+          {topLocs.length===0
+            ? <EmptyState>No location data yet.</EmptyState>
+            : topLocs.map(([loc,count],i)=>{
+              const pct = topLocs[0][1]>0?count/topLocs[0][1]:0;
+              return(
+                <Row key={i} border={i>0}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <Name style={{fontSize:12}}>{loc}</Name>
+                    <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.06)",marginTop:6}}>
+                      <div style={{height:"100%",borderRadius:2,background:"#7c3aed",width:`${pct*100}%`}}/>
+                    </div>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:700,color:"#7c3aed",marginLeft:12,flexShrink:0}}>{count}</span>
+                </Row>
+              );
+            })}
+        </Card>
+      )}
+
+      {/* Top referrers */}
+      {view==="referrers" && (
+        <Card>
+          <Row><SectionTitle style={{margin:0}}>Traffic Sources</SectionTitle></Row>
+          {topRefs.length===0
+            ? <EmptyState>No referrer data yet.</EmptyState>
+            : topRefs.map(([ref,count],i)=>{
+              const pct = topRefs[0][1]>0?count/topRefs[0][1]:0;
+              return(
+                <Row key={i} border={i>0}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <Name style={{fontSize:12}}>{ref||"Direct / none"}</Name>
+                    <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.06)",marginTop:6}}>
+                      <div style={{height:"100%",borderRadius:2,background:"#f97316",width:`${pct*100}%`}}/>
+                    </div>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:700,color:"#f97316",marginLeft:12,flexShrink:0}}>{count}</span>
+                </Row>
+              );
+            })}
+        </Card>
+      )}
     </div>
   );
 }
