@@ -940,6 +940,7 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
   const [calling,setCalling]=useState(false); const [result,setResult]=useState<{ok:boolean;message:string}|null>(null);
   const [callLog,setCallLog]=useState<any[]>([]);
   const [showLog,setShowLog]=useState(false);
+  const [expandedCall,setExpandedCall]=useState<string|null>(null);
   const [schedMode,setSchedMode]=useState(false);
   const [schedDate,setSchedDate]=useState(""); const [schedTime,setSchedTime]=useState("");
   const [schedStatus,setSchedStatus]=useState<string|null>(null);
@@ -1040,19 +1041,42 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
       </div>
       {showLog&&(
         <Card>
-          {callLog.length>0?callLog.slice(0,30).map((c:any,i:number)=>(
-            <Row key={i} border={i>0}>
-              <div>
-                <Name>{c.to||c.phone||"Unknown"}</Name>
-                <Sub>{c.name||""}{c.company?` · ${c.company}`:""}</Sub>
-                <Sub>{c.loggedAt?new Date(c.loggedAt).toLocaleString():""}</Sub>
+          {callLog.length>0?callLog.slice(0,30).map((c:any,i:number)=>{
+            const callId=c.callSid||String(i);
+            const isOpen=expandedCall===callId;
+            const transcript:any[]=Array.isArray(c.transcript)?c.transcript:[];
+            return (
+              <div key={i} style={{borderTop:i>0?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",cursor:transcript.length>0?"pointer":"default"}} onClick={()=>transcript.length>0&&setExpandedCall(isOpen?null:callId)}>
+                  <div>
+                    <Name>{c.name||c.to||"Unknown"}</Name>
+                    <Sub>{c.company||""}{c.company&&c.challenge?" · ":""}{c.challenge||""}</Sub>
+                    <Sub>{c.loggedAt?new Date(c.loggedAt).toLocaleString():""}</Sub>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    <div style={{textAlign:"right"}}>
+                      <span style={{fontSize:10,fontWeight:700,color:c.status==="completed"?"#22c55e":c.status==="busy"||c.status==="no-answer"?"#f59e0b":"#64748b",textTransform:"uppercase"}}>{c.status||"placed"}</span>
+                      <Sub>{transcript.length>0?`${transcript.length} turns`:`${c.messages||0} msgs`}</Sub>
+                    </div>
+                    {transcript.length>0&&<span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>{isOpen?"▲":"▼"}</span>}
+                  </div>
+                </div>
+                {isOpen&&transcript.length>0&&(
+                  <div style={{padding:"0 16px 16px",display:"flex",flexDirection:"column",gap:8}}>
+                    {transcript.map((msg:any,mi:number)=>{
+                      const isLauren=msg.role==="assistant";
+                      return (
+                        <div key={mi} style={{display:"flex",flexDirection:"column",alignItems:isLauren?"flex-start":"flex-end"}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:isLauren?"#e64dff":"#00d4ff",marginBottom:3}}>{isLauren?"Lauren":"Caller"}</div>
+                          <div style={{maxWidth:"85%",padding:"9px 13px",borderRadius:isLauren?"4px 12px 12px 12px":"12px 4px 12px 12px",background:isLauren?"rgba(230,77,255,0.08)":"rgba(0,212,255,0.08)",border:`1px solid ${isLauren?"rgba(230,77,255,0.2)":"rgba(0,212,255,0.2)"}`,fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.5}}>{msg.content}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                <span style={{fontSize:10,fontWeight:700,color:c.status==="completed"?"#22c55e":c.status==="busy"||c.status==="no-answer"?"#f59e0b":"#64748b",textTransform:"uppercase"}}>{c.status||"placed"}</span>
-                {c.duration&&<Sub>{Math.round(c.duration/60)}m {c.duration%60}s</Sub>}
-              </div>
-            </Row>
-          )):<EmptyState>No call history yet</EmptyState>}
+            );
+          }):<EmptyState>No call history yet</EmptyState>}
         </Card>
       )}
     </div>

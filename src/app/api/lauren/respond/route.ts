@@ -199,6 +199,7 @@ Now give your opening. You're a real person — sound like it. Introduce yoursel
         challenge,
         status: "completed",
         messages: history.length,
+        transcript: history.filter(m => !m.content.startsWith("[CONTEXT:")),
         loggedAt: new Date().toISOString(),
       });
       redis.set("lauren:call-log", log.slice(-500)).catch(() => {});
