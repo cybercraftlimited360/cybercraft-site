@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     if (!apiKey) throw new Error("Missing GROQ_API_KEY");
 
     const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}&challenge=${encodeURIComponent(challenge)}`;
+    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
 
     // Load conversation history
     const historyKey = `lauren:call:${callSid}`;

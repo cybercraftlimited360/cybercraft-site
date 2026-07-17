@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const firstName = name.split(" ")[0];
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-  const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}&challenge=${encodeURIComponent(challenge)}`;
+  const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
 
   // Opening: confirm who we're speaking to first — don't assume
   const greeting = `Hi, may I speak with ${firstName}?`;
