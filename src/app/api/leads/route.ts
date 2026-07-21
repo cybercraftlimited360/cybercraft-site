@@ -128,6 +128,28 @@ async function sendLeadEmail(
   });
 }
 
+function scoreLead(lead: any): number {
+  let score = 0;
+  // Phone number = high intent (+25)
+  if (lead.phone) score += 25;
+  // Specific challenge mentioned (+20)
+  if (lead.challenge && lead.challenge.length > 20) score += 20;
+  // Company name given (+15)
+  if (lead.company && lead.company.toLowerCase() !== "your business" && lead.company.length > 2) score += 15;
+  // Business email vs gmail/yahoo (+15)
+  const email = (lead.email || "").toLowerCase();
+  if (email && !email.includes("gmail") && !email.includes("yahoo") && !email.includes("hotmail") && !email.includes("outlook")) score += 15;
+  else if (email) score += 5;
+  // Challenge contains revenue/money/calls/leads keywords (+10)
+  const urgentKeywords = /miss|call|lead|revenue|customer|client|sales|appointment|book|automat|follow/i;
+  if (urgentKeywords.test(lead.challenge || "")) score += 10;
+  // Source quality (+10 for intake/ebook, +5 for iris)
+  if (lead.source === "intake") score += 10;
+  else if (lead.source === "ebook") score += 8;
+  else if (lead.source === "iris") score += 5;
+  return Math.min(score, 100);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const lead = await req.json();
@@ -139,7 +161,8 @@ export async function POST(req: NextRequest) {
 
     await redis.set(key, "1", { ex: 60 * 60 * 24 * 7 }); // 7 day TTL
 
-    const enriched = { ...lead, capturedAt: new Date().toISOString() };
+    const score = scoreLead(lead);
+    const enriched = { ...lead, capturedAt: new Date().toISOString(), score, followUpStatus: "pending" };
 
     // Save lead to Redis list
     const allLeads = await redis.get<any[]>("leads:all") ?? [];

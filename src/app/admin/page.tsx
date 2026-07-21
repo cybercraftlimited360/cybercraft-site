@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website","ads"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website","ads","followups","competitors","roi","referrals"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -104,6 +104,10 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="ebooks"    &&<EbooksTab    token={token} h={h}/>}
             {tab==="website"   &&<WebsiteTab   data={data}/>}
             {tab==="ads"       &&<AdsTab       token={token}/>}
+            {tab==="followups" &&<FollowUpsTab  token={token}/>}
+            {tab==="competitors"&&<CompetitorTab token={token}/>}
+            {tab==="roi"       &&<ROIReportTab  token={token}/>}
+            {tab==="referrals" &&<ReferralTab   token={token}/>}
           </>
         ):(
           <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
@@ -1853,3 +1857,357 @@ function activityBg(type:string){return({lead:"rgba(0,212,255,0.08)",booking:"rg
 function timeAgo(iso:string){const diff=Date.now()-new Date(iso).getTime();if(diff<60000)return"just now";if(diff<3600000)return`${Math.floor(diff/60000)}m ago`;if(diff<86400000)return`${Math.floor(diff/3600000)}h ago`;return`${Math.floor(diff/86400000)}d ago`;}
 
 const miniInputStyle:React.CSSProperties={width:"100%",padding:"11px 14px",borderRadius:10,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"#fff",fontSize:14,outline:"none"};
+
+// ── Follow-Ups Tab ────────────────────────────────────────────────────────────
+function FollowUpsTab({token}:{token:string}) {
+  const [leads,setLeads]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [acting,setActing]=useState<string|null>(null);
+  const [msg,setMsg]=useState("");
+
+  const load=async()=>{
+    setLoading(true);
+    const r=await fetch("/api/admin/follow-ups",{headers:{"x-admin-token":token}}).catch(()=>null);
+    if(r?.ok){const d=await r.json();setLeads(d.due||[]);}
+    setLoading(false);
+  };
+  useEffect(()=>{load();},[]);
+
+  async function callLead(lead:any){
+    if(!lead.phone){setMsg("No phone number for this lead.");return;}
+    setActing(lead.name+lead.company); setMsg("");
+    const r=await fetch("/api/admin/follow-ups",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"call",phone:lead.phone,name:lead.name,company:lead.company,challenge:lead.challenge})}).catch(()=>null);
+    const d=await r?.json().catch(()=>({}));
+    setMsg(d?.ok?`✅ Lauren is calling ${lead.name||"the lead"} now.`:`❌ ${d?.error||"Call failed."}`);
+    setActing(null); load();
+  }
+  async function markDone(lead:any){
+    setActing(lead.name+lead.company);
+    await fetch("/api/admin/follow-ups",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"mark-done",leadName:lead.name,leadCompany:lead.company})}).catch(()=>null);
+    setActing(null); load();
+  }
+
+  const scoreColor=(s:number)=>s>=70?"#22c55e":s>=40?"#f59e0b":"#ef4444";
+
+  return(
+    <div style={{paddingTop:8}}>
+      <SectionHeader icon="🔁" title="Automated Follow-Ups" sub="Leads that need a call — sorted by score. One click has Lauren dial them."/>
+      {msg&&<div style={{padding:"10px 14px",borderRadius:10,background:msg.startsWith("✅")?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${msg.startsWith("✅")?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"}`,color:msg.startsWith("✅")?"#22c55e":"#ef4444",fontSize:13,marginBottom:14}}>{msg}</div>}
+      {loading?<Spinner inline/>:leads.length===0?<EmptyState>🎉 No overdue follow-ups right now</EmptyState>:(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {leads.map(l=>{
+            const key=l.name+l.company;
+            const score=l.score??0;
+            const isActing=acting===key;
+            const age=l.capturedAt?Math.floor((Date.now()-new Date(l.capturedAt).getTime())/3600000):0;
+            return(
+              <div key={key} style={{padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                      <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>{l.name||"Unknown"}</span>
+                      <span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:20,background:`${scoreColor(score)}22`,color:scoreColor(score)}}>Score {score}</span>
+                      <span style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>{age}h ago</span>
+                    </div>
+                    {l.company&&<p style={{fontSize:11,color:"rgba(255,255,255,0.4)",margin:"0 0 4px"}}>{l.company}</p>}
+                    {l.phone&&<p style={{fontSize:11,color:"rgba(0,212,255,0.6)",margin:"0 0 4px"}}>{l.phone}</p>}
+                    {l.challenge&&<p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:0,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{l.challenge}</p>}
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={()=>callLead(l)} disabled={isActing||!l.phone} style={{padding:"8px 12px",borderRadius:9,border:"none",background:l.phone?"linear-gradient(135deg,#e64dff,#7c3aed)":"rgba(255,255,255,0.05)",color:"#fff",fontSize:12,fontWeight:700,cursor:l.phone?"pointer":"not-allowed",opacity:isActing?0.6:1}}>{isActing?"…":"📞 Call"}</button>
+                    <button onClick={()=>markDone(l)} disabled={isActing} style={{padding:"8px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"rgba(255,255,255,0.4)",fontSize:12,cursor:"pointer"}}>✓ Done</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Competitor Intelligence Tab ───────────────────────────────────────────────
+function CompetitorTab({token}:{token:string}) {
+  const [competitors,setCompetitors]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [name,setName]=useState(""); const [website,setWebsite]=useState(""); const [notes,setNotes]=useState("");
+  const [adding,setAdding]=useState(false); const [expanded,setExpanded]=useState<string|null>(null);
+  const [reanalyzing,setReanalyzing]=useState<string|null>(null);
+
+  const load=async()=>{
+    setLoading(true);
+    const r=await fetch("/api/admin/competitors",{headers:{"x-admin-token":token}}).catch(()=>null);
+    if(r?.ok){const d=await r.json();setCompetitors(d.competitors||[]);}
+    setLoading(false);
+  };
+  useEffect(()=>{load();},[]);
+
+  async function add(){
+    if(!name.trim())return;
+    setAdding(true);
+    await fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"add",name:name.trim(),website:website.trim(),notes:notes.trim()})}).catch(()=>null);
+    setName(""); setWebsite(""); setNotes(""); setAdding(false); load();
+  }
+  async function reanalyze(id:string){
+    setReanalyzing(id);
+    await fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"re-analyze",id})}).catch(()=>null);
+    setReanalyzing(null); load();
+  }
+  async function del(id:string){
+    await fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"delete",id})}).catch(()=>null);
+    load();
+  }
+
+  return(
+    <div style={{paddingTop:8}}>
+      <SectionHeader icon="🕵️" title="Competitor Intelligence" sub="Add a competitor — AI generates your counter-strategy automatically."/>
+      {/* Add form */}
+      <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",marginBottom:20}}>
+        <SectionTitle>Add Competitor</SectionTitle>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Competitor name *" style={miniInputStyle}/>
+          <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="Website (optional)" style={miniInputStyle}/>
+          <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="What do you know about them? (pricing, market, clients…)" rows={3} style={{...miniInputStyle,resize:"vertical"}}/>
+          <button onClick={add} disabled={adding||!name.trim()} style={{padding:"11px",borderRadius:10,border:"none",background:adding||!name.trim()?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontWeight:700,fontSize:13,cursor:adding||!name.trim()?"not-allowed":"pointer"}}>
+            {adding?"Analyzing with AI…":"⚡ Add & Analyze"}
+          </button>
+        </div>
+      </div>
+
+      {loading?<Spinner inline/>:competitors.length===0?<EmptyState>No competitors tracked yet. Add one above.</EmptyState>:(
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {competitors.map(c=>{
+            const isOpen=expanded===c.id;
+            const a=c.analysis;
+            return(
+              <div key={c.id} style={{borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",overflow:"hidden"}}>
+                <div onClick={()=>setExpanded(isOpen?null:c.id)} style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <span style={{fontWeight:700,color:"#fff",fontSize:14}}>{c.name}</span>
+                    {c.website&&<span style={{fontSize:11,color:"rgba(0,212,255,0.5)",marginLeft:8}}>{c.website}</span>}
+                    {a&&<p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:"4px 0 0"}}>{a.positioning}</p>}
+                  </div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <button onClick={e=>{e.stopPropagation();reanalyze(c.id);}} disabled={reanalyzing===c.id} style={{padding:"5px 9px",borderRadius:7,border:"1px solid rgba(0,212,255,0.2)",background:"rgba(0,212,255,0.05)",color:"#00d4ff",fontSize:11,cursor:"pointer"}}>{reanalyzing===c.id?"…":"↻"}</button>
+                    <button onClick={e=>{e.stopPropagation();del(c.id);}} style={{padding:"5px 9px",borderRadius:7,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.5)",fontSize:11,cursor:"pointer"}}>✕</button>
+                    <span style={{color:"rgba(255,255,255,0.3)",fontSize:12}}>{isOpen?"▲":"▼"}</span>
+                  </div>
+                </div>
+                {isOpen&&a&&(
+                  <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
+                    <IntelCard label="💪 Their Strengths" value={a.likely_strengths} color="#f59e0b"/>
+                    <IntelCard label="🎯 Their Weaknesses" value={a.likely_weaknesses} color="#22c55e"/>
+                    <IntelCard label="⚡ Your Counter-Angle" value={a.counter_angle} color="#00d4ff" bold/>
+                    <div>
+                      <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(0,212,255,0.5)",margin:"0 0 6px"}}>📢 Talking Points When Prospects Mention Them</p>
+                      {(a.talking_points||"").split("\n").filter(Boolean).map((tp:string,i:number)=>(
+                        <div key={i} style={{padding:"7px 10px",borderRadius:8,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",marginBottom:5,fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.5}}>• {tp.replace(/^[-•]\s*/,"")}</div>
+                      ))}
+                    </div>
+                    {a.watch_for&&<IntelCard label="👀 Watch For" value={a.watch_for} color="rgba(255,255,255,0.35)"/>}
+                  </div>
+                )}
+                {isOpen&&!a&&<div style={{padding:"12px 16px",borderTop:"1px solid rgba(255,255,255,0.06)",fontSize:12,color:"rgba(255,255,255,0.3)"}}>No AI analysis yet — click ↻ to analyze.</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+function IntelCard({label,value,color,bold}:{label:string;value:string;color:string;bold?:boolean}){
+  return(
+    <div>
+      <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",margin:"0 0 5px"}}>{label}</p>
+      <p style={{fontSize:12,color,lineHeight:1.6,margin:0,fontWeight:bold?700:400}}>{value}</p>
+    </div>
+  );
+}
+
+// ── ROI Report Tab ────────────────────────────────────────────────────────────
+function ROIReportTab({token}:{token:string}) {
+  const [form,setForm]=useState({clientName:"",businessName:"",period:"",callsAnswered:"",leadsCaptures:"",hoursSaved:"",appointmentsBooked:"",avgOrderValue:"",missedCallsBefore:"",followUpTimeBefore:""});
+  const [generating,setGenerating]=useState(false); const [err,setErr]=useState("");
+
+  function set(k:string,v:string){setForm(f=>({...f,[k]:v}));}
+
+  async function generate(){
+    if(!form.clientName.trim()){setErr("Client name is required.");return;}
+    setGenerating(true); setErr("");
+    try{
+      const payload=Object.fromEntries(Object.entries(form).map(([k,v])=>[k,isNaN(Number(v))||v===""?v:Number(v)]));
+      const r=await fetch("/api/admin/roi-report",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(payload)});
+      if(!r.ok){const d=await r.json().catch(()=>({}));setErr(d.error||"Failed to generate.");return;}
+      const blob=await r.blob();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a"); a.href=url; a.download=`CyberCraft360-ROI-${form.clientName.replace(/\s/g,"-")}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    }catch(e:any){setErr(e.message||"Error.");}
+    finally{setGenerating(false);}
+  }
+
+  const F=({label,k,placeholder}:{label:string;k:string;placeholder?:string})=>(
+    <div>
+      <label style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",display:"block",marginBottom:5}}>{label}</label>
+      <input value={(form as any)[k]} onChange={e=>set(k,e.target.value)} placeholder={placeholder||""} style={miniInputStyle}/>
+    </div>
+  );
+
+  return(
+    <div style={{paddingTop:8}}>
+      <SectionHeader icon="📑" title="ROI Report Generator" sub="Generate a branded PDF you can send to any client showing the value of their AI system."/>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)"}}>
+          <SectionTitle style={{marginBottom:12}}>Client Info</SectionTitle>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <F label="Client Name *" k="clientName" placeholder="John Smith"/>
+            <F label="Business Name" k="businessName" placeholder="Smith HVAC LLC"/>
+          </div>
+          <div style={{marginTop:10}}>
+            <F label="Reporting Period" k="period" placeholder="June 2026"/>
+          </div>
+        </div>
+
+        <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)"}}>
+          <SectionTitle style={{marginBottom:12}}>AI Performance Numbers</SectionTitle>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <F label="Calls Answered" k="callsAnswered" placeholder="248"/>
+            <F label="Leads Captured" k="leadsCaptures" placeholder="62"/>
+            <F label="Hours Saved / week" k="hoursSaved" placeholder="14"/>
+            <F label="Appointments Booked" k="appointmentsBooked" placeholder="18"/>
+          </div>
+        </div>
+
+        <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)"}}>
+          <SectionTitle style={{marginBottom:12}}>Before AI (for comparison)</SectionTitle>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <F label="Avg Order Value ($)" k="avgOrderValue" placeholder="320"/>
+            <F label="Missed Calls / week (before)" k="missedCallsBefore" placeholder="12"/>
+            <F label="Follow-Up Time (hours)" k="followUpTimeBefore" placeholder="42"/>
+          </div>
+        </div>
+
+        {err&&<p style={{fontSize:12,color:"#ef4444",margin:0}}>{err}</p>}
+        <button onClick={generate} disabled={generating} style={{padding:"14px",borderRadius:12,border:"none",background:generating?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontWeight:700,fontSize:14,cursor:generating?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {generating?<><div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 0.8s linear infinite"}}/> Generating PDF…</>:"📥 Download ROI Report PDF"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Referral Tracker Tab ──────────────────────────────────────────────────────
+function ReferralTab({token}:{token:string}) {
+  const [referrals,setReferrals]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [clientName,setClientName]=useState(""); const [email,setEmail]=useState(""); const [reward,setReward]=useState("1 month free");
+  const [creating,setCreating]=useState(false); const [copied,setCopied]=useState<string|null>(null);
+  const [msg,setMsg]=useState("");
+
+  const load=async()=>{
+    setLoading(true);
+    const r=await fetch("/api/admin/referrals",{headers:{"x-admin-token":token}}).catch(()=>null);
+    if(r?.ok){const d=await r.json();setReferrals(d.referrals||[]);}
+    setLoading(false);
+  };
+  useEffect(()=>{load();},[]);
+
+  async function create(){
+    if(!clientName.trim())return;
+    setCreating(true);
+    const r=await fetch("/api/admin/referrals",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"create",clientName:clientName.trim(),email:email.trim(),reward:reward.trim()||"1 month free"})}).catch(()=>null);
+    const d=await r?.json().catch(()=>({}));
+    if(d?.ok){setMsg(`✅ Referral link created for ${clientName}!`);setClientName("");setEmail("");load();}
+    else setMsg("❌ Failed to create.");
+    setCreating(false);
+  }
+
+  function copyLink(code:string){
+    const link=`${window.location.origin}/?ref=${code}`;
+    navigator.clipboard.writeText(link).then(()=>{setCopied(code);setTimeout(()=>setCopied(null),2000);}).catch(()=>{});
+  }
+
+  async function markRewarded(id:string){
+    await fetch("/api/admin/referrals",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"mark-rewarded",id})}).catch(()=>null);
+    load();
+  }
+  async function del(id:string){
+    await fetch("/api/admin/referrals",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"delete",id})}).catch(()=>null);
+    load();
+  }
+
+  const totalConversions=referrals.reduce((s,r)=>s+(r.referrals?.length||0),0);
+
+  return(
+    <div style={{paddingTop:8}}>
+      <SectionHeader icon="🤝" title="Referral Tracker" sub="Give clients a unique link — track every referral they send and reward them automatically."/>
+      {/* Stats row */}
+      {referrals.length>0&&(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
+          <MiniStat label="Active Links" value={referrals.length} accent="#00d4ff"/>
+          <MiniStat label="Total Referrals" value={totalConversions} accent="#22c55e"/>
+          <MiniStat label="Rewarded" value={referrals.filter(r=>r.rewarded).length} accent="#f59e0b"/>
+        </div>
+      )}
+      {msg&&<div style={{padding:"10px 14px",borderRadius:10,background:msg.startsWith("✅")?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${msg.startsWith("✅")?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"}`,color:msg.startsWith("✅")?"#22c55e":"#ef4444",fontSize:13,marginBottom:14}}>{msg}</div>}
+
+      {/* Create form */}
+      <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",marginBottom:20}}>
+        <SectionTitle>Create Referral Link</SectionTitle>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <input value={clientName} onChange={e=>setClientName(e.target.value)} placeholder="Client name *" style={miniInputStyle}/>
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Client email (optional)" style={miniInputStyle}/>
+          <input value={reward} onChange={e=>setReward(e.target.value)} placeholder="Reward (e.g. 1 month free)" style={miniInputStyle}/>
+          <button onClick={create} disabled={creating||!clientName.trim()} style={{padding:"11px",borderRadius:10,border:"none",background:creating||!clientName.trim()?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontWeight:700,fontSize:13,cursor:creating||!clientName.trim()?"not-allowed":"pointer"}}>
+            {creating?"Creating…":"🔗 Generate Link"}
+          </button>
+        </div>
+      </div>
+
+      {loading?<Spinner inline/>:referrals.length===0?<EmptyState>No referral links yet. Create one above.</EmptyState>:(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[...referrals].reverse().map(r=>{
+            const link=`${typeof window!=="undefined"?window.location.origin:"https://cybercraft360.com"}/?ref=${r.code}`;
+            return(
+              <div key={r.id} style={{padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:`1px solid ${r.rewarded?"rgba(245,158,11,0.25)":"rgba(255,255,255,0.07)"}`}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                      <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>{r.clientName}</span>
+                      {r.rewarded&&<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:20,background:"rgba(245,158,11,0.15)",color:"#f59e0b"}}>Rewarded</span>}
+                      <span style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>{r.referrals?.length||0} referral{(r.referrals?.length||0)!==1?"s":""}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                      <code style={{fontSize:11,color:"rgba(0,212,255,0.7)",background:"rgba(0,212,255,0.07)",padding:"3px 8px",borderRadius:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:200}}>{link}</code>
+                      <button onClick={()=>copyLink(r.code)} style={{padding:"4px 9px",borderRadius:7,border:"1px solid rgba(0,212,255,0.2)",background:"rgba(0,212,255,0.05)",color:"#00d4ff",fontSize:11,cursor:"pointer",flexShrink:0}}>{copied===r.code?"✓ Copied":"Copy"}</button>
+                    </div>
+                    <p style={{fontSize:11,color:"rgba(255,255,255,0.3)",margin:0}}>Reward: {r.reward}</p>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    {!r.rewarded&&(r.referrals?.length||0)>0&&<button onClick={()=>markRewarded(r.id)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(245,158,11,0.3)",background:"rgba(245,158,11,0.05)",color:"#f59e0b",fontSize:11,cursor:"pointer"}}>✓ Reward</button>}
+                    <button onClick={()=>del(r.id)} style={{padding:"6px 9px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.4)",fontSize:11,cursor:"pointer"}}>✕</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Shared section header ─────────────────────────────────────────────────────
+function SectionHeader({icon,title,sub}:{icon:string;title:string;sub:string}){
+  return(
+    <div style={{marginBottom:20}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+        <span style={{fontSize:20}}>{icon}</span>
+        <h2 style={{fontSize:"1.05rem",fontWeight:800,color:"#fff",margin:0}}>{title}</h2>
+      </div>
+      <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:0,lineHeight:1.5}}>{sub}</p>
+    </div>
+  );
+}
