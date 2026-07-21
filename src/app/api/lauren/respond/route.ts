@@ -134,7 +134,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
       name: "Cerebras",
       url: "https://api.cerebras.ai/v1/chat/completions",
       key: cerebrasKey,
-      models: ["llama-3.3-70b", "llama3.1-8b"],
+      models: ["llama-3.3-70b", "llama3.1-70b", "llama3.1-8b"],
     }] : []),
     // Groq as fallback
     ...(groqKey ? [{
@@ -172,7 +172,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
 
         const data = await res.json();
         if (!res.ok) {
-          console.error(`[Amy] ${provider.name}/${model} error:`, data.error?.message);
+          console.error(`[Amy] ${provider.name}/${model} error (${res.status}):`, JSON.stringify(data));
           break; // try next model
         }
         return data.choices[0].message.content as string;
