@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website","ads"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -103,6 +103,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="calendar"  &&<CalendarTab  data={data}/>}
             {tab==="ebooks"    &&<EbooksTab    token={token} h={h}/>}
             {tab==="website"   &&<WebsiteTab   data={data}/>}
+            {tab==="ads"       &&<AdsTab       token={token}/>}
           </>
         ):(
           <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
@@ -1631,6 +1632,205 @@ function EbooksTab({token,h}:{token:string;h:ReturnType<typeof useAdminApi>}) {
             </Row>
           ))}
       </Card>
+    </div>
+  );
+}
+
+// ── Ads Tab ───────────────────────────────────────────────────────────────────
+function AdsTab({token}:{token:string}) {
+  const accent="#f59e0b";
+  const platforms=["linkedin","facebook","instagram"] as const;
+  type Platform=typeof platforms[number];
+
+  const [audience,setAudience]=useState("");
+  const [goal,setGoal]=useState("book a free strategy call");
+  const [tone,setTone]=useState("professional");
+  const [generating,setGenerating]=useState(false);
+  const [ads,setAds]=useState<Record<Platform,any[]>>({linkedin:[],facebook:[],instagram:[]});
+  const [activePlatform,setActivePlatform]=useState<Platform>("linkedin");
+  const [copiedKey,setCopiedKey]=useState<string|null>(null);
+  const [savedPacks,setSavedPacks]=useState<any[]>([]);
+  const [showSaved,setShowSaved]=useState(false);
+  const [error,setError]=useState<string|null>(null);
+
+  useEffect(()=>{
+    const saved=localStorage.getItem("cc360_ad_packs");
+    if(saved) try{setSavedPacks(JSON.parse(saved));}catch{}
+  },[]);
+
+  async function generate(){
+    if(!audience.trim()){setError("Enter a target audience first.");return;}
+    setError(null); setGenerating(true); setAds({linkedin:[],facebook:[],instagram:[]});
+    try{
+      const res=await fetch("/api/admin/generate-ads",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-admin-token":token},
+        body:JSON.stringify({audience,goal,tone}),
+      });
+      const d=await res.json();
+      if(!res.ok){setError(d.error||"Generation failed.");return;}
+      setAds(d.ads);
+      // Save pack to localStorage
+      const pack={id:Date.now(),audience,goal,tone,ads:d.ads,createdAt:new Date().toISOString()};
+      const updated=[pack,...savedPacks].slice(0,20);
+      setSavedPacks(updated);
+      localStorage.setItem("cc360_ad_packs",JSON.stringify(updated));
+    }catch(e:any){setError(e.message);}
+    finally{setGenerating(false);}
+  }
+
+  function copy(text:string,key:string){
+    navigator.clipboard.writeText(text).then(()=>{
+      setCopiedKey(key);
+      setTimeout(()=>setCopiedKey(null),2000);
+    });
+  }
+
+  function copyAll(platform:Platform){
+    const items=ads[platform];
+    if(!items.length)return;
+    const text=items.map((ad,i)=>`--- Variation ${i+1} ---\n${Object.entries(ad).map(([k,v])=>`${k.toUpperCase()}: ${v}`).join("\n")}`).join("\n\n");
+    copy(text,`all-${platform}`);
+  }
+
+  const platformConfig={
+    linkedin:{icon:"💼",color:"#0077b5",label:"LinkedIn",charLimits:{headline:"150 chars",body:"700 chars",cta:""}},
+    facebook:{icon:"📘",color:"#1877f2",label:"Facebook",charLimits:{headline:"40 chars",primary_text:"125 chars",description:"30 chars",cta:""}},
+    instagram:{icon:"📸",color:"#e1306c",label:"Instagram",charLimits:{caption:"2200 chars",hook:"125 chars",hashtags:""}},
+  };
+
+  const inp:React.CSSProperties={width:"100%",padding:"11px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.04)",color:"#fff",fontSize:13,outline:"none",fontFamily:"system-ui,sans-serif"};
+  const sectionStyle:React.CSSProperties={background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:14,padding:20,marginBottom:16};
+  const labelStyle:React.CSSProperties={fontSize:11,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6,display:"block"};
+
+  const currentAds=ads[activePlatform];
+  const pc=platformConfig[activePlatform];
+
+  return(
+    <div>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24}}>
+        <div style={{width:36,height:36,borderRadius:10,background:`${accent}15`,border:`1px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🎯</div>
+        <div>
+          <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>AI Ad Generator</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Create LinkedIn, Facebook & Instagram ads in seconds</div>
+        </div>
+      </div>
+
+      {/* Input form */}
+      <div style={sectionStyle}>
+        <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:16}}>⚙️ Campaign Brief</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div>
+            <label style={labelStyle}>Target Audience *</label>
+            <input style={inp} placeholder='e.g. "Houston restaurant owners who miss calls after hours"' value={audience} onChange={e=>{setAudience(e.target.value);setError(null);}}/>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div>
+              <label style={labelStyle}>Campaign Goal</label>
+              <select style={{...inp,cursor:"pointer"}} value={goal} onChange={e=>setGoal(e.target.value)}>
+                <option value="book a free strategy call">Book a Free Strategy Call</option>
+                <option value="get a free AI quote at cybercraft360.com/intake">Get a Free AI Quote</option>
+                <option value="try the free eBook generator">Try Free eBook Generator</option>
+                <option value="learn about AI for their business">Learn About AI</option>
+                <option value="contact us to discuss AI solutions">Contact Us</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Tone</label>
+              <select style={{...inp,cursor:"pointer"}} value={tone} onChange={e=>setTone(e.target.value)}>
+                <option value="professional">Professional</option>
+                <option value="bold and direct">Bold & Direct</option>
+                <option value="conversational and friendly">Conversational</option>
+                <option value="urgent and results-focused">Urgent</option>
+                <option value="curious and question-led">Question-Led</option>
+              </select>
+            </div>
+          </div>
+          {error&&<div style={{padding:"10px 14px",borderRadius:9,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",fontSize:12,color:"#ef4444"}}>{error}</div>}
+          <button onClick={generate} disabled={generating} style={{padding:"13px 20px",borderRadius:11,border:"none",fontWeight:700,fontSize:14,cursor:generating?"not-allowed":"pointer",background:generating?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#ef4444)`,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {generating?<><span style={{width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 0.8s linear infinite",display:"inline-block"}}/> Generating 3 variations per platform…</>:<>🎯 Generate Ad Pack — All 3 Platforms</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Results */}
+      {(currentAds.length>0||ads.facebook.length>0||ads.instagram.length>0)&&(
+        <div style={sectionStyle}>
+          {/* Platform tabs */}
+          <div style={{display:"flex",gap:6,marginBottom:18}}>
+            {platforms.map(p=>{
+              const cfg=platformConfig[p];
+              const hasAds=ads[p].length>0;
+              return(
+                <button key={p} onClick={()=>setActivePlatform(p)} style={{flex:1,padding:"9px 6px",borderRadius:10,border:`1px solid ${activePlatform===p?cfg.color+"60":"rgba(255,255,255,0.07)"}`,background:activePlatform===p?`${cfg.color}15`:"rgba(255,255,255,0.02)",color:activePlatform===p?cfg.color:"rgba(255,255,255,0.4)",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                  <span>{cfg.icon}</span>{cfg.label}{hasAds&&<span style={{fontSize:9,background:`${cfg.color}20`,border:`1px solid ${cfg.color}30`,color:cfg.color,padding:"1px 5px",borderRadius:4}}>3</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Copy all */}
+          {currentAds.length>0&&(
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>3 variations · {pc.label} · ready to paste</div>
+              <button onClick={()=>copyAll(activePlatform)} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${pc.color}40`,background:`${pc.color}10`,color:pc.color,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {copiedKey===`all-${activePlatform}`?"✓ Copied!":"📋 Copy All"}
+              </button>
+            </div>
+          )}
+
+          {/* Ad variations */}
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {currentAds.map((ad:any,i:number)=>(
+              <div key={i} style={{borderRadius:12,border:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.015)",overflow:"hidden"}}>
+                <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"rgba(255,255,255,0.02)"}}>
+                  <span style={{fontSize:11,fontWeight:700,color:pc.color,letterSpacing:"0.1em",textTransform:"uppercase"}}>Variation {i+1}</span>
+                  <button onClick={()=>{
+                    const text=Object.entries(ad).map(([k,v])=>`${k.toUpperCase()}: ${v}`).join("\n");
+                    copy(text,`ad-${i}`);
+                  }} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${pc.color}30`,background:`${pc.color}10`,color:pc.color,fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                    {copiedKey===`ad-${i}`?"✓ Copied":"Copy"}
+                  </button>
+                </div>
+                <div style={{padding:14,display:"flex",flexDirection:"column",gap:10}}>
+                  {Object.entries(ad).map(([field,value])=>(
+                    <div key={field}>
+                      <div style={{fontSize:9,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",marginBottom:4}}>{field.replace(/_/g," ")}</div>
+                      <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.6,background:"rgba(255,255,255,0.02)",borderRadius:8,padding:"9px 12px",border:"1px solid rgba(255,255,255,0.05)",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                        {String(value)}
+                      </div>
+                      <button onClick={()=>copy(String(value),`field-${i}-${field}`)} style={{marginTop:4,padding:"3px 8px",borderRadius:5,border:"1px solid rgba(255,255,255,0.06)",background:"none",color:"rgba(255,255,255,0.2)",fontSize:10,cursor:"pointer"}}>
+                        {copiedKey===`field-${i}-${field}`?"✓ Copied":"Copy field"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Saved packs */}
+      {savedPacks.length>0&&(
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)"}}>Saved Ad Packs ({savedPacks.length})</span>
+            <button onClick={()=>setShowSaved(!showSaved)} style={{fontSize:11,color:accent,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>{showSaved?"Hide":"Show"}</button>
+          </div>
+          {showSaved&&(
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {savedPacks.map((pack:any)=>(
+                <div key={pack.id} onClick={()=>{setAds(pack.ads);setAudience(pack.audience);setGoal(pack.goal);setTone(pack.tone);setShowSaved(false);}} style={{padding:"12px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.02)",cursor:"pointer"}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#fff",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pack.audience}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{pack.goal} · {new Date(pack.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
