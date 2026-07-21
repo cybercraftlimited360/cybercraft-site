@@ -285,6 +285,7 @@ export default function Home() {
   const [tab, setTab] = React.useState<SiteTab>("about");
   const [showEbook, setShowEbook] = React.useState(false);
   const [showHowItWorks, setShowHowItWorks] = React.useState(false);
+  const [howItWorksService, setHowItWorksService] = React.useState("Amy");
 
   React.useEffect(() => {
     const HASH_TAB: Record<string, SiteTab> = {
@@ -317,7 +318,7 @@ export default function Home() {
       <ExitIntent />
       <ScrollTransition />
       <AnimatePresence>{showEbook && <EbookForm onClose={() => setShowEbook(false)} />}</AnimatePresence>
-      <HowItWorksModal open={showHowItWorks} onClose={() => setShowHowItWorks(false)} />
+      <HowItWorksModal open={showHowItWorks} onClose={() => setShowHowItWorks(false)} service={howItWorksService} />
 
       <ScrollProgress />
 
@@ -1010,6 +1011,12 @@ export default function Home() {
                           <button onClick={() => setShowEbook(true)}
                             style={{ marginTop: 12, width: "100%", padding: "10px 16px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, #f97316, #ec4899)`, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em" }}>
                             📖 Generate Free eBook →
+                          </button>
+                        )}
+                        {["Ava","Nova","Atlas","Echo","Pulse","Orion","Amy","Aegis"].includes(name) && (
+                          <button onClick={() => { setHowItWorksService(name); setShowHowItWorks(true); }}
+                            style={{ marginTop: 10, width: "100%", padding: "9px 16px", borderRadius: 8, background: `${accent}14`, border: `1px solid ${accent}33`, color: accent, fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: "0.08em" }}>
+                            ▶ See {name} in Action
                           </button>
                         )}
                       </div>
