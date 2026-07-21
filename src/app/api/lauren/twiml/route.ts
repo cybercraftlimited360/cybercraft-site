@@ -10,15 +10,15 @@ export async function GET(req: NextRequest) {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
   const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
 
-  // Opening: confirm who we're speaking to first — don't assume
   const greeting = `Hi, may I speak with ${firstName}?`;
+  const noAnswer = `Hi ${firstName}, this is Amy from CyberCraft360. I'll try you again another time — you can also visit cybercraft360.com whenever you're ready. Have a great day!`;
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" timeout="8" speechTimeout="3" action="${actionUrl}&amp;stage=opening" method="POST">
-    <Say voice="Polly.Joanna-Neural">${greeting}</Say>
+    <Play>${base}/api/lauren/tts?text=${encodeURIComponent(greeting)}</Play>
   </Gather>
-  <Say voice="Polly.Joanna-Neural">Hi ${firstName}, this is Lauren from CyberCraft360. I'll try you again another time — you can also visit cybercraft360.com whenever you're ready. Have a great day!</Say>
+  <Play>${base}/api/lauren/tts?text=${encodeURIComponent(noAnswer)}</Play>
   <Hangup/>
 </Response>`;
 

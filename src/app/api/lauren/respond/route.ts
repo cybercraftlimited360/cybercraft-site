@@ -95,14 +95,15 @@ async function groqCall(apiKey: string, messages: Message[]): Promise<string> {
   return data.choices[0].message.content as string;
 }
 
-function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, firstName: string): string {
-  // Strip the [END_CALL] token before speaking
+function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, firstName: string, base: string): string {
   const clean = spokenText.replace(/\[END_CALL\]/gi, "").trim();
+  const ttsUrl = (text: string) => `${base}/api/lauren/tts?text=${encodeURIComponent(text)}`;
+  const timeout = `${base}/api/lauren/tts?text=${encodeURIComponent(`Sorry ${firstName}, I didn't catch that. I'll let you go — feel free to visit cybercraft360.com whenever you're ready. Have a great day!`)}`;
 
   if (shouldEnd) {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna-Neural">${clean}</Say>
+  <Play>${ttsUrl(clean)}</Play>
   <Pause length="1"/>
   <Hangup/>
 </Response>`;
@@ -111,9 +112,9 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" timeout="8" speechTimeout="3" action="${actionUrl}" method="POST">
-    <Say voice="Polly.Joanna-Neural">${clean}</Say>
+    <Play>${ttsUrl(clean)}</Play>
   </Gather>
-  <Say voice="Polly.Joanna-Neural">Sorry ${firstName}, I didn't catch that. I'll let you go — feel free to visit cybercraft360.com whenever you're ready. Have a great day!</Say>
+  <Play>${timeout}</Play>
   <Hangup/>
 </Response>`;
 }
@@ -152,7 +153,7 @@ export async function POST(req: NextRequest) {
         const reply = `Oh, sorry about that! Do you know when ${firstName} might be available? Or I can try back another time.`;
         history.push({ role: "assistant", content: reply });
         await redis.set(historyKey, history, { ex: 3600 });
-        return new NextResponse(buildTwiml(reply, false, actionUrl, firstName), { headers: { "Content-Type": "text/xml" } });
+        return new NextResponse(buildTwiml(reply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
       }
 
       // They confirmed — now give the real intro naturally
@@ -173,7 +174,7 @@ Now give your opening. You're a real person — sound like it. Introduce yoursel
       history.push({ role: "assistant", content: reply });
       await redis.set(historyKey, history.filter(m => !m.content.startsWith("[CONTEXT:")), { ex: 3600 });
 
-      return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName), { headers: { "Content-Type": "text/xml" } });
+      return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
     // Main conversation flow
@@ -205,13 +206,15 @@ Now give your opening. You're a real person — sound like it. Introduce yoursel
       redis.set("lauren:call-log", log.slice(-500)).catch(() => {});
     }
 
-    return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName), { headers: { "Content-Type": "text/xml" } });
+    return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
 
   } catch (err) {
     console.error("[Lauren respond] error:", err);
+    const fallbackBase = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
+    const fallbackText = encodeURIComponent("Sorry, I ran into a technical issue. Please visit cybercraft360.com to book a free strategy session. Have a great day!");
     return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna-Neural">Sorry, I ran into a technical issue. Please visit cybercraft360.com to book a free strategy session. Have a great day!</Say>
+  <Play>${fallbackBase}/api/lauren/tts?text=${fallbackText}</Play>
   <Hangup/>
 </Response>`, { headers: { "Content-Type": "text/xml" } });
   }
