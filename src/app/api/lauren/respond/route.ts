@@ -117,42 +117,70 @@ async function saveLearning(history: Message[], booked: boolean) {
   } catch { /* non-critical */ }
 }
 
-async function groqCall(apiKey: string, messages: Message[], systemPrompt: string): Promise<string> {
-  // Try primary model with up to 3 retries on rate limit, then fall back to smaller model
-  const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
-  let lastError = "";
+interface Provider {
+  name: string;
+  url: string;
+  key: string;
+  models: string[];
+}
 
-  for (const model of models) {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 1000));
+async function callLLM(messages: Message[], systemPrompt: string): Promise<string> {
+  const cerebrasKey = process.env.CEREBRAS_API_KEY ?? "";
+  const groqKey = process.env.GROQ_API_KEY ?? "";
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "system", content: systemPrompt }, ...messages],
-          max_tokens: 110,
-          temperature: 0.92,
-        }),
-      });
+  const providers: Provider[] = [
+    // Cerebras first — fastest inference (~100ms), no rate limits on paid
+    ...(cerebrasKey ? [{
+      name: "Cerebras",
+      url: "https://api.cerebras.ai/v1/chat/completions",
+      key: cerebrasKey,
+      models: ["llama-3.3-70b", "llama3.1-8b"],
+    }] : []),
+    // Groq as fallback
+    ...(groqKey ? [{
+      name: "Groq",
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      key: groqKey,
+      models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+    }] : []),
+  ];
 
-      if (res.status === 429) {
-        // Rate limited — wait and retry (or fall to smaller model after all attempts)
-        const retryAfter = res.headers.get("retry-after");
-        const wait = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 1200;
-        await new Promise(r => setTimeout(r, Math.min(wait, 4000)));
-        lastError = "rate_limit";
-        continue;
+  if (!providers.length) throw new Error("No AI provider configured");
+
+  for (const provider of providers) {
+    for (const model of provider.models) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 1000));
+
+        const res = await fetch(provider.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${provider.key}` },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: "system", content: systemPrompt }, ...messages],
+            max_tokens: 110,
+            temperature: 0.92,
+          }),
+        });
+
+        if (res.status === 429) {
+          const retryAfter = res.headers.get("retry-after");
+          const wait = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 1200;
+          await new Promise(r => setTimeout(r, Math.min(wait, 4000)));
+          continue;
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          console.error(`[Amy] ${provider.name}/${model} error:`, data.error?.message);
+          break; // try next model
+        }
+        return data.choices[0].message.content as string;
       }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message || "Groq error");
-      return data.choices[0].message.content as string;
     }
   }
 
-  throw new Error(`Groq rate limited after all retries: ${lastError}`);
+  throw new Error("All AI providers exhausted");
 }
 
 function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, firstName: string, base: string): string {
@@ -191,9 +219,6 @@ export async function POST(req: NextRequest) {
     const stage = req.nextUrl.searchParams.get("stage") || "";
     const firstName = name.split(" ")[0];
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("Missing GROQ_API_KEY");
-
     const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
     const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
 
@@ -227,7 +252,7 @@ export async function POST(req: NextRequest) {
 Give your opening. STRICT LIMIT: your entire opening must be under 20 words before the question mark. One ultra-short sentence introducing yourself (just your name + "from CyberCraft360"), then immediately one genuine question. Example format: "Hey, it's Amy from CyberCraft360 — good time?" or "Hey ${firstName}, Amy from CyberCraft360 — quick question for you?" Do NOT explain why you're calling. Do NOT pitch anything. Do NOT use three sentences. Short intro, then one question. That's it.`;
 
       history.push({ role: "user", content: `[CONTEXT: ${introPrompt}]` });
-      const reply = await groqCall(apiKey, history, systemPrompt);
+      const reply = await callLLM(history, systemPrompt);
       const shouldEnd = /\[END_CALL\]/i.test(reply);
       history.push({ role: "assistant", content: reply });
       await redis.set(historyKey, history.filter(m => !m.content.startsWith("[CONTEXT:")), { ex: 3600 });
@@ -239,7 +264,7 @@ Give your opening. STRICT LIMIT: your entire opening must be under 20 words befo
       history.push({ role: "user", content: speechResult });
     }
 
-    const reply = await groqCall(apiKey, history, systemPrompt);
+    const reply = await callLLM(history, systemPrompt);
     const shouldEnd = /\[END_CALL\]/i.test(reply);
 
     history.push({ role: "assistant", content: reply });
