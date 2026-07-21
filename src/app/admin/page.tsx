@@ -101,11 +101,18 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [refreshing,setRefreshing]=useState(false);
+  const [loadErr,setLoadErr]=useState<string|null>(null);
 
   const load=useCallback(async(silent=false)=>{
-    if(!silent)setLoading(true); else setRefreshing(true);
-    const res=await fetch("/api/admin/dashboard",{headers:{"x-admin-token":token}}).catch(()=>null);
-    if(res?.ok)setData(await res.json());
+    if(!silent){setLoading(true);setLoadErr(null);} else setRefreshing(true);
+    try {
+      const res=await fetch("/api/admin/dashboard",{headers:{"x-admin-token":token}});
+      const json=await res.json();
+      if(res.ok) setData(json);
+      else setLoadErr(`Server error ${res.status}: ${json?.error||JSON.stringify(json)}`);
+    } catch(e:any) {
+      setLoadErr(`Network error: ${e?.message||String(e)}`);
+    }
     setLoading(false); setRefreshing(false);
   },[token]);
 
@@ -216,7 +223,10 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="reports"    &&<ReportsTab     token={token}/>}
           </>
         ):(
-          <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
+          <div style={{textAlign:"center",marginTop:60,padding:"0 24px"}}>
+            <p style={{color:"#ef4444",marginBottom:12}}>Failed to load dashboard.</p>
+            {loadErr&&<pre style={{color:"#f87171",fontSize:11,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"12px 16px",textAlign:"left",whiteSpace:"pre-wrap",wordBreak:"break-all",maxWidth:600,margin:"0 auto"}}>{loadErr}</pre>}
+          </div>
         )}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}*{box-sizing:border-box}`}</style>
