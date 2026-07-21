@@ -1361,7 +1361,7 @@ export default function Home() {
             Build Your<br />AI Workforce.
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl">
-            Every AI employee includes an implementation phase and a monthly partnership. Final pricing is scoped to your exact requirements — book a free strategy call for a tailored quote.
+            You&apos;re not buying software. You&apos;re hiring AI that works 24/7, never misses a lead, and gets smarter every month. Final pricing is scoped to your exact setup — book a call for a tailored quote.
           </p>
         </motion.div>
 
@@ -1370,103 +1370,191 @@ export default function Home() {
           {[
             {
               name: "Starter",
-              tagline: "One AI Employee",
-              desc: "Ideal for businesses deploying a single AI solution — a chatbot, a receptionist, or an appointment assistant.",
-              implementation: "$1,500 – $2,500",
-              monthly: "Starting at $499/mo",
+              tagline: "Never Miss Another Lead",
+              outcome: "Save 20+ hours/month · Capture leads 24/7",
+              desc: "One AI employee handling your most urgent gap — a chatbot that converts, a receptionist that never sleeps, or a booking assistant that fills your calendar.",
+              implementation: "Starting at $1,500",
+              implementationSub: "one-time · strategy, build & launch",
+              perDay: "From $16/day",
+              monthly: "$499/mo",
+              monthlySub: "Managed AI partnership",
               accent: "#00d4ff",
-              solutions: ["AI Website Chatbot", "WhatsApp AI Assistant", "AI Appointment Booking", "AI Content Marketing"],
+              cta: "Book a Free Strategy Call",
+              ctaHref: "#contact",
+              industries: ["Plumbers", "Electricians", "Med Spas", "Restaurants", "Contractors"],
+              solutions: ["AI Website Chatbot", "WhatsApp AI Assistant", "AI Appointment Booking", "AI Lead Capture"],
               highlight: false,
             },
             {
               name: "Growth",
-              tagline: "Your AI Workforce",
-              desc: "For businesses automating customer support, lead handling, sales, and core workflows with multiple AI employees.",
-              implementation: "$3,000 – $5,000",
-              monthly: "Starting at $999/mo",
+              tagline: "Replace 1–2 Admin Roles with AI",
+              outcome: "Automate customer support, leads & sales",
+              desc: "Multiple AI employees working together — handling calls, qualifying leads, managing follow-ups, and running your CRM while your team focuses on billable work.",
+              implementation: "Starting at $3,000",
+              implementationSub: "one-time · strategy, build & launch",
+              perDay: "From $33/day",
+              monthly: "$999/mo",
+              monthlySub: "Managed AI partnership",
               accent: "#7c3aed",
+              cta: "Schedule a Demo",
+              ctaHref: "#contact",
+              industries: ["Law Firms", "Real Estate Teams", "Dental Practices", "Insurance Agencies", "HVAC Companies"],
               solutions: ["AI Voice Receptionist", "AI Customer Support", "AI Sales Agent", "CRM & Workflow Automation"],
               highlight: true,
             },
             {
               name: "Enterprise",
-              tagline: "Full AI Ecosystem",
-              desc: "Designed for organizations needing multiple AI agents, custom integrations, and ongoing strategic optimization.",
-              implementation: "$7,500 – $15,000+",
-              monthly: "Starting at $2,500/mo",
+              tagline: "Scale Without Hiring More Staff",
+              outcome: "Full AI ecosystem · Custom integrations",
+              desc: "A complete AI infrastructure built for organizations handling high volume across multiple channels — calls, chat, email, CRM — with a dedicated strategy team.",
+              implementation: "Starting at $7,500",
+              implementationSub: "one-time · strategy, build & launch",
+              perDay: "From $83/day",
+              monthly: "$2,500/mo",
+              monthlySub: "Managed AI partnership",
               accent: "#e64dff",
+              cta: "Talk to an AI Consultant",
+              ctaHref: "#contact",
+              industries: ["Multi-location Businesses", "Franchises", "Healthcare Groups", "Large Service Companies"],
               solutions: ["AI Call Center", "Custom AI Integrations", "Enterprise AI Ecosystem", "Dedicated Strategy Team"],
               highlight: false,
             },
-          ].map(({ name, tagline, desc, implementation, monthly, accent, solutions, highlight }, i) => (
+          ].map(({ name, tagline, outcome, desc, implementation, implementationSub, perDay, monthly, monthlySub, accent, cta, ctaHref, industries, solutions, highlight }, i) => (
             <motion.div key={name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.6, delay: i * 0.1 }}
               className="relative rounded-2xl flex flex-col overflow-hidden"
               style={{
                 border: highlight ? `1px solid ${accent}50` : "1px solid rgba(255,255,255,0.08)",
-                background: highlight ? `linear-gradient(135deg, ${accent}0d, rgba(255,255,255,0.02))` : "rgba(255,255,255,0.02)",
-                boxShadow: highlight ? `0 0 40px ${accent}15` : "none",
+                background: highlight ? `linear-gradient(160deg, ${accent}0f, rgba(255,255,255,0.02))` : "rgba(255,255,255,0.02)",
+                boxShadow: highlight ? `0 0 60px ${accent}12` : "none",
               }}>
-              {highlight && (
-                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${accent}, #00d4ff)` }} />
-              )}
+              {/* Top accent line */}
+              <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: highlight ? `linear-gradient(90deg, ${accent}, #00d4ff)` : `linear-gradient(90deg, ${accent}40, transparent)` }} />
+
               {highlight && (
                 <div className="absolute top-4 right-4">
                   <span className="text-[0.6rem] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full" style={{ background: `${accent}20`, color: accent, border: `1px solid ${accent}40` }}>Most Popular</span>
                 </div>
               )}
+
               <div className="p-7 flex flex-col flex-1">
-                <div className="mb-5">
-                  <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase mb-1" style={{ color: accent }}>{tagline}</div>
-                  <div className="text-2xl font-bold text-white">{name}</div>
-                  <p className="text-muted-foreground text-sm leading-relaxed mt-2">{desc}</p>
-                </div>
-
-                <div className="rounded-xl p-4 mb-5" style={{ background: `${accent}08`, border: `1px solid ${accent}18` }}>
-                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-1">AI Implementation & Deployment</div>
-                  <div className="text-lg font-bold text-white">{implementation}</div>
-                  <div className="text-[0.65rem] text-muted-foreground mt-0.5">One-time · Includes strategy, build & launch</div>
-                </div>
-
+                {/* Header */}
                 <div className="mb-6">
-                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-1">Monthly Partnership</div>
-                  <div className="text-2xl font-bold" style={{ color: accent }}>{monthly}</div>
-                  <div className="text-[0.65rem] text-muted-foreground mt-0.5">Ongoing optimization, support & improvements</div>
+                  <div className="text-[0.6rem] font-bold tracking-[0.22em] uppercase mb-2" style={{ color: accent }}>{name}</div>
+                  <div className="text-xl font-bold text-white leading-snug mb-1">{tagline}</div>
+                  <div className="text-[0.65rem] font-semibold tracking-wide mb-3" style={{ color: `${accent}cc` }}>{outcome}</div>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
                 </div>
 
+                {/* Pricing */}
+                <div className="rounded-xl p-4 mb-5" style={{ background: `${accent}08`, border: `1px solid ${accent}18` }}>
+                  <div className="flex items-end justify-between mb-1">
+                    <div>
+                      <div className="text-3xl font-bold text-white leading-none">{monthly}</div>
+                      <div className="text-[0.65rem] text-muted-foreground mt-1">{monthlySub}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold" style={{ color: accent }}>{perDay}</div>
+                      <div className="text-[0.6rem] text-muted-foreground">works 24/7</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t" style={{ borderColor: `${accent}20` }}>
+                    <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-0.5">Implementation</div>
+                    <div className="text-sm font-bold text-white">{implementation}</div>
+                    <div className="text-[0.6rem] text-muted-foreground">{implementationSub}</div>
+                  </div>
+                </div>
+
+                {/* Who this is for */}
+                <div className="mb-5">
+                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-2">Perfect for</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {industries.map(ind => (
+                      <span key={ind} className="text-[0.65rem] font-medium px-2 py-0.5 rounded" style={{ background: `${accent}10`, color: `${accent}cc`, border: `1px solid ${accent}20` }}>{ind}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* What's included */}
                 <div className="mb-6 flex-1">
-                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-3">Includes AI Employees Like</div>
+                  <div className="text-[0.6rem] font-bold tracking-widest uppercase text-muted-foreground mb-3">AI Employees Included</div>
                   <div className="flex flex-col gap-2">
                     {solutions.map(s => (
                       <div key={s} className="flex items-center gap-2">
-                        <span className="text-xs" style={{ color: accent }}>✓</span>
+                        <span className="text-xs shrink-0" style={{ color: accent }}>✓</span>
                         <span className="text-sm text-muted-foreground">{s}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <a href="#contact"
-                  className="text-center py-3 rounded-xl text-sm font-bold tracking-widest uppercase no-underline transition-all hover:opacity-90"
+                <a href={ctaHref}
+                  className="text-center py-3.5 rounded-xl text-sm font-bold tracking-wide uppercase no-underline transition-all hover:opacity-90 block"
                   style={highlight
                     ? { background: `linear-gradient(135deg, ${accent}, #00d4ff)`, color: "#fff" }
                     : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  Get a Custom Quote
+                  {cta}
                 </a>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* What implementation covers */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+        {/* Feature comparison table */}
+        <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.6 }} className="mb-16 overflow-x-auto">
+          <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase text-muted-foreground mb-6">Compare Plans</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 500 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <th style={{ textAlign: "left", padding: "10px 12px", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", width: "40%" }}>Feature</th>
+                {[{ label: "Starter", color: "#00d4ff" }, { label: "Growth", color: "#7c3aed" }, { label: "Enterprise", color: "#e64dff" }].map(({ label, color }) => (
+                  <th key={label} style={{ textAlign: "center", padding: "10px 12px", fontSize: "0.75rem", fontWeight: 700, color, letterSpacing: "0.1em" }}>{label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["AI Website Chatbot",          true,  true,  true ],
+                ["AI Appointment Booking",       true,  true,  true ],
+                ["AI Voice Receptionist",        false, true,  true ],
+                ["WhatsApp AI",                  true,  true,  true ],
+                ["CRM Integration",              false, true,  true ],
+                ["Workflow Automation",          false, true,  true ],
+                ["AI Lead Qualification",        false, true,  true ],
+                ["Custom AI Integrations",       false, false, true ],
+                ["Dedicated Success Manager",    false, false, true ],
+                ["Monthly Strategy Call",        false, true,  true ],
+                ["Monthly Performance Report",   true,  true,  true ],
+                ["Priority Support",             false, true,  true ],
+              ].map(([feature, starter, growth, enterprise], i) => (
+                <tr key={String(feature)} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}>
+                  <td style={{ padding: "11px 12px", fontSize: "0.8rem", color: "rgba(255,255,255,0.6)" }}>{feature as string}</td>
+                  {[
+                    { val: starter, color: "#00d4ff" },
+                    { val: growth, color: "#7c3aed" },
+                    { val: enterprise, color: "#e64dff" },
+                  ].map(({ val, color }, j) => (
+                    <td key={j} style={{ textAlign: "center", padding: "11px 12px" }}>
+                      {val
+                        ? <span style={{ color, fontSize: "1rem" }}>✓</span>
+                        : <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.75rem" }}>—</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </motion.div>
+
+        {/* What implementation + monthly covers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
             className="rounded-2xl p-7 border border-white/07" style={{ background: "rgba(0,212,255,0.03)" }}>
-            <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase text-primary mb-2">AI Implementation & Deployment Includes</div>
-            <p className="text-muted-foreground text-sm mb-5">You&apos;re not paying for setup — you&apos;re paying for expertise. Every implementation covers:</p>
+            <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase text-primary mb-2">Implementation Includes</div>
+            <p className="text-muted-foreground text-sm mb-5">You&apos;re not paying for setup. You&apos;re paying for 60+ deployments worth of expertise applied to your specific business.</p>
             <div className="grid grid-cols-2 gap-2">
-              {["Business workflow analysis", "AI strategy session", "Solution architecture", "Prompt engineering", "Knowledge base creation", "CRM & software integrations", "AI training", "Testing & quality assurance", "Deployment", "Team onboarding"].map(item => (
+              {["Business workflow analysis", "AI strategy session", "Solution architecture", "Prompt engineering", "Knowledge base creation", "CRM & software integrations", "AI training on your data", "Quality assurance testing", "Live deployment", "Team onboarding"].map(item => (
                 <div key={item} className="flex items-center gap-2">
-                  <span className="text-primary text-xs">✓</span>
+                  <span className="text-primary text-xs shrink-0">✓</span>
                   <span className="text-muted-foreground text-sm">{item}</span>
                 </div>
               ))}
@@ -1476,11 +1564,11 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
             className="rounded-2xl p-7 border border-white/07" style={{ background: "rgba(124,58,237,0.03)" }}>
             <div className="text-[0.65rem] font-bold tracking-[0.25em] uppercase mb-2" style={{ color: "#a78bfa" }}>Monthly Partnership Includes</div>
-            <p className="text-muted-foreground text-sm mb-5">Your AI doesn&apos;t stand still. Every month your subscription covers:</p>
+            <p className="text-muted-foreground text-sm mb-5">Your AI gets measurably better every month. This is what keeps it that way.</p>
             <div className="grid grid-cols-2 gap-2">
-              {["AI performance monitoring", "Continuous learning optimization", "Prompt refinement", "Knowledge base updates", "Security monitoring", "CRM & integration maintenance", "Workflow improvements", "Feature enhancements", "Priority support", "Monthly performance review"].map(item => (
+              {["AI performance monitoring", "Continuous learning updates", "Prompt refinement", "Knowledge base updates", "Security & uptime monitoring", "CRM integration maintenance", "Workflow improvements", "New feature enhancements", "Monthly performance review", "Priority support response"].map(item => (
                 <div key={item} className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: "#a78bfa" }}>✓</span>
+                  <span className="text-xs shrink-0" style={{ color: "#a78bfa" }}>✓</span>
                   <span className="text-muted-foreground text-sm">{item}</span>
                 </div>
               ))}
@@ -1488,10 +1576,29 @@ export default function Home() {
           </motion.div>
         </div>
 
+        {/* Guarantee + Why not DIY */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
+            className="rounded-2xl p-7 border" style={{ background: "rgba(16,185,129,0.04)", borderColor: "rgba(16,185,129,0.2)" }}>
+            <div className="text-2xl mb-3">🛡️</div>
+            <div className="text-[0.65rem] font-bold tracking-[0.22em] uppercase mb-2" style={{ color: "#10b981" }}>30-Day Deployment Guarantee</div>
+            <p className="text-white font-semibold text-base mb-2">We work with you until your AI is live and performing.</p>
+            <p className="text-muted-foreground text-sm leading-relaxed">If your AI system isn&apos;t successfully deployed and working within 30 days of kickoff, we keep working at no extra cost until it is. No abandonment, no excuses.</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
+            className="rounded-2xl p-7 border border-white/07" style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div className="text-2xl mb-3">🤔</div>
+            <div className="text-[0.65rem] font-bold tracking-[0.22em] uppercase text-muted-foreground mb-2">Why Not Use a Cheaper Tool?</div>
+            <p className="text-white font-semibold text-base mb-2">DIY tools cost less. Done-for-you costs more. The difference is results.</p>
+            <p className="text-muted-foreground text-sm leading-relaxed">Tools like Chatbase or Voiceflow are software. CyberCraft360 is a fully built, trained, and managed AI system — integrated into your CRM, customized to your business, optimized every month. You&apos;re not paying for a subscription. You&apos;re hiring AI talent.</p>
+          </motion.div>
+        </div>
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <p className="text-muted-foreground text-sm flex-1">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — we&apos;ll scope your project and give you an exact figure.</p>
+          <p className="text-muted-foreground text-sm flex-1">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — we&apos;ll scope your project and give you an exact number.</p>
           <a href="#contact" className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
-            Get a Custom Quote <ArrowRight size={15} />
+            Book a Free Strategy Call <ArrowRight size={15} />
           </a>
         </div>
       </section>
