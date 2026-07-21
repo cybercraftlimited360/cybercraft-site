@@ -192,7 +192,7 @@ export async function GET(req: NextRequest) {
         iris: irisConvs.slice(0, 50),
         lauren: laurenConvs.slice(0, 50).map((c: any) => ({
           ...c,
-          messages: (c.messages || []).filter((m: any) => m.role !== "system"),
+          messages: (Array.isArray(c.messages) ? c.messages : []).filter((m: any) => m.role !== "system"),
         })),
       },
       offboarded,
