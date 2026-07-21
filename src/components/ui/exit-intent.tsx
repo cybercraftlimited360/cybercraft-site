@@ -49,7 +49,7 @@ export default function ExitIntent() {
       const res = await fetch("/api/call", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), name: "Website Visitor", company: "your business", challenge: "Came from exit intent — general inquiry about AI solutions" }),
+        body: JSON.stringify({ phone: phone.trim(), name: "", company: "your business", challenge: "Came from exit intent — general inquiry about AI solutions" }),
       });
       const d = await res.json();
       if (d.ok) { setPhase("done"); }
