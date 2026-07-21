@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website","ads","followups","competitors","roi","referrals"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website","ads","followups","competitors","roi","referrals","reports"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -90,6 +90,7 @@ const CARD_GROUPS = [
       { tab:"analytics"  as Tab, icon:"📈", title:"Analytics",   desc:"Traffic, funnels & performance" },
       { tab:"competitors" as Tab, icon:"🕵️", title:"Intel",      desc:"AI competitive analysis & counter-angles" },
       { tab:"roi"        as Tab, icon:"📑", title:"ROI Report",  desc:"Generate branded client PDF reports" },
+      { tab:"reports"    as Tab, icon:"📬", title:"Reports",     desc:"Weekly AI report + proposal writer" },
     ],
   },
 ];
@@ -212,6 +213,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="competitors"&&<CompetitorTab  token={token}/>}
             {tab==="roi"        &&<ROIReportTab   token={token}/>}
             {tab==="referrals"  &&<ReferralTab    token={token}/>}
+            {tab==="reports"    &&<ReportsTab     token={token}/>}
           </>
         ):(
           <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
@@ -1957,6 +1959,8 @@ function FollowUpsTab({token}:{token:string}) {
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState<string|null>(null);
   const [msg,setMsg]=useState("");
+  const [qualifying,setQualifying]=useState<string|null>(null);
+  const [qualifications,setQualifications]=useState<Record<string,any>>({});
 
   const load=async()=>{
     setLoading(true);
@@ -1981,6 +1985,15 @@ function FollowUpsTab({token}:{token:string}) {
   }
 
   const scoreColor=(s:number)=>s>=70?"#22c55e":s>=40?"#f59e0b":"#ef4444";
+
+  async function qualify(lead:any){
+    const key=lead.name+lead.company;
+    setQualifying(key);
+    const r=await fetch("/api/admin/qualify-lead",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(lead)}).catch(()=>null);
+    const d=await r?.json().catch(()=>({}));
+    if(d?.qualification) setQualifications(prev=>({...prev,[key]:d.qualification}));
+    setQualifying(null);
+  }
 
   return(
     <div style={{paddingTop:8}}>
@@ -2007,10 +2020,12 @@ function FollowUpsTab({token}:{token:string}) {
                     {l.challenge&&<p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:0,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{l.challenge}</p>}
                   </div>
                   <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={()=>qualify(l)} disabled={qualifying===key} style={{padding:"8px 10px",borderRadius:9,border:"1px solid rgba(124,58,237,0.3)",background:"rgba(124,58,237,0.07)",color:"#a78bfa",fontSize:12,fontWeight:700,cursor:"pointer",opacity:qualifying===key?0.5:1}}>{qualifying===key?"…":"🧠"}</button>
                     <button onClick={()=>callLead(l)} disabled={isActing||!l.phone} style={{padding:"8px 12px",borderRadius:9,border:"none",background:l.phone?"linear-gradient(135deg,#e64dff,#7c3aed)":"rgba(255,255,255,0.05)",color:"#fff",fontSize:12,fontWeight:700,cursor:l.phone?"pointer":"not-allowed",opacity:isActing?0.6:1}}>{isActing?"…":"📞 Call"}</button>
-                    <button onClick={()=>markDone(l)} disabled={isActing} style={{padding:"8px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"rgba(255,255,255,0.4)",fontSize:12,cursor:"pointer"}}>✓ Done</button>
+                    <button onClick={()=>markDone(l)} disabled={isActing} style={{padding:"8px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"rgba(255,255,255,0.4)",fontSize:12,cursor:"pointer"}}>✓</button>
                   </div>
                 </div>
+                {qualifications[key]&&<QualificationCard q={qualifications[key]}/>}
               </div>
             );
           })}
@@ -2366,6 +2381,190 @@ function ReferralTab({token}:{token:string}) {
     </div>
   );
 }
+
+// ── Qualification Card ────────────────────────────────────────────────────────
+function QualificationCard({q}:{q:any}){
+  const ratingColor=q.rating==="hot"?"#ef4444":q.rating==="warm"?"#f59e0b":"#64748b";
+  const ratingBg=q.rating==="hot"?"rgba(239,68,68,0.08)":q.rating==="warm"?"rgba(245,158,11,0.08)":"rgba(100,116,139,0.08)";
+  const priorityColor=q.priority==="call today"?"#ef4444":q.priority==="call this week"?"#f59e0b":"#64748b";
+  return(
+    <div style={{marginTop:10,padding:"12px 14px",borderRadius:11,background:"rgba(124,58,237,0.06)",border:"1px solid rgba(124,58,237,0.15)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a78bfa"}}>🧠 AI Qualifier</span>
+        <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:ratingBg,color:ratingColor,textTransform:"uppercase"}}>{q.rating}</span>
+        <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>{q.score_out_of_10}/10</span>
+        <span style={{fontSize:10,fontWeight:700,color:priorityColor,marginLeft:"auto"}}>{q.priority?.toUpperCase()}</span>
+      </div>
+      <p style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.85)",margin:"0 0 6px",lineHeight:1.5}}>{q.one_line}</p>
+      {q.opening_line&&(
+        <div style={{padding:"8px 10px",borderRadius:8,background:"rgba(0,212,255,0.05)",border:"1px solid rgba(0,212,255,0.1)",marginBottom:6}}>
+          <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(0,212,255,0.5)",margin:"0 0 3px"}}>Opening line</p>
+          <p style={{fontSize:11,color:"rgba(255,255,255,0.7)",margin:0,lineHeight:1.5,fontStyle:"italic"}}>"{q.opening_line}"</p>
+        </div>
+      )}
+      <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+        {q.estimated_deal_size&&<p style={{fontSize:11,color:"#22c55e",margin:0,fontWeight:700}}>{q.estimated_deal_size}</p>}
+        {q.red_flags&&q.red_flags!=="None"&&<p style={{fontSize:11,color:"#f59e0b",margin:0}}>⚠️ {q.red_flags}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── Reports Tab ───────────────────────────────────────────────────────────────
+function ReportsTab({token}:{token:string}){
+  const [view,setView]=useState<"reports"|"proposal">("reports");
+  const [reports,setReports]=useState<any[]>([]);
+  const [loadingReports,setLoadingReports]=useState(true);
+  const [expanded,setExpanded]=useState<string|null>(null);
+  const [generating,setGenerating]=useState(false);
+  const [genErr,setGenErr]=useState("");
+
+  // Proposal form
+  const [form,setForm]=useState({clientName:"",businessName:"",industry:"",challenge:"",budget:"",services:"AI phone agent, chatbot, automation",timeline:"4–6 weeks",notes:""});
+  const setF=(k:string,v:string)=>setForm(f=>({...f,[k]:v}));
+
+  useEffect(()=>{
+    fetch("/api/admin/reports",{headers:{"x-admin-token":token}}).then(r=>r.ok?r.json():null).then(d=>{if(d)setReports(d.reports||[]);}).catch(()=>{}).finally(()=>setLoadingReports(false));
+  },[token]);
+
+  async function generateProposal(){
+    if(!form.clientName.trim()||!form.challenge.trim()){setGenErr("Client name and challenge are required.");return;}
+    setGenerating(true); setGenErr("");
+    try{
+      const r=await fetch("/api/admin/generate-proposal",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(form)});
+      if(!r.ok){const d=await r.json().catch(()=>({}));setGenErr(d.error||"Failed.");return;}
+      const blob=await r.blob();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a"); a.href=url; a.download=`CyberCraft360-Proposal-${form.clientName.replace(/\s+/g,"-")}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    }catch(e:any){setGenErr(e.message||"Error.");}
+    finally{setGenerating(false);}
+  }
+
+  const F=({label,k,placeholder,rows}:{label:string;k:string;placeholder?:string;rows?:number})=>(
+    <div>
+      <label style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",display:"block",marginBottom:5}}>{label}</label>
+      {rows
+        ? <textarea value={(form as any)[k]} onChange={e=>setF(k,e.target.value)} placeholder={placeholder||""} rows={rows} style={{...miniInputStyle,resize:"vertical"}}/>
+        : <input value={(form as any)[k]} onChange={e=>setF(k,e.target.value)} placeholder={placeholder||""} style={miniInputStyle}/>
+      }
+    </div>
+  );
+
+  return(
+    <div style={{paddingTop:8}}>
+      <SectionHeader icon="📬" title="Reports" sub="Weekly AI business reports delivered to your inbox + AI proposal writer."/>
+
+      {/* Toggle */}
+      <div style={{display:"flex",gap:6,marginBottom:20,padding:4,borderRadius:12,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)"}}>
+        {(["reports","proposal"] as const).map(v=>(
+          <button key={v} onClick={()=>setView(v)} style={{flex:1,padding:"9px",borderRadius:9,border:"none",background:view===v?"rgba(255,255,255,0.08)":"none",color:view===v?"#fff":"rgba(255,255,255,0.35)",fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.15s"}}>
+            {v==="reports"?"📊 Weekly Reports":"✍️ Proposal Writer"}
+          </button>
+        ))}
+      </div>
+
+      {view==="reports"&&(
+        <>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:16,padding:"8px 12px",borderRadius:10,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.1)"}}>
+            <span style={{fontSize:12}}>🔄</span>
+            <p style={{fontSize:11,color:"rgba(34,197,94,0.6)",margin:0}}>Auto-generated every Monday 7am — delivered to cybercraftlimited@gmail.com and saved here.</p>
+          </div>
+          {loadingReports?<Spinner inline/>:reports.length===0?(
+            <EmptyState>No reports yet — first one arrives Monday morning at 7am.</EmptyState>
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {reports.map(r=>{
+                const isOpen=expanded===r.id;
+                const s=r.summary;
+                return(
+                  <div key={r.id} style={{borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",overflow:"hidden"}}>
+                    <div onClick={()=>setExpanded(isOpen?null:r.id)} style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                      <div>
+                        <p style={{fontSize:13,fontWeight:700,color:"#fff",margin:"0 0 3px"}}>Week of {r.weekEnding}</p>
+                        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                          <span style={{fontSize:11,color:"rgba(0,212,255,0.7)"}}>{s?.new_leads||0} leads</span>
+                          <span style={{fontSize:11,color:"rgba(230,77,255,0.7)"}}>{s?.lauren_calls||0} calls</span>
+                          <span style={{fontSize:11,color:"rgba(34,197,94,0.7)"}}>${(s?.pipeline_value||0).toLocaleString()} pipeline</span>
+                        </div>
+                      </div>
+                      <span style={{color:"rgba(255,255,255,0.25)",fontSize:12,flexShrink:0}}>{isOpen?"▲":"▼"}</span>
+                    </div>
+                    {isOpen&&(
+                      <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"14px 16px"}}>
+                        {/* Quick stats */}
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+                          {[
+                            {l:"New Leads",v:s?.new_leads||0,c:"#00d4ff"},
+                            {l:"Hot Leads",v:s?.hot_leads||0,c:"#ef4444"},
+                            {l:"Lauren Calls",v:s?.lauren_calls||0,c:"#e64dff"},
+                            {l:"Active Clients",v:s?.active_clients||0,c:"#22c55e"},
+                            {l:"Pipeline",v:`$${(s?.pipeline_value||0).toLocaleString()}`,c:"#7c3aed"},
+                            {l:"Pending $",v:`$${(s?.pending_invoices||0).toLocaleString()}`,c:"#f59e0b"},
+                          ].map(x=>(
+                            <div key={x.l} style={{padding:"8px 10px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
+                              <p style={{fontSize:"1rem",fontWeight:800,color:x.c,margin:"0 0 2px",lineHeight:1}}>{x.v}</p>
+                              <p style={{fontSize:9,color:"rgba(255,255,255,0.25)",margin:0,letterSpacing:"0.08em",textTransform:"uppercase"}}>{x.l}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {/* AI Narrative */}
+                        <div style={{padding:"12px 14px",borderRadius:11,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                          <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(124,58,237,0.6)",margin:"0 0 8px"}}>🧠 AI Analysis</p>
+                          <p style={{fontSize:12,color:"rgba(255,255,255,0.7)",lineHeight:1.7,margin:0,whiteSpace:"pre-wrap"}}>{r.narrative}</p>
+                        </div>
+                        {s?.top_lead&&(
+                          <div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:"rgba(245,158,11,0.05)",border:"1px solid rgba(245,158,11,0.15)"}}>
+                            <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#f59e0b",margin:"0 0 4px"}}>🔥 Top Lead</p>
+                            <p style={{fontSize:12,fontWeight:700,color:"#fff",margin:"0 0 2px"}}>{s.top_lead.name} · {s.top_lead.company}</p>
+                            <p style={{fontSize:11,color:"rgba(255,255,255,0.4)",margin:0}}>"{s.top_lead.challenge}"</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {view==="proposal"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)"}}>
+            <SectionTitle style={{marginBottom:12}}>Client Details</SectionTitle>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <F label="Client Name *" k="clientName" placeholder="John Smith"/>
+              <F label="Business Name" k="businessName" placeholder="Smith Plumbing LLC"/>
+            </div>
+            <div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <F label="Industry" k="industry" placeholder="HVAC, Legal, Dental…"/>
+              <F label="Budget Range" k="budget" placeholder="$800–$1,200/mo"/>
+            </div>
+          </div>
+          <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)"}}>
+            <SectionTitle style={{marginBottom:12}}>Their Problem & Our Solution</SectionTitle>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <F label="Their Main Challenge *" k="challenge" placeholder="Missing calls after hours, losing leads to competitors…" rows={3}/>
+              <F label="Services We're Proposing" k="services" placeholder="AI phone agent, chatbot, follow-up automation"/>
+              <F label="Deployment Timeline" k="timeline" placeholder="4–6 weeks"/>
+              <F label="Additional Notes" k="notes" placeholder="Anything else Groq should know about this client" rows={2}/>
+            </div>
+          </div>
+          {genErr&&<p style={{fontSize:12,color:"#ef4444",margin:0}}>{genErr}</p>}
+          <button onClick={generateProposal} disabled={generating} style={{padding:"14px",borderRadius:12,border:"none",background:generating?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontWeight:700,fontSize:14,cursor:generating?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {generating?<><div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 0.8s linear infinite"}}/> Writing proposal…</>:"✍️ Generate Proposal PDF"}
+          </button>
+          <p style={{fontSize:11,color:"rgba(255,255,255,0.2)",textAlign:"center",margin:0}}>Groq writes a fully custom proposal in your voice — downloads as a branded PDF instantly.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reports API route (GET saved reports) ─────────────────────────────────────
+// Note: this is a client-side fetch to /api/admin/reports which we need to create
 
 // ── Shared section header ─────────────────────────────────────────────────────
 function SectionHeader({icon,title,sub}:{icon:string;title:string;sub:string}){

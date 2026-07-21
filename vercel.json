@@ -3,6 +3,10 @@
     {
       "path": "/api/admin/cron/reanalyze-competitors",
       "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/admin/cron/weekly-report",
+      "schedule": "0 7 * * 1"
     }
   ]
 }
