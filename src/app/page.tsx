@@ -82,7 +82,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             const isActive = tab === mapped;
             return (
               <li key={item}>
-                <button onClick={() => { setTab(mapped); const tb = document.querySelector("[data-tabbar]"); if (tb) tb.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="relative text-sm font-semibold tracking-widest uppercase transition-colors duration-200 bg-transparent border-0 p-0">
+                <button onClick={() => { setTab(mapped); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="relative text-sm font-semibold tracking-widest uppercase transition-colors duration-200 bg-transparent border-0 p-0">
                   <span className={isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}>
                     {item}
                   </span>
@@ -101,7 +101,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
               <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all mr-2">
                 Get a Quote
               </a>
-              <button onClick={() => { setTab("book"); const tb = document.querySelector("[data-tabbar]"); if (tb) tb.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity">
+              <button onClick={() => { setTab("book"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity">
                 Book a Call
               </button>
           </li>
@@ -155,7 +155,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
                 transition={{ duration: 0.3, delay: menuOpen ? i * 0.06 : 0 }}
-                onClick={() => { setTab(mapped); setMenuOpen(false); setTimeout(() => { const tb = document.querySelector("[data-tabbar]"); if (tb) tb.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300); }}
+                onClick={() => { setTab(mapped); setMenuOpen(false); setTimeout(() => { const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }, 300); }}
                 className="font-serif font-light bg-transparent border-0"
                 style={{
                   fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
@@ -175,7 +175,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             className="mt-4 flex flex-col items-center gap-3 w-full px-8"
           >
             <button
-              onClick={() => { setTab("book"); setMenuOpen(false); setTimeout(() => { const tb = document.querySelector("[data-tabbar]"); if (tb) tb.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300); }}
+              onClick={() => { setTab("book"); setMenuOpen(false); setTimeout(() => { const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }, 300); }}
               className="w-full text-center bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md border-0"
             >
               📅 Book a Call
