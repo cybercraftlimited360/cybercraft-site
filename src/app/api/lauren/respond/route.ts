@@ -239,7 +239,13 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
     .trim();
 
   const ttsUrl = (text: string) => `${base}/api/lauren/tts?text=${encodeURIComponent(text)}`;
-  const timeout = `${base}/api/lauren/tts?text=${encodeURIComponent(`Sorry about that — I didn't catch you. Feel free to call us back or visit cybercraft360.com. Have a great day!`)}`;
+  const timeoutMsg = `${base}/api/lauren/tts?text=${encodeURIComponent(`Sorry about that — I didn't catch you. Feel free to call us back or visit cybercraft360.com. Have a great day!`)}`;
+
+  // Email readback turns have long spoken text — give extra silence timeout so Amy
+  // isn't cut off while spelling out a long email address letter by letter
+  const isEmailTurn = /\b[a-z]-[a-z]\b|dot com|at gmail|did I get that right/i.test(clean);
+  const speechTimeout = isEmailTurn ? "4" : "2";
+  const gatherTimeout = isEmailTurn ? "12" : "8";
 
   if (shouldEnd) {
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -252,10 +258,10 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" timeout="8" speechTimeout="2" action="${actionUrl}" method="POST">
+  <Gather input="speech" timeout="${gatherTimeout}" speechTimeout="${speechTimeout}" action="${actionUrl}" method="POST">
     <Play>${ttsUrl(clean)}</Play>
   </Gather>
-  <Play>${timeout}</Play>
+  <Play>${timeoutMsg}</Play>
   <Hangup/>
 </Response>`;
 }
