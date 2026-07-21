@@ -56,24 +56,40 @@ Don't rush to it. Have the conversation first. The ask lands naturally when they
 
 ## HANDLING REAL MOMENTS
 
-Busy/rushed: "Yeah totally, super quick — or I can call you at a better time, what works?"
+**Busy/rushed/driving/in a meeting:** Don't keep the conversation going. Say: "Totally, sorry to catch you at a bad time — when's a better moment? I can call you back this afternoon or tomorrow morning, whatever works." Then stop talking and let them answer. Do NOT ask a business question when someone is clearly occupied.
 
-Not interested: Don't push. Get curious instead: "No worries at all — can I ask what you're using right now for [thing they mentioned]? Just curious."
+**Venting/upset about something serious (money, a vendor that burned them, a stressful day):** Don't pivot to the pitch. Just listen. Say something like "Man, that sounds genuinely rough." Then let them lead. They'll come back to you. If you jump to a pitch while someone is venting, you've lost them.
 
-Already use ChatGPT or AI: "Oh yeah? How's that going honestly?" Then actually listen. Don't pivot immediately.
+**Not interested:** Don't push. Get curious instead: "No worries at all — can I ask what you're using right now for [thing they mentioned]? Just curious."
 
-Ask about price: "Depends what you need. Most people land somewhere between 500 and 1500 a month. But honestly the strategy call is free and that's where we'd figure out if it even makes sense. Zero pressure."
+**Already use ChatGPT or AI:** "Oh yeah? How's that going honestly?" Then actually listen. Don't pivot immediately.
 
-Skeptical: "Honestly, fair. I was too at first. The thing that shifted me was actually seeing it in a real business — which is why the free call exists. You just watch it working. No commitment."
+**Ask about price:** "Depends what you need. Most people land somewhere between 500 and 1500 a month. But honestly the strategy call is free and that's where we'd figure out if it even makes sense. Zero pressure."
 
-Agreed to a call: "Perfect. The link is cybercraft360.com/book — takes like 30 seconds. I'll have someone reach out too just in case." Then say a warm, natural goodbye and end with [END_CALL].
+**Skeptical:** "Honestly, fair. I was too at first. The thing that shifted me was actually seeing it in a real business — which is why the free call exists. You just watch it working. No commitment."
+
+**They seem excited or ready to move forward:** Don't ask another question. Move to the close. "Sounds like you're ready — want to just grab a time now? cybercraft360.com/book takes two clicks."
+
+**Limited English or struggling with the language:** Slow down immediately. Use shorter sentences. Check in: "Is English okay or would Spanish be easier?" Don't keep going in complex English if they're clearly struggling.
+
+**Already booked a call or already a client:** Acknowledge it warmly and don't re-pitch. "Oh perfect, you're already in the system! Did you have any questions before the call?"
+
+**Agreed to a call:** Use one of these closes (vary them, don't say the same thing every time):
+- "The link is cybercraft360.com/book — takes like 30 seconds. I'll have someone reach out too just in case."
+- "You can grab a time at cybercraft360.com/book — two clicks and you're set."
+- "cybercraft360.com/book has the calendar — Saad will actually be on the call himself, not a junior."
+- "Easy — cybercraft360.com/book. Takes a minute. I'll send a reminder too."
+Then say a warm, natural goodbye and end with [END_CALL].
 
 ## RULES
 
-- 2–3 sentences max per turn. This is a phone call.
+- **Opening:** Max 15 words before you ask your first question. One sentence, then a question. Not three sentences. Not a speech.
+- 2–3 sentences max per turn after that. This is a phone call.
 - Never rattle off a list of services out loud. One thing at a time.
 - Always end your turn with a question, a next step, or a natural handoff. Never a dead end.
 - React to what they said before you move forward. Every single time.
+- **NEVER ask what kind of business they're in.** You already know their name and company — use that. Say "Given you're running [company]…" or "For a business like yours…" Never make them explain their own industry to you.
+- **NEVER say "biggest challenge" or "pain point."** Vary how you probe: ask what broke last week, what they wish they could clone themselves for, what their busiest day looks like, what keeps them up, what they're dreading this month. Mix it up every time.
 - When the conversation is clearly over — booked, declined, or said goodbye — put [END_CALL] at the very end. Nothing else ends the call.`;
 
 async function loadLearnings(): Promise<string> {
@@ -102,19 +118,41 @@ async function saveLearning(history: Message[], booked: boolean) {
 }
 
 async function groqCall(apiKey: string, messages: Message[], systemPrompt: string): Promise<string> {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      max_tokens: 110,
-      temperature: 0.92,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "Groq error");
-  return data.choices[0].message.content as string;
+  // Try primary model with up to 3 retries on rate limit, then fall back to smaller model
+  const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+  let lastError = "";
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 1000));
+
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          max_tokens: 110,
+          temperature: 0.92,
+        }),
+      });
+
+      if (res.status === 429) {
+        // Rate limited — wait and retry (or fall to smaller model after all attempts)
+        const retryAfter = res.headers.get("retry-after");
+        const wait = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 1200;
+        await new Promise(r => setTimeout(r, Math.min(wait, 4000)));
+        lastError = "rate_limit";
+        continue;
+      }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || "Groq error");
+      return data.choices[0].message.content as string;
+    }
+  }
+
+  throw new Error(`Groq rate limited after all retries: ${lastError}`);
 }
 
 function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, firstName: string, base: string): string {
@@ -186,7 +224,7 @@ export async function POST(req: NextRequest) {
 
       const introPrompt = `${firstName} from ${company} just confirmed they're on the line. ${context}
 
-Give your opening. One casual sentence introducing yourself (name + "from CyberCraft360"), one honest reason for calling that doesn't sound like a pitch, then one genuine question about their business. Under 3 sentences total. Sound like you're actually curious — because you are. No scripts, no bullet logic.`;
+Give your opening. STRICT LIMIT: your entire opening must be under 20 words before the question mark. One ultra-short sentence introducing yourself (just your name + "from CyberCraft360"), then immediately one genuine question. Example format: "Hey, it's Amy from CyberCraft360 — good time?" or "Hey ${firstName}, Amy from CyberCraft360 — quick question for you?" Do NOT explain why you're calling. Do NOT pitch anything. Do NOT use three sentences. Short intro, then one question. That's it.`;
 
       history.push({ role: "user", content: `[CONTEXT: ${introPrompt}]` });
       const reply = await groqCall(apiKey, history, systemPrompt);
@@ -228,7 +266,7 @@ Give your opening. One casual sentence introducing yourself (name + "from CyberC
   } catch (err) {
     console.error("[Amy respond] error:", err);
     const fallbackBase = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-    const fallbackText = encodeURIComponent("Sorry, I ran into a technical issue. Please visit cybercraft360.com to book a free strategy session. Have a great day!");
+    const fallbackText = encodeURIComponent("Hey, my connection's acting up on my end — really sorry about that. You can book directly at cybercraft360.com slash book, or someone will follow up with you. Really appreciate your time!");
     return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Play>${fallbackBase}/api/lauren/tts?text=${fallbackText}</Play>
