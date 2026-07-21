@@ -28,6 +28,7 @@ import ScrollTransition from "@/components/ui/scroll-transition";
 import BeforeAfter from "@/components/demo/BeforeAfter";
 import DemoIrisChat from "@/components/demo/DemoIrisChat";
 import LaurenCallDemo from "@/components/demo/LaurenCallDemo";
+import HowItWorksModal from "@/components/demo/HowItWorksModal";
 
 type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
 
@@ -283,6 +284,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
 export default function Home() {
   const [tab, setTab] = React.useState<SiteTab>("about");
   const [showEbook, setShowEbook] = React.useState(false);
+  const [showHowItWorks, setShowHowItWorks] = React.useState(false);
 
   React.useEffect(() => {
     const HASH_TAB: Record<string, SiteTab> = {
@@ -315,6 +317,7 @@ export default function Home() {
       <ExitIntent />
       <ScrollTransition />
       <AnimatePresence>{showEbook && <EbookForm onClose={() => setShowEbook(false)} />}</AnimatePresence>
+      <HowItWorksModal open={showHowItWorks} onClose={() => setShowHowItWorks(false)} />
 
       <ScrollProgress />
 
@@ -1065,10 +1068,10 @@ export default function Home() {
                 </div>
               </div>
               <div className="shrink-0">
-                <a href="#contact" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold tracking-widest uppercase no-underline transition-opacity hover:opacity-90"
+                <button onClick={() => setShowHowItWorks(true)} className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold tracking-widest uppercase transition-opacity hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
                   See How It Works <ArrowRight size={15} />
-                </a>
+                </button>
               </div>
             </div>
           </motion.div>
