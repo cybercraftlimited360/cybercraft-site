@@ -2023,10 +2023,16 @@ function FollowUpsTab({token}:{token:string}) {
 // ── Competitor Intelligence Tab ───────────────────────────────────────────────
 function CompetitorTab({token}:{token:string}) {
   const [competitors,setCompetitors]=useState<any[]>([]);
+  const [mentions,setMentions]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
+  const [seeding,setSeeding]=useState(false);
+  const [scanning,setScanning]=useState(false);
   const [name,setName]=useState(""); const [website,setWebsite]=useState(""); const [notes,setNotes]=useState("");
   const [adding,setAdding]=useState(false); const [expanded,setExpanded]=useState<string|null>(null);
   const [reanalyzing,setReanalyzing]=useState<string|null>(null);
+  const [showAdd,setShowAdd]=useState(false);
+
+  const api=(body:any)=>fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(body)}).catch(()=>null);
 
   const load=async()=>{
     setLoading(true);
@@ -2036,55 +2042,123 @@ function CompetitorTab({token}:{token:string}) {
   };
   useEffect(()=>{load();},[]);
 
+  async function autoSeed(){
+    setSeeding(true);
+    const r=await api({action:"auto-seed"});
+    const d=await r?.json().catch(()=>({}));
+    if(d?.competitors)setCompetitors(d.competitors);
+    setSeeding(false);
+  }
+  async function scanLeads(){
+    setScanning(true);
+    const r=await api({action:"scan-leads"});
+    const d=await r?.json().catch(()=>({}));
+    setMentions(d?.mentions||[]);
+    setScanning(false);
+  }
   async function add(){
     if(!name.trim())return;
     setAdding(true);
-    await fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"add",name:name.trim(),website:website.trim(),notes:notes.trim()})}).catch(()=>null);
-    setName(""); setWebsite(""); setNotes(""); setAdding(false); load();
+    await api({action:"add",name:name.trim(),website:website.trim(),notes:notes.trim()});
+    setName(""); setWebsite(""); setNotes(""); setAdding(false); setShowAdd(false); load();
   }
   async function reanalyze(id:string){
     setReanalyzing(id);
-    await fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"re-analyze",id})}).catch(()=>null);
+    await api({action:"re-analyze",id});
     setReanalyzing(null); load();
   }
   async function del(id:string){
-    await fetch("/api/admin/competitors",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"delete",id})}).catch(()=>null);
+    await api({action:"delete",id});
     load();
   }
 
+  const getMentionCount=(id:string)=>mentions.find(m=>m.competitorId===id)?.count||0;
+
   return(
     <div style={{paddingTop:8}}>
-      <SectionHeader icon="🕵️" title="Competitor Intelligence" sub="Add a competitor — AI generates your counter-strategy automatically."/>
-      {/* Add form */}
-      <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",marginBottom:20}}>
-        <SectionTitle>Add Competitor</SectionTitle>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Competitor name *" style={miniInputStyle}/>
-          <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="Website (optional)" style={miniInputStyle}/>
-          <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="What do you know about them? (pricing, market, clients…)" rows={3} style={{...miniInputStyle,resize:"vertical"}}/>
-          <button onClick={add} disabled={adding||!name.trim()} style={{padding:"11px",borderRadius:10,border:"none",background:adding||!name.trim()?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontWeight:700,fontSize:13,cursor:adding||!name.trim()?"not-allowed":"pointer"}}>
-            {adding?"Analyzing with AI…":"⚡ Add & Analyze"}
-          </button>
-        </div>
+      <SectionHeader icon="🕵️" title="Competitor Intelligence" sub="AI-powered — auto-discovers competitors, scans your leads for mentions, refreshes analysis every Monday."/>
+
+      {/* Automation action bar */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20}}>
+        <button onClick={autoSeed} disabled={seeding} style={{padding:"13px 10px",borderRadius:12,border:"1px solid rgba(230,77,255,0.25)",background:"rgba(230,77,255,0.06)",color:seeding?"rgba(255,255,255,0.3)":"#e64dff",fontWeight:700,fontSize:12,cursor:seeding?"not-allowed":"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+          <span style={{fontSize:20}}>{seeding?"⏳":"🤖"}</span>
+          <span>{seeding?"Discovering…":"Auto-Discover"}</span>
+          <span style={{fontSize:10,fontWeight:400,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>AI finds your top competitors</span>
+        </button>
+        <button onClick={scanLeads} disabled={scanning} style={{padding:"13px 10px",borderRadius:12,border:"1px solid rgba(0,212,255,0.25)",background:"rgba(0,212,255,0.06)",color:scanning?"rgba(255,255,255,0.3)":"#00d4ff",fontWeight:700,fontSize:12,cursor:scanning?"not-allowed":"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+          <span style={{fontSize:20}}>{scanning?"⏳":"🔍"}</span>
+          <span>{scanning?"Scanning…":"Scan Leads"}</span>
+          <span style={{fontSize:10,fontWeight:400,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>Find mentions in your leads</span>
+        </button>
       </div>
 
-      {loading?<Spinner inline/>:competitors.length===0?<EmptyState>No competitors tracked yet. Add one above.</EmptyState>:(
+      {/* Mention results */}
+      {mentions.length>0&&(
+        <div style={{padding:"12px 14px",borderRadius:12,background:"rgba(0,212,255,0.04)",border:"1px solid rgba(0,212,255,0.12)",marginBottom:18}}>
+          <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(0,212,255,0.6)",margin:"0 0 8px"}}>🔍 Lead & Call Mentions</p>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {mentions.map(m=>(
+              <div key={m.competitorId} style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{m.competitorName}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{m.leads.slice(0,3).join(", ")}{m.leads.length>3?` +${m.leads.length-3} more`:""}</span>
+                  <span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20,background:"rgba(239,68,68,0.15)",color:"#ef4444"}}>{m.count}×</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cron status note */}
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:16,padding:"8px 12px",borderRadius:10,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.1)"}}>
+        <span style={{fontSize:12}}>🔄</span>
+        <p style={{fontSize:11,color:"rgba(34,197,94,0.6)",margin:0}}>Auto re-analysis runs every Monday 8am — all competitor intelligence stays fresh automatically.</p>
+      </div>
+
+      {/* Manual add toggle */}
+      <div style={{marginBottom:16}}>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{padding:"9px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.03)",color:"rgba(255,255,255,0.4)",fontSize:12,cursor:"pointer",fontWeight:600}}>
+          {showAdd?"✕ Cancel":"＋ Add Competitor Manually"}
+        </button>
+      </div>
+      {showAdd&&(
+        <div style={{padding:"16px",borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",marginBottom:20}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Competitor name *" style={miniInputStyle}/>
+            <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="Website (optional)" style={miniInputStyle}/>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="What do you know about them?" rows={2} style={{...miniInputStyle,resize:"vertical"}}/>
+            <button onClick={add} disabled={adding||!name.trim()} style={{padding:"11px",borderRadius:10,border:"none",background:adding||!name.trim()?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontWeight:700,fontSize:13,cursor:adding||!name.trim()?"not-allowed":"pointer"}}>
+              {adding?"Analyzing…":"⚡ Add & Analyze"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading?<Spinner inline/>:competitors.length===0?(
+        <EmptyState>No competitors tracked yet. Hit Auto-Discover and let AI do the work.</EmptyState>
+      ):(
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           {competitors.map(c=>{
             const isOpen=expanded===c.id;
             const a=c.analysis;
+            const mentionCount=getMentionCount(c.id);
             return(
-              <div key={c.id} style={{borderRadius:14,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",overflow:"hidden"}}>
-                <div onClick={()=>setExpanded(isOpen?null:c.id)} style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div>
-                    <span style={{fontWeight:700,color:"#fff",fontSize:14}}>{c.name}</span>
-                    {c.website&&<span style={{fontSize:11,color:"rgba(0,212,255,0.5)",marginLeft:8}}>{c.website}</span>}
-                    {a&&<p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:"4px 0 0"}}>{a.positioning}</p>}
+              <div key={c.id} style={{borderRadius:14,background:"rgba(255,255,255,0.02)",border:`1px solid ${mentionCount>0?"rgba(239,68,68,0.2)":"rgba(255,255,255,0.07)"}`,overflow:"hidden"}}>
+                <div onClick={()=>setExpanded(isOpen?null:c.id)} style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:700,color:"#fff",fontSize:14}}>{c.name}</span>
+                      {c.autoSeeded&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:"rgba(230,77,255,0.1)",color:"#e64dff",letterSpacing:"0.1em",textTransform:"uppercase"}}>Auto</span>}
+                      {mentionCount>0&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:"rgba(239,68,68,0.12)",color:"#ef4444"}}>{mentionCount} mention{mentionCount!==1?"s":""}</span>}
+                    </div>
+                    {c.website&&<p style={{fontSize:11,color:"rgba(0,212,255,0.45)",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.website}</p>}
+                    {a&&<p style={{fontSize:11,color:"rgba(255,255,255,0.3)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.positioning}</p>}
                   </div>
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
                     <button onClick={e=>{e.stopPropagation();reanalyze(c.id);}} disabled={reanalyzing===c.id} style={{padding:"5px 9px",borderRadius:7,border:"1px solid rgba(0,212,255,0.2)",background:"rgba(0,212,255,0.05)",color:"#00d4ff",fontSize:11,cursor:"pointer"}}>{reanalyzing===c.id?"…":"↻"}</button>
                     <button onClick={e=>{e.stopPropagation();del(c.id);}} style={{padding:"5px 9px",borderRadius:7,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.5)",fontSize:11,cursor:"pointer"}}>✕</button>
-                    <span style={{color:"rgba(255,255,255,0.3)",fontSize:12}}>{isOpen?"▲":"▼"}</span>
+                    <span style={{color:"rgba(255,255,255,0.25)",fontSize:12}}>{isOpen?"▲":"▼"}</span>
                   </div>
                 </div>
                 {isOpen&&a&&(
@@ -2093,15 +2167,16 @@ function CompetitorTab({token}:{token:string}) {
                     <IntelCard label="🎯 Their Weaknesses" value={a.likely_weaknesses} color="#22c55e"/>
                     <IntelCard label="⚡ Your Counter-Angle" value={a.counter_angle} color="#00d4ff" bold/>
                     <div>
-                      <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(0,212,255,0.5)",margin:"0 0 6px"}}>📢 Talking Points When Prospects Mention Them</p>
+                      <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(0,212,255,0.5)",margin:"0 0 6px"}}>📢 Talking Points</p>
                       {(a.talking_points||"").split("\n").filter(Boolean).map((tp:string,i:number)=>(
-                        <div key={i} style={{padding:"7px 10px",borderRadius:8,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",marginBottom:5,fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.5}}>• {tp.replace(/^[-•]\s*/,"")}</div>
+                        <div key={i} style={{padding:"7px 10px",borderRadius:8,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",marginBottom:5,fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.5}}>• {tp.replace(/^[-•\d.]\s*/,"")}</div>
                       ))}
                     </div>
                     {a.watch_for&&<IntelCard label="👀 Watch For" value={a.watch_for} color="rgba(255,255,255,0.35)"/>}
+                    <p style={{fontSize:10,color:"rgba(255,255,255,0.15)",margin:0}}>Last updated {new Date(c.updatedAt).toLocaleDateString()}{c.autoRefreshedAt?" · auto-refreshed":""}</p>
                   </div>
                 )}
-                {isOpen&&!a&&<div style={{padding:"12px 16px",borderTop:"1px solid rgba(255,255,255,0.06)",fontSize:12,color:"rgba(255,255,255,0.3)"}}>No AI analysis yet — click ↻ to analyze.</div>}
+                {isOpen&&!a&&<div style={{padding:"12px 16px",borderTop:"1px solid rgba(255,255,255,0.06)",fontSize:12,color:"rgba(255,255,255,0.3)"}}>No analysis yet — click ↻</div>}
               </div>
             );
           })}

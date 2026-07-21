@@ -62,6 +62,93 @@ export async function POST(req: NextRequest) {
   const { action, id, name, website, notes, update } = await req.json();
   const apiKey = process.env.GROQ_API_KEY;
 
+  // ── Auto-seed: discover competitors via Groq ──────────────────────────────
+  if (action === "auto-seed") {
+    if (!apiKey) return NextResponse.json({ error: "No API key" }, { status: 500 });
+    const existing = await redis.get<any[]>("competitors:all") ?? [];
+
+    const seedRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: `You are a competitive intelligence analyst. CyberCraft360 is a premium bespoke AI agency in Houston TX that builds custom AI phone agents, chatbots, voice assistants, and automation systems for small-to-medium businesses. Monthly subscription model, fully custom (no templates), founder-led.`,
+          },
+          {
+            role: "user",
+            content: `List the top 8 competitors CyberCraft360 should be tracking. Include: national AI agency platforms, local Houston competitors, and template-based chatbot tools that businesses often compare them to.
+
+Return a JSON object: { "competitors": [ { "name": "...", "website": "...", "notes": "1-2 sentence description of what they do and why businesses consider them" } ] }`,
+          },
+        ],
+        max_tokens: 900,
+        temperature: 0.6,
+        response_format: { type: "json_object" },
+      }),
+    });
+    const seedData = await seedRes.json();
+    if (!seedRes.ok) return NextResponse.json({ error: seedData.error?.message }, { status: 500 });
+
+    const suggestions: any[] = JSON.parse(seedData.choices[0].message.content).competitors || [];
+    const existingNames = existing.map((c: any) => c.name.toLowerCase());
+    const toAdd = suggestions.filter((s: any) => !existingNames.includes(s.name.toLowerCase()));
+
+    // Analyze each new competitor in parallel (max 8)
+    const analyzed = await Promise.all(
+      toAdd.slice(0, 8).map(async (s: any) => {
+        let analysis = null;
+        try { analysis = await groqAnalyze(apiKey, s.name, s.notes); } catch {}
+        return { id: `${Date.now()}-${Math.random().toString(36).slice(2,6)}`, name: s.name, website: s.website || "", notes: s.notes || "", analysis, addedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), autoSeeded: true };
+      })
+    );
+
+    const updated = [...existing, ...analyzed];
+    await redis.set("competitors:all", updated);
+    return NextResponse.json({ ok: true, added: analyzed.length, competitors: updated });
+  }
+
+  // ── Scan leads for competitor mentions ────────────────────────────────────
+  if (action === "scan-leads") {
+    const competitors = await redis.get<any[]>("competitors:all") ?? [];
+    const leads = await redis.get<any[]>("leads:all") ?? [];
+    if (competitors.length === 0) return NextResponse.json({ mentions: [] });
+
+    const mentions: { competitorId: string; competitorName: string; count: number; leads: string[] }[] = [];
+
+    for (const comp of competitors) {
+      const regex = new RegExp(comp.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      const matched = leads.filter((l: any) =>
+        regex.test(l.challenge || "") || regex.test(l.company || "") || regex.test(l.notes || "")
+      );
+      if (matched.length > 0) {
+        mentions.push({
+          competitorId: comp.id,
+          competitorName: comp.name,
+          count: matched.length,
+          leads: matched.map((l: any) => l.name || "Unknown").slice(0, 5),
+        });
+      }
+    }
+
+    // Also scan Lauren call transcripts
+    const callLog = await redis.get<any[]>("lauren:call-log") ?? [];
+    for (const mention of mentions) {
+      const comp = competitors.find((c: any) => c.id === mention.competitorId);
+      if (!comp) continue;
+      const regex = new RegExp(comp.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      const callMatches = callLog.filter((call: any) =>
+        (call.transcript || []).some((m: any) => regex.test(m.content || ""))
+      );
+      if (callMatches.length > 0) mention.count += callMatches.length;
+    }
+
+    mentions.sort((a, b) => b.count - a.count);
+    return NextResponse.json({ mentions });
+  }
+
   if (action === "add") {
     const competitors = await redis.get<any[]>("competitors:all") ?? [];
     let analysis = null;
