@@ -953,14 +953,18 @@ export default function Home() {
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {employees.map(({ emoji, name, role, accent, headline, problem, desc, features, impact, tag, icon: Icon, cta }: any, i: number) => (
+              {employees.map(({ emoji, name, role, accent, headline, problem, desc, features, impact, tag, icon: Icon, cta }: any, i: number) => {
+                const hasDemo = ["Ava","Nova","Atlas","Echo","Pulse","Orion","Amy","Aegis"].includes(name);
+                const openDemo = () => { if (hasDemo) { setHowItWorksService(name); setShowHowItWorks(true); } };
+                return (
                 <TiltCard key={name}>
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-30px" }}
                     transition={{ duration: 0.55, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="relative overflow-hidden rounded-xl group h-full flex flex-col"
+                    onClick={openDemo}
+                    className={`relative overflow-hidden rounded-xl group h-full flex flex-col${hasDemo ? " cursor-pointer" : ""}`}
                     style={{ background: `linear-gradient(135deg, ${accent}07 0%, rgba(255,255,255,0.015) 100%)`, border: "1px solid rgba(255,255,255,0.07)", padding: "1.75rem" }}
                   >
                     {/* Hover glow */}
@@ -1013,8 +1017,8 @@ export default function Home() {
                             📖 Generate Free eBook →
                           </button>
                         )}
-                        {["Ava","Nova","Atlas","Echo","Pulse","Orion","Amy","Aegis"].includes(name) && (
-                          <button onClick={() => { setHowItWorksService(name); setShowHowItWorks(true); }}
+                        {hasDemo && (
+                          <button onClick={e => { e.stopPropagation(); openDemo(); }}
                             style={{ marginTop: 10, width: "100%", padding: "9px 16px", borderRadius: 8, background: `${accent}14`, border: `1px solid ${accent}33`, color: accent, fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: "0.08em" }}>
                             ▶ See {name} in Action
                           </button>
@@ -1023,7 +1027,8 @@ export default function Home() {
                     </div>
                   </motion.div>
                 </TiltCard>
-              ))}
+                );
+              })}
             </div>
           );
         })()}
