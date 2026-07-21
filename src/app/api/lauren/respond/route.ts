@@ -197,7 +197,7 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" timeout="8" speechTimeout="2" action="${actionUrl}" method="POST">
+  <Gather input="speech" timeout="8" speechTimeout="1" action="${actionUrl}" method="POST">
     <Play>${ttsUrl(clean)}</Play>
   </Gather>
   <Play>${timeout}</Play>
@@ -221,10 +221,13 @@ export async function POST(req: NextRequest) {
     const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
 
     const historyKey = `lauren:call:${callSid}`;
-    const history = (await redis.get<Message[]>(historyKey)) ?? [];
 
-    // Build system prompt with self-learnings injected
-    const learningsContext = await loadLearnings();
+    // Fetch history and learnings in parallel to cut latency
+    const [rawHistory, learningsContext] = await Promise.all([
+      redis.get<Message[]>(historyKey),
+      loadLearnings(),
+    ]);
+    const history = rawHistory ?? [];
     const systemPrompt = BASE_SYSTEM + learningsContext;
 
     if (stage === "opening") {
