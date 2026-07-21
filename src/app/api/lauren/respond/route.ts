@@ -152,6 +152,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
             messages: [{ role: "system", content: systemPrompt }, ...messages],
             max_tokens: 110,
             temperature: 0.92,
+            stream: false,
           }),
         });
 
