@@ -17,11 +17,11 @@ export async function GET(req: NextRequest) {
     },
     body: JSON.stringify({
       text,
-      model_id: "eleven_turbo_v2_5",
+      model_id: "eleven_flash_v2_5",
       voice_settings: {
-        stability: 0.45,
-        similarity_boost: 0.80,
-        style: 0.35,
+        stability: 0.40,
+        similarity_boost: 0.85,
+        style: 0.30,
         use_speaker_boost: true,
       },
     }),
@@ -37,7 +37,9 @@ export async function GET(req: NextRequest) {
   return new NextResponse(audio, {
     headers: {
       "Content-Type": "audio/mpeg",
+      "Content-Length": String(audio.byteLength),
       "Cache-Control": "no-store",
+      "Accept-Ranges": "bytes",
     },
   });
 }

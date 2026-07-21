@@ -915,10 +915,10 @@ export default function Home() {
               icon: Zap,
             },
             {
-              emoji: "🎙️", name: "Lauren", role: "AI Voice Agent", accent: "#e64dff",
+              emoji: "🎙️", name: "Amy", role: "AI Voice Agent", accent: "#e64dff",
               headline: "Conversations That Feel Human",
               problem: "Your customers deserve real conversations — not robotic menus.",
-              desc: "Lauren sounds natural, understands context, and delivers professional interactions from the very first call. The more conversations she has, the better she becomes. Perfect for sales, support, scheduling, and follow-up.",
+              desc: "Amy sounds natural, understands context, and delivers professional interactions from the very first call. The more conversations she has, the better she becomes. Perfect for sales, support, scheduling, and follow-up.",
               features: ["Natural human-like voice", "Context-aware responses", "Sales & qualification", "Appointment scheduling", "24/7 availability", "Self-improving with every call"],
               impact: "Professional conversations at scale — without hiring a team.",
               tag: "Sounds Human",

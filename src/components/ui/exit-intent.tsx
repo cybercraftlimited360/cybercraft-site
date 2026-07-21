@@ -106,7 +106,7 @@ export default function ExitIntent() {
                   🎙️
                 </motion.div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#e64dff", marginBottom: 2 }}>Lauren · AI Sales Agent</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#e64dff", marginBottom: 2 }}>Amy · AI Sales Agent</div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", gap: 5 }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
                     Available now · calls you in 60 seconds
@@ -148,7 +148,7 @@ export default function ExitIntent() {
                     >
                       {calling
                         ? <><span style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 0.8s linear infinite", display: "inline-block" }} /> Calling…</>
-                        : "📞 Have Lauren Call Me Now"}
+                        : "📞 Have Amy Call Me Now"}
                     </button>
 
                     <div style={{ display: "flex", gap: 8 }}>
@@ -165,7 +165,7 @@ export default function ExitIntent() {
                 {phase === "done" && (
                   <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} style={{ textAlign: "center", padding: "16px 0 8px" }}>
                     <motion.div animate={{ scale: [0.8, 1.2, 1] }} transition={{ duration: 0.5 }} style={{ fontSize: 48, marginBottom: 14 }}>📞</motion.div>
-                    <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Lauren is calling you now</p>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Amy is calling you now</p>
                     <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, marginBottom: 20 }}>Check your phone — she'll be calling {phone} in the next 60 seconds.</p>
                     <button onClick={handleDismiss} style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.3)", fontSize: 12, cursor: "pointer" }}>
                       Close

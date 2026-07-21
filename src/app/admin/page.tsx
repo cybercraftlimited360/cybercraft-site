@@ -6,7 +6,7 @@ const TABS = ["overview","clients","pipeline","finances","tasks","convos","activ
 type Tab = typeof TABS[number];
 
 const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Lauren",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -71,7 +71,7 @@ const CARD_GROUPS = [
     cards: [
       { tab:"convos"     as Tab, icon:"💬", title:"Convos",      desc:"IRIS chat conversations" },
       { tab:"activity"   as Tab, icon:"🔔", title:"Activity",    desc:"Live feed of all events" },
-      { tab:"lauren"     as Tab, icon:"📞", title:"Lauren",      desc:"AI phone agent & call logs" },
+      { tab:"lauren"     as Tab, icon:"📞", title:"Amy",         desc:"AI voice agent & call logs" },
       { tab:"followups"  as Tab, icon:"🔁", title:"Follow-Ups",  desc:"Overdue leads sorted by score" },
     ],
   },
@@ -944,18 +944,18 @@ function ConvosTab({data}:{data:any}) {
   const allConvs=[...irisConvs.map((c:any)=>({...c,_source:"iris"})),...laurenConvs.map((c:any)=>({...c,_source:"lauren"}))].sort((a,b)=>b.date>a.date?1:-1);
   const visible=allConvs.filter(c=>filter==="all"||c._source===filter);
   const sourceColor=(s:string)=>s==="iris"?"#7c3aed":"#e64dff";
-  const sourceLabel=(s:string)=>s==="iris"?"IRIS":"Lauren";
+  const sourceLabel=(s:string)=>s==="iris"?"IRIS":"Amy";
 
   return (
     <div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
         <MiniStat label="IRIS Chats" value={irisConvs.length} accent="#7c3aed"/>
-        <MiniStat label="Lauren Calls" value={laurenConvs.length} accent="#e64dff"/>
+        <MiniStat label="Amy Calls" value={laurenConvs.length} accent="#e64dff"/>
         <MiniStat label="Chat Leads" value={data.chat?.totalLeads??0} accent="#00d4ff"/>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         {(["all","iris","lauren"] as const).map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"7px 16px",borderRadius:20,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",background:filter===f?(f==="iris"?"#7c3aed":f==="lauren"?"#e64dff":"#00d4ff"):"rgba(255,255,255,0.06)",color:filter===f?"#fff":"rgba(255,255,255,0.4)",textTransform:"capitalize"}}>{f==="all"?`All (${allConvs.length})`:f==="iris"?`IRIS (${irisConvs.length})`:`Lauren (${laurenConvs.length})`}</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:"7px 16px",borderRadius:20,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",background:filter===f?(f==="iris"?"#7c3aed":f==="lauren"?"#e64dff":"#00d4ff"):"rgba(255,255,255,0.06)",color:filter===f?"#fff":"rgba(255,255,255,0.4)",textTransform:"capitalize"}}>{f==="all"?`All (${allConvs.length})`:f==="iris"?`IRIS (${irisConvs.length})`:`Amy (${laurenConvs.length})`}</button>
         ))}
       </div>
       <Card>
@@ -992,7 +992,7 @@ function ConvosTab({data}:{data:any}) {
                   {msgs.filter((m:any)=>m.role!=="system").map((m:any,mi:number)=>(
                     <div key={mi} style={{display:"flex",justifyContent:m.role==="user"||m.role==="caller"?"flex-end":"flex-start"}}>
                       <div style={{maxWidth:"80%",padding:"9px 12px",borderRadius:12,background:m.role==="user"||m.role==="caller"?"rgba(0,212,255,0.12)":"rgba(255,255,255,0.05)",border:`1px solid ${m.role==="user"||m.role==="caller"?"rgba(0,212,255,0.2)":"rgba(255,255,255,0.07)"}`}}>
-                        <p style={{margin:0,fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:3,textTransform:"uppercase",fontWeight:700,letterSpacing:"0.1em"}}>{m.role==="user"||m.role==="caller"?(c._source==="lauren"?"Caller":"Visitor"):(c._source==="lauren"?"Lauren":"IRIS")}</p>
+                        <p style={{margin:0,fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:3,textTransform:"uppercase",fontWeight:700,letterSpacing:"0.1em"}}>{m.role==="user"||m.role==="caller"?(c._source==="lauren"?"Caller":"Visitor"):(c._source==="lauren"?"Amy":"IRIS")}</p>
                         <p style={{margin:0,fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.5}}>{String(m.content).slice(0,500)}</p>
                       </div>
                     </div>
@@ -1016,7 +1016,7 @@ function ActivityTab({data}:{data:any}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
         <MiniStat label="Conversations" value={data.chat.totalConversations} accent="#7c3aed"/>
         <MiniStat label="Chat Leads" value={data.chat.totalLeads} accent="#00d4ff"/>
-        <MiniStat label="Lauren Calls" value={data.lauren.totalCalls} accent="#e64dff"/>
+        <MiniStat label="Amy Calls" value={data.lauren.totalCalls} accent="#e64dff"/>
       </div>
       <Card>
         {events.length>0?events.map((e,i)=>(
@@ -1054,7 +1054,7 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
     try{
       const res=await fetch("/api/call",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({phone,name:name||"there",company:company||"your business",challenge})});
       const d=await res.json();
-      if(d.ok)setResult({ok:true,message:`✅ Lauren is calling ${phone}. SID: ${d.callSid}`});
+      if(d.ok)setResult({ok:true,message:`✅ Amy is calling ${phone}. SID: ${d.callSid}`});
       else setResult({ok:false,message:`❌ ${d.error||"Call failed"}`});
     }catch(e:any){setResult({ok:false,message:`❌ ${e.message}`});}
     finally{setCalling(false);}
@@ -1063,8 +1063,8 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
   async function scheduleCall(){
     if(!phone||!schedDate||!schedTime)return;
     const scheduledFor=`${schedDate}T${schedTime}:00`;
-    const log=await h.post("/api/admin/reminders",{action:"add",name:name||phone,phone,company,note:`Scheduled Lauren call: ${challenge||"(no context)"}`,dueDate:schedDate});
-    setSchedStatus(`✅ Follow-up reminder set for ${schedDate} at ${schedTime}. Lauren will call when you trigger from the reminder.`);
+    const log=await h.post("/api/admin/reminders",{action:"add",name:name||phone,phone,company,note:`Scheduled Amy call: ${challenge||"(no context)"}`,dueDate:schedDate});
+    setSchedStatus(`✅ Follow-up reminder set for ${schedDate} at ${schedTime}. Amy will call when you trigger from the reminder.`);
   }
 
   const accent="#e64dff";
@@ -1077,8 +1077,8 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24}}>
         <div style={{width:36,height:36,borderRadius:10,background:`${accent}15`,border:`1px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🎙️</div>
         <div>
-          <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>Lauren — AI Voice Agent</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Dial any lead. Lauren handles the conversation.</div>
+          <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>Amy — AI Voice Agent</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Dial any lead. Amy handles the conversation.</div>
         </div>
       </div>
 
@@ -1096,13 +1096,13 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
             <div><label style={labelStyle}>Name</label><input style={inp} placeholder="Lead Name" value={name} onChange={e=>setName(e.target.value)}/></div>
             <div><label style={labelStyle}>Company</label><input style={inp} placeholder="Business" value={company} onChange={e=>setCompany(e.target.value)}/></div>
           </div>
-          <div><label style={labelStyle}>Context / Challenge</label><input style={inp} placeholder="What Lauren should know" value={challenge} onChange={e=>setChallenge(e.target.value)}/></div>
+          <div><label style={labelStyle}>Context / Challenge</label><input style={inp} placeholder="What Amy should know" value={challenge} onChange={e=>setChallenge(e.target.value)}/></div>
           {schedMode&&(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
             <div><label style={labelStyle}>Date</label><input type="date" style={inp} value={schedDate} onChange={e=>setSchedDate(e.target.value)}/></div>
             <div><label style={labelStyle}>Time</label><input type="time" style={inp} value={schedTime} onChange={e=>setSchedTime(e.target.value)}/></div>
           </div>)}
           <button onClick={schedMode?scheduleCall:dial} disabled={calling||!phone} style={{padding:"13px 20px",borderRadius:11,border:"none",fontWeight:700,fontSize:14,cursor:calling||!phone?"not-allowed":"pointer",background:calling||!phone?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,color:"#fff"}}>
-            {schedMode?"🗓️ Set Reminder":(calling?"⏳ Dialing…":"📞 Have Lauren Call Now")}
+            {schedMode?"🗓️ Set Reminder":(calling?"⏳ Dialing…":"📞 Have Amy Call Now")}
           </button>
           {result&&<div style={{padding:"12px 16px",borderRadius:10,background:result.ok?"rgba(34,197,94,0.08)":"rgba(239,68,68,0.08)",border:`1px solid ${result.ok?"rgba(34,197,94,0.2)":"rgba(239,68,68,0.2)"}`,fontSize:13,color:result.ok?"#22c55e":"#ef4444"}}>{result.message}</div>}
           {schedStatus&&<div style={{padding:"12px 16px",borderRadius:10,background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",fontSize:13,color:"#22c55e"}}>{schedStatus}</div>}
@@ -1131,7 +1131,7 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
       <div style={sectionStyle}>
         <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>📈 Call Stats</div>
         <div style={{fontSize:28,fontWeight:800,color:accent}}>{data.lauren?.totalCalls??0}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginTop:4}}>Total calls placed by Lauren</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginTop:4}}>Total calls placed by Amy</div>
       </div>
 
       {/* Call Log */}
@@ -1167,7 +1167,7 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
                       const isLauren=msg.role==="assistant";
                       return (
                         <div key={mi} style={{display:"flex",flexDirection:"column",alignItems:isLauren?"flex-start":"flex-end"}}>
-                          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:isLauren?"#e64dff":"#00d4ff",marginBottom:3}}>{isLauren?"Lauren":"Caller"}</div>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:isLauren?"#e64dff":"#00d4ff",marginBottom:3}}>{isLauren?"Amy":"Caller"}</div>
                           <div style={{maxWidth:"85%",padding:"9px 13px",borderRadius:isLauren?"4px 12px 12px 12px":"12px 4px 12px 12px",background:isLauren?"rgba(230,77,255,0.08)":"rgba(0,212,255,0.08)",border:`1px solid ${isLauren?"rgba(230,77,255,0.2)":"rgba(0,212,255,0.2)"}`,fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.5}}>{msg.content}</div>
                         </div>
                       );
@@ -1975,7 +1975,7 @@ function FollowUpsTab({token}:{token:string}) {
     setActing(lead.name+lead.company); setMsg("");
     const r=await fetch("/api/admin/follow-ups",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"call",phone:lead.phone,name:lead.name,company:lead.company,challenge:lead.challenge})}).catch(()=>null);
     const d=await r?.json().catch(()=>({}));
-    setMsg(d?.ok?`✅ Lauren is calling ${lead.name||"the lead"} now.`:`❌ ${d?.error||"Call failed."}`);
+    setMsg(d?.ok?`✅ Amy is calling ${lead.name||"the lead"} now.`:`❌ ${d?.error||"Call failed."}`);
     setActing(null); load();
   }
   async function markDone(lead:any){
@@ -1997,7 +1997,7 @@ function FollowUpsTab({token}:{token:string}) {
 
   return(
     <div style={{paddingTop:8}}>
-      <SectionHeader icon="🔁" title="Automated Follow-Ups" sub="Leads that need a call — sorted by score. One click has Lauren dial them."/>
+      <SectionHeader icon="🔁" title="Automated Follow-Ups" sub="Leads that need a call — sorted by score. One click has Amy dial them."/>
       {msg&&<div style={{padding:"10px 14px",borderRadius:10,background:msg.startsWith("✅")?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${msg.startsWith("✅")?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"}`,color:msg.startsWith("✅")?"#22c55e":"#ef4444",fontSize:13,marginBottom:14}}>{msg}</div>}
       {loading?<Spinner inline/>:leads.length===0?<EmptyState>🎉 No overdue follow-ups right now</EmptyState>:(
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -2497,7 +2497,7 @@ function ReportsTab({token}:{token:string}){
                           {[
                             {l:"New Leads",v:s?.new_leads||0,c:"#00d4ff"},
                             {l:"Hot Leads",v:s?.hot_leads||0,c:"#ef4444"},
-                            {l:"Lauren Calls",v:s?.lauren_calls||0,c:"#e64dff"},
+                            {l:"Amy Calls",v:s?.lauren_calls||0,c:"#e64dff"},
                             {l:"Active Clients",v:s?.active_clients||0,c:"#22c55e"},
                             {l:"Pipeline",v:`$${(s?.pipeline_value||0).toLocaleString()}`,c:"#7c3aed"},
                             {l:"Pending $",v:`$${(s?.pending_invoices||0).toLocaleString()}`,c:"#f59e0b"},

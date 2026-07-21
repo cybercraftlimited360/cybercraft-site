@@ -5,7 +5,7 @@ import crypto from "crypto";
 const NOTIFY_EMAIL = "cybercraftlimited@gmail.com";
 const LAUREN_URL = "https://amused-empathy-production-6b44.up.railway.app";
 
-async function triggerLaurenCall(lead: { name: string; company: string; challenge: string; phone: string }, retryCount = 0) {
+async function triggerAmyCall(lead: { name: string; company: string; challenge: string; phone: string }, retryCount = 0) {
   try {
     const context = `This lead came from our website chat. They mentioned: ${lead.challenge}. Address this specifically in your pitch.`;
     const res = await fetch(`${LAUREN_URL}/make-call`, {
@@ -22,13 +22,13 @@ async function triggerLaurenCall(lead: { name: string; company: string; challeng
     });
     const data = await res.json();
     if (data.ok) {
-      console.log(`Lauren calling ${lead.name} (${lead.phone}) — callSid: ${data.callSid}`);
+      console.log(`Amy calling ${lead.name} (${lead.phone}) — callSid: ${data.callSid}`);
       // Track in Redis
       await redis.hincrby("lauren:stats", "totalCalls", 1);
     }
     return data;
   } catch (err) {
-    console.error("Lauren call trigger error:", err);
+    console.error("Amy call trigger error:", err);
     return null;
   }
 }
@@ -48,12 +48,12 @@ async function sendLeadEmail(
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <span style="font-size:18px;">${laurenCalling ? "📞" : "⚠️"}</span>
             <span style="font-size:13px;font-weight:700;color:${laurenCalling ? "#22c55e" : "#f59e0b"};">
-              ${laurenCalling ? "Lauren is calling them now" : "No phone — Lauren not triggered"}
+              ${laurenCalling ? "Amy is calling them now" : "No phone — Amy not triggered"}
             </span>
           </div>
           <span style="font-size:12px;color:rgba(255,255,255,0.4);">
             ${laurenCalling
-              ? `Calling ${lead.phone} · If no answer, Lauren will retry in 30 min and 2 hours`
+              ? `Calling ${lead.phone} · If no answer, Amy will retry in 30 min and 2 hours`
               : "Lead has no phone number on file"
             }
           </span>
@@ -123,7 +123,7 @@ async function sendLeadEmail(
   const { sendEmail } = await import("@/lib/mailer");
   await sendEmail({
     to: NOTIFY_EMAIL,
-    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? (laurenCalling ? " 📞 Lauren calling" : " (no answer yet)") : ""}`,
+    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? (laurenCalling ? " 📞 Amy calling" : " (no answer yet)") : ""}`,
     html,
   });
 }
@@ -172,12 +172,12 @@ export async function POST(req: NextRequest) {
     // Auto-trigger Lauren if phone number provided
     let laurenCalling = false;
     if (lead.phone) {
-      triggerLaurenCall({
+      triggerAmyCall({
         name: lead.name,
         company: lead.company,
         challenge: lead.challenge,
         phone: lead.phone,
-      }).catch(err => console.error("Lauren trigger error:", err));
+      }).catch(err => console.error("Amy trigger error:", err));
       laurenCalling = true;
     }
 

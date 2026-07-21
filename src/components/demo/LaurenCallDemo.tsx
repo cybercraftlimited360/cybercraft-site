@@ -23,7 +23,7 @@ export default function LaurenCallDemo() {
           phone,
           name: name || "there",
           company: "your business",
-          challenge: "This is a live demo call from the CyberCraft360 website. The visitor wants to experience Lauren firsthand.",
+          challenge: "This is a live demo call from the CyberCraft360 website. The visitor wants to experience Amy firsthand.",
         }),
       });
       const data = await res.json();
@@ -64,20 +64,19 @@ export default function LaurenCallDemo() {
           </div>
           <h2 className="font-serif text-4xl md:text-5xl font-light text-foreground leading-tight mb-4"
             style={{ fontFamily: "var(--font-cormorant),'Cormorant Garamond',serif" }}>
-            Let Lauren Call <em>You</em> Right Now
+            Let Amy Call <em>You</em> Right Now
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-            Enter your phone number. Lauren — our AI voice agent — will call you in seconds. Have a real conversation. Ask her anything. This is exactly what we build for businesses.
+            Enter your phone number. Amy — our AI voice agent — will call you in seconds. Have a real conversation. Ask her anything. This is exactly what we build for businesses.
           </p>
         </motion.div>
 
         <AnimatePresence>
           {stage === "idle" && (
             <motion.div key="idle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              {/* What to expect */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
                 {[
-                  { icon: "⚡", title: "Calls in Seconds", desc: "Lauren dials your number the moment you click" },
+                  { icon: "⚡", title: "Calls in Seconds", desc: "Amy dials your number the moment you click" },
                   { icon: "🧠", title: "Real AI", desc: "Not a recording — she adapts to everything you say" },
                   { icon: "🎯", title: "Feel the Difference", desc: "Experience what your customers will hear" },
                 ].map(item => (
@@ -112,7 +111,6 @@ export default function LaurenCallDemo() {
                 background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: 20, padding: "28px 24px",
               }}>
-                {/* Lauren avatar */}
                 <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                   <div style={{
                     width: 52, height: 52, borderRadius: 16,
@@ -123,7 +121,7 @@ export default function LaurenCallDemo() {
                     🎙️
                   </div>
                   <div>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 3px" }}>Lauren — AI Voice Agent</p>
+                    <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 3px" }}>Amy — AI Voice Agent</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", animation: "pulse-dot 2s infinite" }} />
                       <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Ready to call · Average wait: &lt;5 seconds</span>
@@ -135,7 +133,7 @@ export default function LaurenCallDemo() {
                   <div>
                     <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", display: "block", marginBottom: 7 }}>Your Name (optional)</label>
                     <input
-                      placeholder="So Lauren knows who she's calling"
+                      placeholder="So Amy knows who she's calling"
                       value={name}
                       onChange={e => setName(e.target.value)}
                       style={{ width: "100%", padding: "13px 16px", borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: 14, outline: "none" }}
@@ -152,7 +150,6 @@ export default function LaurenCallDemo() {
                     />
                   </div>
 
-                  {/* Consent */}
                   <div
                     onClick={() => setAgreed(a => !a)}
                     style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", padding: "12px 14px", borderRadius: 10, background: agreed ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${agreed ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.07)"}`, transition: "all 0.2s" }}
@@ -193,7 +190,7 @@ export default function LaurenCallDemo() {
                   🎙️
                 </div>
               </div>
-              <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Lauren is calling you…</p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Amy is calling you…</p>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>Answer your phone in the next few seconds</p>
             </motion.div>
           )}
@@ -203,7 +200,7 @@ export default function LaurenCallDemo() {
               <div style={{ fontSize: 56, marginBottom: 20 }}>📲</div>
               <p style={{ fontSize: 20, fontWeight: 700, color: "#22c55e", margin: "0 0 10px" }}>Your phone should be ringing!</p>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>
-                Lauren is calling right now. Pick up and have a real conversation with her.<br />
+                Amy is calling right now. Pick up and have a real conversation with her.<br />
                 Ask about pricing, services, booking — anything. She handles it all.
               </p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
