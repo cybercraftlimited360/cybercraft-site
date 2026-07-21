@@ -126,7 +126,6 @@ interface Provider {
 
 async function callLLM(messages: Message[], systemPrompt: string): Promise<string> {
   const cerebrasKey = process.env.CEREBRAS_API_KEY ?? "";
-  const groqKey = process.env.GROQ_API_KEY ?? "";
 
   const providers: Provider[] = [
     // Cerebras first — fastest inference (~100ms), no rate limits on paid
@@ -135,13 +134,6 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
       url: "https://api.cerebras.ai/v1/chat/completions",
       key: cerebrasKey,
       models: ["gpt-oss-120b", "gemma-4-31b"],
-    }] : []),
-    // Groq as fallback
-    ...(groqKey ? [{
-      name: "Groq",
-      url: "https://api.groq.com/openai/v1/chat/completions",
-      key: groqKey,
-      models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
     }] : []),
   ];
 
@@ -175,7 +167,12 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
           console.error(`[Amy] ${provider.name}/${model} error (${res.status}):`, JSON.stringify(data));
           break; // try next model
         }
-        return data.choices[0].message.content as string;
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) {
+          console.error(`[Amy] ${provider.name}/${model} empty content:`, JSON.stringify(data));
+          break; // try next model
+        }
+        return content as string;
       }
     }
   }
@@ -255,7 +252,7 @@ Give your opening. STRICT LIMIT: your entire opening must be under 20 words befo
       const reply = await callLLM(history, systemPrompt);
       const shouldEnd = /\[END_CALL\]/i.test(reply);
       history.push({ role: "assistant", content: reply });
-      await redis.set(historyKey, history.filter(m => !m.content.startsWith("[CONTEXT:")), { ex: 3600 });
+      await redis.set(historyKey, history.filter(m => !m.content?.startsWith("[CONTEXT:")), { ex: 3600 });
 
       return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
@@ -279,7 +276,7 @@ Give your opening. STRICT LIMIT: your entire opening must be under 20 words befo
         callSid, to: name, name, company, challenge,
         status: "completed",
         messages: history.length,
-        transcript: history.filter(m => !m.content.startsWith("[CONTEXT:")),
+        transcript: history.filter(m => !m.content?.startsWith("[CONTEXT:")),
         booked,
         loggedAt: new Date().toISOString(),
       });
