@@ -134,7 +134,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
       name: "Cerebras",
       url: "https://api.cerebras.ai/v1/chat/completions",
       key: cerebrasKey,
-      models: ["gemma-4-31b", "llama3.1-8b"],
+      models: ["gpt-oss-120b", "gemma-4-31b"],
     }] : []),
     // Groq as fallback
     ...(groqKey ? [{
