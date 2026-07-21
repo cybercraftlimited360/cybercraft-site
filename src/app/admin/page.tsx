@@ -53,9 +53,50 @@ export default function AdminRoot() {
   return <Dashboard token={token} onLogout={()=>{localStorage.removeItem(TOKEN_KEY);setToken(null);}}/>;
 }
 
+// ── Dashboard card groups ─────────────────────────────────────────────────────
+const CARD_GROUPS = [
+  {
+    label: "Core", color: "#00d4ff",
+    cards: [
+      { tab:"overview"   as Tab, icon:"📊", title:"Overview",    desc:"Revenue, MRR, pipeline at a glance" },
+      { tab:"clients"    as Tab, icon:"👥", title:"Clients",     desc:"All active client accounts" },
+      { tab:"pipeline"   as Tab, icon:"📋", title:"Pipeline",    desc:"Deals & proposal stages" },
+      { tab:"finances"   as Tab, icon:"💰", title:"Finances",    desc:"Invoices, payments, cash flow" },
+      { tab:"tasks"      as Tab, icon:"✅", title:"Tasks",       desc:"To-dos, deadlines, priorities" },
+      { tab:"calendar"   as Tab, icon:"📅", title:"Calendar",    desc:"Upcoming bookings & calls" },
+    ],
+  },
+  {
+    label: "Leads & Conversations", color: "#e64dff",
+    cards: [
+      { tab:"convos"     as Tab, icon:"💬", title:"Convos",      desc:"IRIS chat conversations" },
+      { tab:"activity"   as Tab, icon:"🔔", title:"Activity",    desc:"Live feed of all events" },
+      { tab:"lauren"     as Tab, icon:"📞", title:"Lauren",      desc:"AI phone agent & call logs" },
+      { tab:"followups"  as Tab, icon:"🔁", title:"Follow-Ups",  desc:"Overdue leads sorted by score" },
+    ],
+  },
+  {
+    label: "Marketing", color: "#f59e0b",
+    cards: [
+      { tab:"ads"        as Tab, icon:"🎯", title:"AI Ads",      desc:"Generate LinkedIn, Facebook & Instagram ads" },
+      { tab:"ebooks"     as Tab, icon:"📖", title:"eBooks",      desc:"Lead magnet downloads & tracking" },
+      { tab:"website"    as Tab, icon:"🌐", title:"Website",     desc:"Live site stats & quick edits" },
+      { tab:"referrals"  as Tab, icon:"🤝", title:"Referrals",   desc:"Referral links & conversion tracking" },
+    ],
+  },
+  {
+    label: "Intelligence & Reports", color: "#22c55e",
+    cards: [
+      { tab:"analytics"  as Tab, icon:"📈", title:"Analytics",   desc:"Traffic, funnels & performance" },
+      { tab:"competitors" as Tab, icon:"🕵️", title:"Intel",      desc:"AI competitive analysis & counter-angles" },
+      { tab:"roi"        as Tab, icon:"📑", title:"ROI Report",  desc:"Generate branded client PDF reports" },
+    ],
+  },
+];
+
 // ── Dashboard Shell ───────────────────────────────────────────────────────────
 function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
-  const [tab,setTab]=useState<Tab>("overview");
+  const [tab,setTab]=useState<Tab|null>(null);
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [refreshing,setRefreshing]=useState(false);
@@ -68,61 +109,113 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
   },[token]);
 
   useEffect(()=>{load();},[load]);
-
   const h=useAdminApi(token);
 
+  const activeCard=tab ? CARD_GROUPS.flatMap(g=>g.cards).find(c=>c.tab===tab) : null;
+
   return (
-    <div style={{minHeight:"100dvh",background:"#080a10",fontFamily:"system-ui,sans-serif",paddingBottom:84}}>
-      <div style={{background:"rgba(15,17,23,0.95)",borderBottom:"1px solid rgba(255,255,255,0.06)",padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,backdropFilter:"blur(12px)"}}>
-        <div>
-          <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.25em",textTransform:"uppercase",color:"rgba(255,255,255,0.2)",margin:"0 0 2px"}}>CyberCraft360</p>
-          <h1 style={{fontSize:"1.1rem",fontWeight:800,color:"#fff",margin:0}}>Admin Dashboard</h1>
+    <div style={{minHeight:"100dvh",background:"#080a10",fontFamily:"system-ui,sans-serif"}}>
+      {/* Top bar */}
+      <div style={{background:"rgba(15,17,23,0.97)",borderBottom:"1px solid rgba(255,255,255,0.06)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,backdropFilter:"blur(12px)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+          {tab&&(
+            <button onClick={()=>setTab(null)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.4)",padding:"4px 6px 4px 2px",fontSize:18,flexShrink:0,lineHeight:1}}>←</button>
+          )}
+          <div style={{minWidth:0}}>
+            {tab ? (
+              <>
+                <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"rgba(255,255,255,0.2)",margin:"0 0 1px"}}>CyberCraft360 · Dashboard</p>
+                <h1 style={{fontSize:"1rem",fontWeight:800,color:"#fff",margin:0,display:"flex",alignItems:"center",gap:6}}>
+                  <span>{activeCard?.icon}</span> {activeCard?.title}
+                </h1>
+              </>
+            ) : (
+              <>
+                <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.25em",textTransform:"uppercase",color:"rgba(255,255,255,0.2)",margin:"0 0 2px"}}>CyberCraft360</p>
+                <h1 style={{fontSize:"1.05rem",fontWeight:800,color:"#fff",margin:0}}>Admin Dashboard</h1>
+              </>
+            )}
+          </div>
         </div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          {refreshing&&<div style={{width:16,height:16,borderRadius:"50%",border:"2px solid rgba(0,212,255,0.3)",borderTopColor:"#00d4ff",animation:"spin 0.8s linear infinite"}}/>}
+        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+          {refreshing&&<div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(0,212,255,0.3)",borderTopColor:"#00d4ff",animation:"spin 0.8s linear infinite"}}/>}
           <Btn onClick={()=>load(true)}>↻</Btn>
-          <a href="/admin/invoice" style={{padding:"7px 12px",borderRadius:8,background:"linear-gradient(135deg,#00d4ff22,#7c3aed22)",border:"1px solid rgba(0,212,255,0.2)",color:"#00d4ff",fontSize:12,fontWeight:700,textDecoration:"none"}}>📄 Invoice</a>
-          <Btn onClick={onLogout} style={{color:"rgba(255,255,255,0.3)"}}>Out</Btn>
+          {!tab&&<a href="/admin/invoice" style={{padding:"7px 10px",borderRadius:8,background:"linear-gradient(135deg,#00d4ff22,#7c3aed22)",border:"1px solid rgba(0,212,255,0.2)",color:"#00d4ff",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>📄 Invoice</a>}
+          <Btn onClick={onLogout} style={{color:"rgba(255,255,255,0.25)"}}>Out</Btn>
         </div>
       </div>
 
-      <div style={{maxWidth:720,margin:"0 auto",padding:"20px 14px 0"}}>
+      <div style={{maxWidth:700,margin:"0 auto",padding:"20px 14px 40px"}}>
         {loading?(
-          <div style={{textAlign:"center",padding:"80px 0"}}><Spinner inline/><p style={{color:"rgba(255,255,255,0.3)",fontSize:13,marginTop:16}}>Loading dashboard…</p></div>
-        ):data?(
+          <div style={{textAlign:"center",padding:"80px 0"}}><Spinner inline/><p style={{color:"rgba(255,255,255,0.3)",fontSize:13,marginTop:16}}>Loading…</p></div>
+        ) : !tab ? (
+          /* ── Home card grid ── */
+          <div>
+            {/* Quick stats strip */}
+            {data&&(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:28}}>
+                {[
+                  {label:"MRR",      value:`$${(data.overview?.mrr||0).toLocaleString()}`,    color:"#00d4ff"},
+                  {label:"Clients",  value: data.overview?.totalClients||0,                   color:"#e64dff"},
+                  {label:"Pipeline", value:`$${(data.overview?.pipelineValue||0).toLocaleString()}`, color:"#7c3aed"},
+                  {label:"Tasks",    value: data.overview?.openTasks||0,                      color: data.overview?.overdueTasks>0?"#ef4444":"#f59e0b"},
+                ].map(s=>(
+                  <div key={s.label} style={{padding:"10px 10px 9px",borderRadius:12,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
+                    <p style={{fontSize:"1rem",fontWeight:800,color:s.color,margin:"0 0 2px",lineHeight:1}}>{s.value}</p>
+                    <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",margin:0}}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {CARD_GROUPS.map(group=>(
+              <div key={group.label} style={{marginBottom:28}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                  <div style={{width:3,height:16,borderRadius:2,background:group.color,flexShrink:0}}/>
+                  <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>{group.label}</p>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+                  {group.cards.map(card=>(
+                    <button key={card.tab} onClick={()=>setTab(card.tab)}
+                      style={{padding:"16px 14px",borderRadius:16,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.07)",textAlign:"left",cursor:"pointer",transition:"background 0.15s,border-color 0.15s",display:"flex",flexDirection:"column",gap:6}}
+                      onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,0.05)";(e.currentTarget as HTMLButtonElement).style.borderColor=`${group.color}44`;}}
+                      onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,0.025)";(e.currentTarget as HTMLButtonElement).style.borderColor="rgba(255,255,255,0.07)";}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <span style={{fontSize:22}}>{card.icon}</span>
+                        <span style={{fontSize:14,color:"rgba(255,255,255,0.15)"}}>›</span>
+                      </div>
+                      <p style={{fontSize:13,fontWeight:700,color:"#fff",margin:0,lineHeight:1.2}}>{card.title}</p>
+                      <p style={{fontSize:11,color:"rgba(255,255,255,0.3)",margin:0,lineHeight:1.4}}>{card.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : data ? (
+          /* ── Section view ── */
           <>
-            {tab==="overview"  &&<OverviewTab  data={data} token={token} h={h}/>}
-            {tab==="clients"   &&<ClientsTab   data={data} token={token} h={h}/>}
-            {tab==="pipeline"  &&<PipelineTab  data={data} token={token} onRefresh={()=>load(true)} h={h}/>}
-            {tab==="finances"  &&<FinancesTab  data={data} token={token}/>}
-            {tab==="tasks"     &&<TasksTab     data={data} token={token} onRefresh={()=>load(true)}/>}
-            {tab==="convos"    &&<ConvosTab    data={data}/>}
-            {tab==="activity"  &&<ActivityTab  data={data}/>}
-            {tab==="lauren"    &&<LaurenTab    data={data} token={token} h={h}/>}
-            {tab==="analytics" &&<AnalyticsTab data={data}/>}
-            {tab==="calendar"  &&<CalendarTab  data={data}/>}
-            {tab==="ebooks"    &&<EbooksTab    token={token} h={h}/>}
-            {tab==="website"   &&<WebsiteTab   data={data}/>}
-            {tab==="ads"       &&<AdsTab       token={token}/>}
-            {tab==="followups" &&<FollowUpsTab  token={token}/>}
-            {tab==="competitors"&&<CompetitorTab token={token}/>}
-            {tab==="roi"       &&<ROIReportTab  token={token}/>}
-            {tab==="referrals" &&<ReferralTab   token={token}/>}
+            {tab==="overview"   &&<OverviewTab    data={data} token={token} h={h}/>}
+            {tab==="clients"    &&<ClientsTab     data={data} token={token} h={h}/>}
+            {tab==="pipeline"   &&<PipelineTab    data={data} token={token} onRefresh={()=>load(true)} h={h}/>}
+            {tab==="finances"   &&<FinancesTab    data={data} token={token}/>}
+            {tab==="tasks"      &&<TasksTab       data={data} token={token} onRefresh={()=>load(true)}/>}
+            {tab==="convos"     &&<ConvosTab      data={data}/>}
+            {tab==="activity"   &&<ActivityTab    data={data}/>}
+            {tab==="lauren"     &&<LaurenTab      data={data} token={token} h={h}/>}
+            {tab==="analytics"  &&<AnalyticsTab   data={data}/>}
+            {tab==="calendar"   &&<CalendarTab    data={data}/>}
+            {tab==="ebooks"     &&<EbooksTab      token={token} h={h}/>}
+            {tab==="website"    &&<WebsiteTab     data={data}/>}
+            {tab==="ads"        &&<AdsTab         token={token}/>}
+            {tab==="followups"  &&<FollowUpsTab   token={token}/>}
+            {tab==="competitors"&&<CompetitorTab  token={token}/>}
+            {tab==="roi"        &&<ROIReportTab   token={token}/>}
+            {tab==="referrals"  &&<ReferralTab    token={token}/>}
           </>
         ):(
           <p style={{color:"#ef4444",textAlign:"center",marginTop:60}}>Failed to load dashboard.</p>
         )}
-      </div>
-
-      {/* Bottom tab bar — scrollable, icon-only for inactive */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(10,12,18,0.97)",borderTop:"1px solid rgba(255,255,255,0.07)",display:"flex",backdropFilter:"blur(12px)",zIndex:50,overflowX:"auto"}}>
-        {TABS.map(t=>(
-          <button key={t} onClick={()=>setTab(t)} style={{flexShrink:0,width:tab===t?72:40,padding:"10px 4px 12px",border:"none",background:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer",opacity:tab===t?1:0.4,transition:"all 0.15s",position:"relative"}}>
-            <span style={{fontSize:17}}>{TAB_ICONS[t]}</span>
-            {tab===t&&<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.05em",color:"#00d4ff",textTransform:"uppercase",whiteSpace:"nowrap"}}>{TAB_LABELS[t]}</span>}
-            {tab===t&&<div style={{position:"absolute",bottom:0,width:28,height:2,background:"#00d4ff",borderRadius:2}}/>}
-          </button>
-        ))}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}*{box-sizing:border-box}`}</style>
     </div>
