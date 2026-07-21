@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const rawName = (searchParams.get("name") || "").trim();
-  const name = rawName || "there";
+  const hasName = rawName.length > 0 && rawName.toLowerCase() !== "there";
+  const name = hasName ? rawName : "";
   const company = searchParams.get("company") || "your business";
   const challenge = searchParams.get("challenge") || "";
-  const firstName = name.split(" ")[0];
-  const hasName = rawName.length > 0;
+  const firstName = hasName ? name.split(" ")[0] : "";
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
   const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;

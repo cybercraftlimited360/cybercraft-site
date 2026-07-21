@@ -261,12 +261,12 @@ export async function POST(req: NextRequest) {
     const callSid = body.get("CallSid") as string || "unknown";
 
     const rawName = (req.nextUrl.searchParams.get("name") || "").trim();
-    const hasName = rawName.length > 0 && rawName !== "there";
-    let name = hasName ? rawName : "there";
+    const hasName = rawName.length > 0 && rawName.toLowerCase() !== "there";
+    let name = hasName ? rawName : "";
     const company = req.nextUrl.searchParams.get("company") || "your business";
     const challenge = req.nextUrl.searchParams.get("challenge") || "";
     const stage = req.nextUrl.searchParams.get("stage") || "";
-    let firstName = name.split(" ")[0];
+    let firstName = hasName ? name.split(" ")[0] : "";
 
     const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
 
@@ -291,28 +291,42 @@ export async function POST(req: NextRequest) {
         return new NextResponse(buildTwiml(reply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
       }
 
-      // If we didn't have a name, the caller just told us who they are — use it
+      // If we didn't have a name, the caller just told us who they are — extract it
       if (!hasName && speechResult.length > 0) {
-        // Extract just first name or first word from their response
-        const spokenName = speechResult.replace(/^(yes|yeah|hi|hey|speaking|this is|it's|it is)\s*/i, "").split(/[\s,]/)[0];
-        if (spokenName.length > 1 && spokenName.length < 20) {
+        // Strip common prefixes iteratively (handles "Hi, it's John", "Yeah this is Sarah", etc.)
+        const prefixPattern = /^(yes|yeah|yep|sure|hi|hey|hello|uh|um|speaking|this is|it's|it is|my name is|i'm|im|name's|name is)[,\s]*/gi;
+        let extracted = speechResult.trim();
+        let prev = "";
+        while (extracted !== prev) { prev = extracted; extracted = extracted.replace(prefixPattern, "").trim(); }
+        const spokenName = extracted.split(/[\s,!.?]/)[0];
+        if (spokenName && spokenName.length > 1 && spokenName.length < 20 && /^[a-zA-Z'-]+$/.test(spokenName)) {
           name = spokenName;
           firstName = spokenName.charAt(0).toUpperCase() + spokenName.slice(1).toLowerCase();
         }
       }
 
       const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
-      const context = challenge ? `They mentioned interest in: ${challenge}.` : `They're with ${company}, exploring AI.`;
+      const context = challenge ? `They mentioned interest in: ${challenge}.` : `They're with ${company}.`;
 
-      history.push({ role: "assistant", content: hasName ? `Hi, may I speak with ${firstName}?` : `Hey, who am I speaking with?` });
+      const knownName = firstName && firstName.toLowerCase() !== "there";
+      const nameNote = knownName
+        ? `Their name is ${firstName}.`
+        : `You don't have their name yet — if it didn't come up naturally, ask: "Sorry — didn't catch your name?"`;
+
+      const greetingUsed = hasName && firstName ? `Hi, may I speak with ${firstName}?` : `Hey, who am I speaking with?`;
+      history.push({ role: "assistant", content: greetingUsed });
       history.push({ role: "user", content: speechResult || "Yes, speaking." });
 
-      const introPrompt = `${firstName} from ${company} just confirmed they're on the line. ${context}
+      const introPrompt = `${nameNote} They're with ${company}. ${context}
 
-Give your opening. STRICT LIMIT: under 20 words before the question mark. One ultra-short intro (name + "from CyberCraft360"), then one genuine question. Example: "Hey, it's Amy from CyberCraft360 — good time?" Do NOT pitch. Do NOT use three sentences.`;
+YOUR ONLY JOB RIGHT NOW: Give a one-line opener. Pattern: "[your name] from CyberCraft360 — [soft availability check]?"
+The ONLY acceptable questions here: "good time?", "bad time?", "catch you at a bad time?", "got a quick sec?", "you got a sec?"
+DO NOT ask about their business, challenges, technology, or anything work-related. That comes AFTER they confirm it's a good time.
+STRICT: Under 15 words total. One sentence. End with a soft question. No pitching.`;
 
       history.push({ role: "user", content: `[CONTEXT: ${introPrompt}]` });
-      const reply = await callLLM(history, systemPrompt);
+      // Don't inject learnings in opening — they push toward business questions too early
+      const reply = await callLLM(history, BASE_SYSTEM);
       const shouldEnd = /\[END_CALL\]/i.test(reply);
       history.push({ role: "assistant", content: reply });
       await redis.set(historyKey, history.filter(m => !m.content?.startsWith("[CONTEXT:")), { ex: 3600 });
