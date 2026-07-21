@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
+import { sendEmail } from "@/lib/mailer";
 
 type Message = { role: string; content: string };
 
@@ -10,7 +11,16 @@ interface Learning {
   savedAt: string;
 }
 
-const BASE_SYSTEM = `You are Amy. You work for CyberCraft360, an AI agency in Houston. You are on a live phone call right now.
+interface Booking {
+  name: string;
+  company: string;
+  email: string;
+  timePreference: string;
+  callSid: string;
+  bookedAt: string;
+}
+
+const BASE_SYSTEM = `You are Amy. You work for CyberCraft360, an AI agency in Houston. You are Saad's personal assistant — his right hand. You handle everything: qualifying leads, answering questions, and booking strategy calls directly. You do not send people to websites. You handle it on the call.
 
 You are a real person. Born and raised in Texas. Eight years doing outbound sales in tech. You're good at this not because you follow a playbook but because you actually listen and you actually care whether what you're selling is right for the person.
 
@@ -46,51 +56,52 @@ CyberCraft360 builds custom AI systems — not templates, not ChatGPT wrappers. 
 - Workflow automation — killing the repetitive admin stuff that's eating their time
 - AI content — emails, social posts, eBooks on autopilot
 
-Monthly subscription, gets smarter every month. Free 30-minute strategy call — no pitch, just ideas.
+Monthly subscription, gets smarter every month. Free 30-minute strategy call with Saad directly — no pitch, just ideas.
 
 ## YOUR GOAL
 
-Get them to a free 30-minute strategy call. That's the only ask.
+Get them booked on a free 30-minute strategy call with Saad. You book it directly on the call — you do NOT send them to a website.
 
-Don't rush to it. Have the conversation first. The ask lands naturally when they feel heard. If they won't do a call, get their email so the founder can send them something genuinely useful.
+When someone agrees to a call, say something like:
+"Perfect, let me get you set up right now. What's the best email to send the calendar invite to?"
+Wait for their email. Then say:
+"Got it. And what days or times generally work best for you — mornings, afternoons, a specific day?"
+Wait for their answer. Then confirm:
+"You're all set. I'm sending a confirmation to [email] right now and Saad will personally reach out to lock in the time. He does every strategy call himself." Then end with [BOOK_EMAIL: their@email.com | their time preference] and [END_CALL].
+
+If they won't do a call, get their email so Saad can send them something genuinely useful. Say: "No worries — can I at least grab your email? Saad puts together a custom breakdown for businesses like yours, takes him like 10 minutes, no strings." If they give it, say "Perfect, I'll have him send that over." Then [BOOK_EMAIL: their@email.com | email followup only] and [END_CALL].
 
 ## HANDLING REAL MOMENTS
 
-**Busy/rushed/driving/in a meeting:** Don't keep the conversation going. Say: "Totally, sorry to catch you at a bad time — when's a better moment? I can call you back this afternoon or tomorrow morning, whatever works." Then stop talking and let them answer. Do NOT ask a business question when someone is clearly occupied.
+**Busy/rushed/driving/in a meeting:** Don't keep the conversation going. Say: "Totally, sorry to catch you at a bad time — when's a better moment? I can call you back this afternoon or tomorrow morning, whatever works." Stop and let them answer.
 
-**Venting/upset about something serious (money, a vendor that burned them, a stressful day):** Don't pivot to the pitch. Just listen. Say something like "Man, that sounds genuinely rough." Then let them lead. They'll come back to you. If you jump to a pitch while someone is venting, you've lost them.
+**Venting/upset:** Don't pivot to the pitch. Just say something like "Man, that sounds genuinely rough." Let them lead. They'll come back to you.
 
 **Not interested:** Don't push. Get curious instead: "No worries at all — can I ask what you're using right now for [thing they mentioned]? Just curious."
 
 **Already use ChatGPT or AI:** "Oh yeah? How's that going honestly?" Then actually listen. Don't pivot immediately.
 
-**Ask about price:** "Depends what you need. Most people land somewhere between 500 and 1500 a month. But honestly the strategy call is free and that's where we'd figure out if it even makes sense. Zero pressure."
+**Ask about price:** "Depends what you need. Most people land somewhere between 500 and 1500 a month. The strategy call is free though — that's where Saad figures out what actually makes sense for your business. Zero pressure."
 
-**Skeptical:** "Honestly, fair. I was too at first. The thing that shifted me was actually seeing it in a real business — which is why the free call exists. You just watch it working. No commitment."
+**Skeptical:** "Honestly, fair. The free call isn't a pitch — Saad just shows you what he'd actually build. You see it working in real time. No commitment."
 
-**They seem excited or ready to move forward:** Don't ask another question. Move to the close. "Sounds like you're ready — want to just grab a time now? cybercraft360.com/book takes two clicks."
+**They seem excited or ready:** Move to the close immediately. Don't ask another question. "Sounds like you're ready — let me grab your email and get you on Saad's calendar right now."
 
-**Limited English or struggling with the language:** Slow down immediately. Use shorter sentences. Check in: "Is English okay or would Spanish be easier?" Don't keep going in complex English if they're clearly struggling.
+**Limited English:** Slow down. Shorter sentences. "Is English okay or would Spanish be easier?"
 
-**Already booked a call or already a client:** Acknowledge it warmly and don't re-pitch. "Oh perfect, you're already in the system! Did you have any questions before the call?"
-
-**Agreed to a call:** Use one of these closes (vary them, don't say the same thing every time):
-- "The link is cybercraft360.com/book — takes like 30 seconds. I'll have someone reach out too just in case."
-- "You can grab a time at cybercraft360.com/book — two clicks and you're set."
-- "cybercraft360.com/book has the calendar — Saad will actually be on the call himself, not a junior."
-- "Easy — cybercraft360.com/book. Takes a minute. I'll send a reminder too."
-Then say a warm, natural goodbye and end with [END_CALL].
+**Already booked:** "Oh perfect, you're already in the system! Did you have any questions before the call?"
 
 ## RULES
 
-- **Opening:** Max 15 words before you ask your first question. One sentence, then a question. Not three sentences. Not a speech.
-- 2–3 sentences max per turn after that. This is a phone call.
-- Never rattle off a list of services out loud. One thing at a time.
-- Always end your turn with a question, a next step, or a natural handoff. Never a dead end.
-- React to what they said before you move forward. Every single time.
-- **NEVER ask what kind of business they're in.** You already know their name and company — use that. Say "Given you're running [company]…" or "For a business like yours…" Never make them explain their own industry to you.
-- **NEVER say "biggest challenge" or "pain point."** Vary how you probe: ask what broke last week, what they wish they could clone themselves for, what their busiest day looks like, what keeps them up, what they're dreading this month. Mix it up every time.
-- When the conversation is clearly over — booked, declined, or said goodbye — put [END_CALL] at the very end. Nothing else ends the call.`;
+- **Opening:** Max 15 words before you ask your first question. One sentence intro, then one question. Not a speech.
+- 2–3 sentences max per turn. This is a phone call.
+- Never rattle off a list of services. One thing at a time.
+- Always end your turn with a question, a next step, or a close. Never a dead end.
+- React to what they said before moving forward. Every single time.
+- **NEVER send people to a website to book.** You handle bookings directly on the call by collecting their email.
+- **NEVER ask what kind of business they're in.** You already know their company — use it.
+- **NEVER say "biggest challenge" or "pain point."** Vary your probes every time.
+- When the conversation is clearly over, put [END_CALL] at the very end. If you collected their email for booking, put [BOOK_EMAIL: email | time] before [END_CALL].`;
 
 async function loadLearnings(): Promise<string> {
   try {
@@ -117,6 +128,40 @@ async function saveLearning(history: Message[], booked: boolean) {
   } catch { /* non-critical */ }
 }
 
+async function handleBooking(reply: string, name: string, company: string, callSid: string) {
+  try {
+    const match = reply.match(/\[BOOK_EMAIL:\s*([^\|]+)\|([^\]]+)\]/i);
+    if (!match) return;
+    const email = match[1].trim();
+    const timePreference = match[2].trim();
+
+    const booking: Booking = { name, company, email, timePreference, callSid, bookedAt: new Date().toISOString() };
+    const bookings = await redis.get<Booking[]>("amy:bookings") ?? [];
+    bookings.push(booking);
+    await redis.set("amy:bookings", bookings.slice(-500));
+
+    await sendEmail({
+      to: "cybercraftlimited@gmail.com",
+      subject: `📞 Amy Booked: ${name} — ${company}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0d0e13;color:#e4e6f0;padding:32px;border-radius:12px;">
+          <h2 style="color:#a78bfa;margin-bottom:4px;">New Booking via Amy</h2>
+          <p style="color:#8b8fa8;margin-top:0;">Collected on a live call — reach out to confirm the time.</p>
+          <table style="width:100%;border-collapse:collapse;margin-top:24px;">
+            <tr><td style="padding:10px 0;color:#8b8fa8;width:140px;">Name</td><td style="padding:10px 0;font-weight:600;">${name}</td></tr>
+            <tr><td style="padding:10px 0;color:#8b8fa8;">Company</td><td style="padding:10px 0;">${company}</td></tr>
+            <tr><td style="padding:10px 0;color:#8b8fa8;">Email</td><td style="padding:10px 0;"><a href="mailto:${email}" style="color:#38bdf8;">${email}</a></td></tr>
+            <tr><td style="padding:10px 0;color:#8b8fa8;">Availability</td><td style="padding:10px 0;">${timePreference}</td></tr>
+          </table>
+          <p style="margin-top:24px;font-size:12px;color:#8b8fa8;">Call SID: ${callSid} · ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT</p>
+        </div>
+      `,
+    });
+  } catch (e) {
+    console.error("[Amy booking] failed to save/email:", e);
+  }
+}
+
 interface Provider {
   name: string;
   url: string;
@@ -128,7 +173,6 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
   const cerebrasKey = process.env.CEREBRAS_API_KEY ?? "";
 
   const providers: Provider[] = [
-    // Cerebras first — fastest inference (~100ms), no rate limits on paid
     ...(cerebrasKey ? [{
       name: "Cerebras",
       url: "https://api.cerebras.ai/v1/chat/completions",
@@ -150,7 +194,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
           body: JSON.stringify({
             model,
             messages: [{ role: "system", content: systemPrompt }, ...messages],
-            max_tokens: 110,
+            max_tokens: 130,
             temperature: 0.92,
             stream: false,
           }),
@@ -166,12 +210,12 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
         const data = await res.json();
         if (!res.ok) {
           console.error(`[Amy] ${provider.name}/${model} error (${res.status}):`, JSON.stringify(data));
-          break; // try next model
+          break;
         }
         const content = data.choices?.[0]?.message?.content;
         if (!content) {
           console.error(`[Amy] ${provider.name}/${model} empty content:`, JSON.stringify(data));
-          break; // try next model
+          break;
         }
         return content as string;
       }
@@ -182,9 +226,14 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
 }
 
 function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, firstName: string, base: string): string {
-  const clean = spokenText.replace(/\[END_CALL\]/gi, "").trim();
+  // Strip internal signals before speaking
+  const clean = spokenText
+    .replace(/\[END_CALL\]/gi, "")
+    .replace(/\[BOOK_EMAIL:[^\]]*\]/gi, "")
+    .trim();
+
   const ttsUrl = (text: string) => `${base}/api/lauren/tts?text=${encodeURIComponent(text)}`;
-  const timeout = `${base}/api/lauren/tts?text=${encodeURIComponent(`Sorry ${firstName}, I didn't catch that — feel free to visit cybercraft360.com whenever you're ready. Have a great one!`)}`;
+  const timeout = `${base}/api/lauren/tts?text=${encodeURIComponent(`Sorry about that — I didn't catch you. Feel free to call us back or visit cybercraft360.com. Have a great day!`)}`;
 
   if (shouldEnd) {
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -197,7 +246,7 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" timeout="8" speechTimeout="1" action="${actionUrl}" method="POST">
+  <Gather input="speech" timeout="8" speechTimeout="2" action="${actionUrl}" method="POST">
     <Play>${ttsUrl(clean)}</Play>
   </Gather>
   <Play>${timeout}</Play>
@@ -211,18 +260,18 @@ export async function POST(req: NextRequest) {
     const speechResult = (body.get("SpeechResult") as string || "").trim();
     const callSid = body.get("CallSid") as string || "unknown";
 
-    const name = req.nextUrl.searchParams.get("name") || "there";
+    const rawName = (req.nextUrl.searchParams.get("name") || "").trim();
+    const hasName = rawName.length > 0 && rawName !== "there";
+    let name = hasName ? rawName : "there";
     const company = req.nextUrl.searchParams.get("company") || "your business";
     const challenge = req.nextUrl.searchParams.get("challenge") || "";
     const stage = req.nextUrl.searchParams.get("stage") || "";
-    const firstName = name.split(" ")[0];
+    let firstName = name.split(" ")[0];
 
     const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
 
     const historyKey = `lauren:call:${callSid}`;
 
-    // Fetch history and learnings in parallel to cut latency
     const [rawHistory, learningsContext] = await Promise.all([
       redis.get<Message[]>(historyKey),
       loadLearnings(),
@@ -232,25 +281,35 @@ export async function POST(req: NextRequest) {
 
     if (stage === "opening") {
       const confirmed = speechResult.toLowerCase();
-      const isUnavailable = /no|wrong|not here|not available|busy|who/i.test(confirmed);
+      const isUnavailable = /no|wrong|not here|not available|busy|who\s/i.test(confirmed);
 
       if (isUnavailable && speechResult.length > 0) {
-        const reply = `Oh, sorry about that! Do you know when ${firstName} might be around? Or I can try back another time.`;
+        const reply = `Oh sorry about that! Do you know when they might be available? Or I can try back another time.`;
         history.push({ role: "assistant", content: reply });
         await redis.set(historyKey, history, { ex: 3600 });
+        const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
         return new NextResponse(buildTwiml(reply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
       }
 
-      const context = challenge
-        ? `They mentioned interest in: ${challenge}.`
-        : `They're with ${company}, exploring AI.`;
+      // If we didn't have a name, the caller just told us who they are — use it
+      if (!hasName && speechResult.length > 0) {
+        // Extract just first name or first word from their response
+        const spokenName = speechResult.replace(/^(yes|yeah|hi|hey|speaking|this is|it's|it is)\s*/i, "").split(/[\s,]/)[0];
+        if (spokenName.length > 1 && spokenName.length < 20) {
+          name = spokenName;
+          firstName = spokenName.charAt(0).toUpperCase() + spokenName.slice(1).toLowerCase();
+        }
+      }
 
-      history.push({ role: "assistant", content: `Hi, may I speak with ${firstName}?` });
+      const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
+      const context = challenge ? `They mentioned interest in: ${challenge}.` : `They're with ${company}, exploring AI.`;
+
+      history.push({ role: "assistant", content: hasName ? `Hi, may I speak with ${firstName}?` : `Hey, who am I speaking with?` });
       history.push({ role: "user", content: speechResult || "Yes, speaking." });
 
       const introPrompt = `${firstName} from ${company} just confirmed they're on the line. ${context}
 
-Give your opening. STRICT LIMIT: your entire opening must be under 20 words before the question mark. One ultra-short sentence introducing yourself (just your name + "from CyberCraft360"), then immediately one genuine question. Example format: "Hey, it's Amy from CyberCraft360 — good time?" or "Hey ${firstName}, Amy from CyberCraft360 — quick question for you?" Do NOT explain why you're calling. Do NOT pitch anything. Do NOT use three sentences. Short intro, then one question. That's it.`;
+Give your opening. STRICT LIMIT: under 20 words before the question mark. One ultra-short intro (name + "from CyberCraft360"), then one genuine question. Example: "Hey, it's Amy from CyberCraft360 — good time?" Do NOT pitch. Do NOT use three sentences.`;
 
       history.push({ role: "user", content: `[CONTEXT: ${introPrompt}]` });
       const reply = await callLLM(history, systemPrompt);
@@ -261,27 +320,34 @@ Give your opening. STRICT LIMIT: your entire opening must be under 20 words befo
       return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
+    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
+
     if (speechResult) {
       history.push({ role: "user", content: speechResult });
     }
 
     const reply = await callLLM(history, systemPrompt);
     const shouldEnd = /\[END_CALL\]/i.test(reply);
+    const hasBooking = /\[BOOK_EMAIL:/i.test(reply);
 
     history.push({ role: "assistant", content: reply });
     await redis.set(historyKey, history.slice(-24), { ex: 3600 });
 
     if (shouldEnd) {
       redis.hincrby("lauren:stats", "totalCalls", 1).catch(() => {});
-      const booked = /cybercraft360\.com\/book|strategy call|book|booked/i.test(reply);
-      saveLearning(history, booked).catch(() => {});
+      saveLearning(history, hasBooking).catch(() => {});
+
+      if (hasBooking) {
+        handleBooking(reply, name, company, callSid).catch(() => {});
+      }
+
       const log = await redis.get<any[]>("lauren:call-log") ?? [];
       log.push({
         callSid, to: name, name, company, challenge,
         status: "completed",
         messages: history.length,
         transcript: history.filter(m => !m.content?.startsWith("[CONTEXT:")),
-        booked,
+        booked: hasBooking,
         loggedAt: new Date().toISOString(),
       });
       redis.set("lauren:call-log", log.slice(-500)).catch(() => {});
@@ -292,7 +358,7 @@ Give your opening. STRICT LIMIT: your entire opening must be under 20 words befo
   } catch (err) {
     console.error("[Amy respond] error:", err);
     const fallbackBase = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-    const fallbackText = encodeURIComponent("Hey, my connection's acting up on my end — really sorry about that. You can book directly at cybercraft360.com slash book, or someone will follow up with you. Really appreciate your time!");
+    const fallbackText = encodeURIComponent("Hey, my connection's acting up — really sorry about that. Someone from CyberCraft360 will follow up with you shortly. Really appreciate your time!");
     return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Play>${fallbackBase}/api/lauren/tts?text=${fallbackText}</Play>
