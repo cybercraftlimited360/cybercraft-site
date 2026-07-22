@@ -393,20 +393,30 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
 
     history.push({ role: "assistant", content: reply });
 
-    // Extract and persist confirmed email from Amy's readback turns
+    // Track confirmed email and time preference across turns
     const stateKey = `lauren:state:${callSid}`;
     const callState = await redis.get<{ email?: string; time?: string }>(stateKey) ?? {};
 
-    // Detect when Amy just read back an email (look for letter-by-letter spelling pattern)
-    const emailReadbackMatch = reply.match(/([a-z](?:-[a-z])+)[,\s]+at[,\s]+([a-z](?:-[a-z])+)(?:[,\s]+dot[,\s]+([a-z](?:-[a-z0-9]+)*))/i);
-    if (emailReadbackMatch) {
-      const user = emailReadbackMatch[1].replace(/-/g, "");
-      const domain = emailReadbackMatch[2].replace(/-/g, "");
-      const tld = emailReadbackMatch[3]?.replace(/-/g, "") ?? "com";
-      callState.email = `${user}@${domain}.${tld}`;
+    // Parse email from user's speech (handles "saad at gmail dot com", "saad@gmail.com", etc.)
+    function parseEmailFromSpeech(text: string): string | null {
+      // Direct email format
+      const direct = text.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i);
+      if (direct) return direct[0].toLowerCase();
+      // Spoken format: "word at word dot com" or "word at word dot com dot au" etc.
+      const spoken = text.match(/([a-z0-9][\w.+-]*)\s+at\s+([a-z0-9][\w-]*)\s+dot\s+([a-z]{2,})(?:\s+dot\s+([a-z]{2,}))?/i);
+      if (spoken) {
+        const local = spoken[1].replace(/\s+/g, "").toLowerCase();
+        const domain = spoken[2].replace(/\s+/g, "").toLowerCase();
+        const tld = spoken[4] ? `${spoken[3]}.${spoken[4]}` : spoken[3];
+        return `${local}@${domain}.${tld.toLowerCase()}`;
+      }
+      return null;
     }
 
-    // Detect time preference from user's last message
+    const parsedEmail = parseEmailFromSpeech(speechResult);
+    if (parsedEmail) callState.email = parsedEmail;
+
+    // Detect time preference from user's message
     const lastUser = speechResult.toLowerCase();
     if (/morning/i.test(lastUser)) callState.time = "mornings";
     else if (/afternoon/i.test(lastUser)) callState.time = "afternoons";
