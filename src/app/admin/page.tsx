@@ -1745,187 +1745,6 @@ function EbooksTab({token,h}:{token:string;h:ReturnType<typeof useAdminApi>}) {
   );
 }
 
-// ── Poster Generator ─────────────────────────────────────────────────────────
-type PosterSize="linkedin"|"facebook"|"instagram-square"|"instagram-story";
-const POSTER_SIZES:Record<PosterSize,{w:number;h:number;label:string}> = {
-  linkedin:          {w:1200,h:627,  label:"LinkedIn (1200×627)"},
-  facebook:          {w:1080,h:1080, label:"Facebook (1080×1080)"},
-  "instagram-square":{w:1080,h:1080, label:"Instagram Square (1080×1080)"},
-  "instagram-story": {w:1080,h:1920, label:"Instagram Story (1080×1920)"},
-};
-
-function PosterModal({ad,platform,onClose}:{ad:any;platform:string;onClose:()=>void}) {
-  const [size,setSize]=useState<PosterSize>("linkedin");
-  const [downloading,setDownloading]=useState(false);
-  const canvasRef=useRef<HTMLCanvasElement>(null);
-
-  const headline:string = ad.headline || ad.hook || Object.values(ad)[0] as string || "";
-  const body:string = ad.body || ad.primary_text || ad.caption || Object.values(ad)[1] as string || "";
-  const cta:string = ad.cta || "";
-
-  useEffect(()=>{ renderCanvas(); },[size,headline,body,cta]);
-
-  function wrapText(ctx:CanvasRenderingContext2D, text:string, x:number, y:number, maxW:number, lineH:number, maxLines=999):number {
-    const words=text.split(" ");
-    let line="";
-    let lineCount=0;
-    for(const word of words){
-      const test=line?`${line} ${word}`:word;
-      if(ctx.measureText(test).width>maxW && line){
-        if(lineCount>=maxLines-1){ ctx.fillText(line+"…",x,y); return y+lineH; }
-        ctx.fillText(line,x,y); y+=lineH; line=word; lineCount++;
-      } else { line=test; }
-    }
-    if(line){ ctx.fillText(line,x,y); y+=lineH; }
-    return y;
-  }
-
-  function renderCanvas(){
-    const canvas=canvasRef.current; if(!canvas) return;
-    const {w,h}=POSTER_SIZES[size];
-    canvas.width=w; canvas.height=h;
-    const ctx=canvas.getContext("2d"); if(!ctx) return;
-    const scale=Math.min(300/w, 300/h); // preview scale
-    canvas.style.width=`${w*scale}px`; canvas.style.height=`${h*scale}px`;
-
-    // Background
-    const bg=ctx.createLinearGradient(0,0,w,h);
-    bg.addColorStop(0,"#060810"); bg.addColorStop(0.5,"#0a0f1a"); bg.addColorStop(1,"#060810");
-    ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
-
-    // Cyan corner accent
-    const glow=ctx.createRadialGradient(0,0,0,0,0,w*0.6);
-    glow.addColorStop(0,"rgba(0,212,255,0.12)"); glow.addColorStop(1,"transparent");
-    ctx.fillStyle=glow; ctx.fillRect(0,0,w,h);
-
-    // Grid dots
-    ctx.fillStyle="rgba(255,255,255,0.035)";
-    const step=Math.round(w/24);
-    for(let x=step;x<w;x+=step) for(let y=step;y<h;y+=step){
-      ctx.beginPath(); ctx.arc(x,y,1.5,0,Math.PI*2); ctx.fill();
-    }
-
-    // Top bar
-    ctx.fillStyle="rgba(0,212,255,0.08)";
-    ctx.fillRect(0,0,w,Math.round(h*0.07));
-    ctx.strokeStyle="rgba(0,212,255,0.25)";
-    ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(0,Math.round(h*0.07)); ctx.lineTo(w,Math.round(h*0.07)); ctx.stroke();
-
-    // Brand name
-    const topY=Math.round(h*0.035);
-    ctx.fillStyle="#00d4ff";
-    ctx.font=`bold ${Math.round(h*0.022)}px Inter,system-ui,sans-serif`;
-    ctx.textBaseline="middle";
-    ctx.fillText("CYBER",Math.round(w*0.05),topY);
-    const cw=ctx.measureText("CYBER").width;
-    ctx.fillStyle="#ffffff";
-    ctx.fillText("CRAFT",Math.round(w*0.05)+cw,topY);
-    const cw2=ctx.measureText("CRAFT").width;
-    ctx.fillStyle="rgba(255,255,255,0.4)";
-    ctx.font=`300 ${Math.round(h*0.018)}px Inter,system-ui,sans-serif`;
-    ctx.fillText(" 360",Math.round(w*0.05)+cw+cw2,topY);
-
-    // Cyan accent bar left
-    ctx.fillStyle="#00d4ff";
-    ctx.fillRect(Math.round(w*0.05),Math.round(h*0.13),5,Math.round(h*0.06));
-
-    // Headline
-    const hSize=Math.round(Math.min(h*0.065, w*0.055));
-    ctx.fillStyle="#ffffff";
-    ctx.font=`800 ${hSize}px Inter,system-ui,sans-serif`;
-    ctx.textBaseline="top";
-    const headX=Math.round(w*0.05)+20;
-    const headY=Math.round(h*0.13);
-    const headLines=Math.ceil(h/w>1.2 ? 4 : 3);
-    const headEnd=wrapText(ctx,headline,headX,headY,w*0.9,hSize*1.25,headLines);
-
-    // Body text
-    const bSize=Math.round(Math.min(h*0.032, w*0.026));
-    ctx.fillStyle="rgba(255,255,255,0.7)";
-    ctx.font=`400 ${bSize}px Inter,system-ui,sans-serif`;
-    const bodyLines=Math.ceil(h/w>1.2 ? 8 : 5);
-    const bodyEnd=wrapText(ctx,body,Math.round(w*0.05),headEnd+Math.round(h*0.04),w*0.9,bSize*1.55,bodyLines);
-
-    // CTA button
-    if(cta){
-      const btnY=Math.min(bodyEnd+Math.round(h*0.06), h*0.85);
-      const btnH=Math.round(h*0.07);
-      const btnPad=Math.round(w*0.06);
-      ctx.font=`700 ${Math.round(h*0.03)}px Inter,system-ui,sans-serif`;
-      const btnW=ctx.measureText(cta).width+btnPad*2;
-      const btnX=Math.round(w*0.05);
-      const r=btnH/2;
-      ctx.beginPath();
-      ctx.moveTo(btnX+r,btnY); ctx.lineTo(btnX+btnW-r,btnY);
-      ctx.arcTo(btnX+btnW,btnY,btnX+btnW,btnY+btnH,r);
-      ctx.lineTo(btnX+btnW,btnY+btnH-r);
-      ctx.arcTo(btnX+btnW,btnY+btnH,btnX,btnY+btnH,r);
-      ctx.lineTo(btnX+r,btnY+btnH);
-      ctx.arcTo(btnX,btnY+btnH,btnX,btnY,r);
-      ctx.lineTo(btnX,btnY+r);
-      ctx.arcTo(btnX,btnY,btnX+btnW,btnY,r);
-      ctx.closePath();
-      ctx.fillStyle="#00d4ff"; ctx.fill();
-      ctx.fillStyle="#000"; ctx.textBaseline="middle";
-      ctx.fillText(cta,btnX+btnPad,btnY+btnH/2);
-    }
-
-    // Bottom bar
-    ctx.fillStyle="rgba(0,212,255,0.06)";
-    ctx.fillRect(0,h-Math.round(h*0.06),w,Math.round(h*0.06));
-    ctx.strokeStyle="rgba(0,212,255,0.15)";
-    ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(0,h-Math.round(h*0.06)); ctx.lineTo(w,h-Math.round(h*0.06)); ctx.stroke();
-    ctx.fillStyle="rgba(255,255,255,0.25)";
-    ctx.font=`500 ${Math.round(h*0.02)}px Inter,system-ui,sans-serif`;
-    ctx.textBaseline="middle";
-    ctx.fillText("cybercraft360.com",Math.round(w*0.05),h-Math.round(h*0.03));
-  }
-
-  function download(){
-    setDownloading(true);
-    const canvas=canvasRef.current; if(!canvas){setDownloading(false);return;}
-    const link=document.createElement("a");
-    link.download=`cybercraft360-ad-${size}-${Date.now()}.png`;
-    link.href=canvas.toDataURL("image/png");
-    link.click();
-    setDownloading(false);
-  }
-
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
-      <div style={{background:"#0d1117",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:24,maxWidth:600,width:"100%",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-          <div style={{fontSize:16,fontWeight:700,color:"#fff"}}>🎨 Poster Generator</div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,0.4)",fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
-        </div>
-
-        {/* Size picker */}
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Canvas Size</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            {(Object.entries(POSTER_SIZES) as [PosterSize,any][]).map(([key,cfg])=>(
-              <button key={key} onClick={()=>setSize(key)} style={{padding:"9px 12px",borderRadius:9,border:`1px solid ${size===key?"#00d4ff40":"rgba(255,255,255,0.07)"}`,background:size===key?"rgba(0,212,255,0.08)":"rgba(255,255,255,0.02)",color:size===key?"#00d4ff":"rgba(255,255,255,0.5)",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left"}}>
-                {cfg.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Canvas preview */}
-        <div style={{display:"flex",justifyContent:"center",marginBottom:16,background:"rgba(255,255,255,0.02)",borderRadius:12,padding:12,border:"1px solid rgba(255,255,255,0.06)"}}>
-          <canvas ref={canvasRef} style={{borderRadius:6,maxWidth:"100%"}}/>
-        </div>
-
-        <button onClick={download} disabled={downloading} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
-          {downloading?"Saving…":"⬇ Download PNG"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Ads Tab ───────────────────────────────────────────────────────────────────
 function AdsTab({token}:{token:string}) {
   const accent="#f59e0b";
@@ -1942,7 +1761,6 @@ function AdsTab({token}:{token:string}) {
   const [savedPacks,setSavedPacks]=useState<any[]>([]);
   const [showSaved,setShowSaved]=useState(false);
   const [error,setError]=useState<string|null>(null);
-  const [posterAd,setPosterAd]=useState<{ad:any;platform:string}|null>(null);
 
   useEffect(()=>{
     const saved=localStorage.getItem("cc360_ad_packs");
@@ -1999,7 +1817,6 @@ function AdsTab({token}:{token:string}) {
 
   return(
     <div>
-      {posterAd&&<PosterModal ad={posterAd.ad} platform={posterAd.platform} onClose={()=>setPosterAd(null)}/>}
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24}}>
         <div style={{width:36,height:36,borderRadius:10,background:`${accent}15`,border:`1px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🎯</div>
@@ -2078,17 +1895,12 @@ function AdsTab({token}:{token:string}) {
               <div key={i} style={{borderRadius:12,border:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.015)",overflow:"hidden"}}>
                 <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"rgba(255,255,255,0.02)"}}>
                   <span style={{fontSize:11,fontWeight:700,color:pc.color,letterSpacing:"0.1em",textTransform:"uppercase"}}>Variation {i+1}</span>
-                  <div style={{display:"flex",gap:6}}>
-                    <button onClick={()=>setPosterAd({ad,platform:activePlatform})} style={{padding:"4px 10px",borderRadius:6,border:"1px solid rgba(0,212,255,0.3)",background:"rgba(0,212,255,0.08)",color:"#00d4ff",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                      🎨 Poster
-                    </button>
-                    <button onClick={()=>{
-                      const text=Object.entries(ad).map(([k,v])=>`${k.toUpperCase()}: ${v}`).join("\n");
-                      copy(text,`ad-${i}`);
-                    }} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${pc.color}30`,background:`${pc.color}10`,color:pc.color,fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                      {copiedKey===`ad-${i}`?"✓ Copied":"Copy"}
-                    </button>
-                  </div>
+                  <button onClick={()=>{
+                    const text=Object.entries(ad).map(([k,v])=>`${k.toUpperCase()}: ${v}`).join("\n");
+                    copy(text,`ad-${i}`);
+                  }} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${pc.color}30`,background:`${pc.color}10`,color:pc.color,fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                    {copiedKey===`ad-${i}`?"✓ Copied":"Copy"}
+                  </button>
                 </div>
                 <div style={{padding:14,display:"flex",flexDirection:"column",gap:10}}>
                   {Object.entries(ad).map(([field,value])=>(
