@@ -467,11 +467,11 @@ export default function Home() {
                   fontFamily: "'Inter', system-ui, sans-serif",
                   fontSize: "clamp(0.75rem, 1.1vw, 0.92rem)",
                   fontWeight: 400,
-                  color: "rgba(255,255,255,0.55)",
+                  color: "rgba(255,255,255,0.82)",
                   marginTop: "10px",
                   letterSpacing: "0.04em",
                   lineHeight: 1.6,
-                  textShadow: "0 1px 12px rgba(0,0,0,0.9)",
+                  textShadow: "0 1px 16px rgba(0,0,0,1), 0 2px 32px rgba(0,0,0,1), 0 0 2px rgba(0,0,0,1)",
                 }}>
                   Custom AI receptionists, sales agents, support teams & automation — built for your business.
                 </p>
