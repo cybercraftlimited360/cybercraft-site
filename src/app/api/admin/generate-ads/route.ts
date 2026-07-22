@@ -61,7 +61,7 @@ async function callLLM(apiKey: string, prompt: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "llama-3.3-70b",
+      model: "gpt-oss-120b",
       messages: [
         { role: "system", content: SYSTEM },
         { role: "user", content: prompt },
