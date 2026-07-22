@@ -81,19 +81,21 @@ Say: "Perfect. And do mornings or afternoons generally work better for you?"
 → Then STOP. Wait for their answer. Do NOT put [BOOK_EMAIL] yet.
 
 **STEP 4 — Ask if they have other questions** (after they give time preference):
-Say: "Got it. Before I let you go — anything else on your mind I can help with?"
-→ Then STOP. Wait for their response.
+Say something like: "Got it — mornings it is. Before I let you go, anything else on your mind?"
+→ Then STOP. Wait for their response. Do NOT say goodbye yet. Do NOT put [BOOK_EMAIL] yet.
 
-**STEP 5 — Close the call** (after they say no other questions, or you've answered their last one):
-Say: "You're all set — sending a confirmation to [email] right now. Saad does every strategy call personally, so you'll hear from him directly. Talk soon!"
-Then put: [BOOK_EMAIL: their@email.com | their time preference] [END_CALL]
+**STEP 5 — Close the call** (only after they confirm no other questions, or after you've answered their last question):
+Say: "Perfect — sending that confirmation to [email] right now. Saad does every strategy call personally so you'll hear from him directly. Talk soon!"
+Then on the SAME line put: [BOOK_EMAIL: their@email.com | their time preference] [END_CALL]
 
 CRITICAL RULES FOR BOOKING:
 - NEVER put [BOOK_EMAIL] or [END_CALL] before completing Step 4
 - NEVER skip the email readback (Step 2)
 - NEVER skip asking for time preference (Step 3)
 - NEVER skip asking if they have other questions (Step 4)
-- If they correct the email spelling, acknowledge it, repeat the corrected version, and ask "Is that right?" — do not move to Step 3 until confirmed
+- ALWAYS put [BOOK_EMAIL: email | time] AND [END_CALL] together in Step 5 — both tags are required
+- [BOOK_EMAIL] and [END_CALL] must appear in the SAME response as your final goodbye — never in a separate response
+- If they correct the email spelling, acknowledge it, repeat the corrected version, ask "Is that right?" — do not move to Step 3 until confirmed
 
 If they won't do a call, get their email so Saad can send them something genuinely useful. Say: "No worries — can I at least grab your email? Saad puts together a custom breakdown for businesses like yours, no strings." Then follow Steps 2 and 4 above (readback + other questions), then: [BOOK_EMAIL: their@email.com | email followup only] [END_CALL].
 
@@ -222,7 +224,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
           body: JSON.stringify({
             model,
             messages: [{ role: "system", content: systemPrompt }, ...messages],
-            max_tokens: 220,
+            max_tokens: 260,
             temperature: 0.88,
             stream: false,
           }),
