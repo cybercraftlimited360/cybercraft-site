@@ -431,6 +431,7 @@ export default function Home() {
                   lineHeight: 1,
                   marginBottom: "10px",
                   cursor: "default",
+                  textShadow: "0 2px 24px rgba(0,0,0,0.95), 0 0px 2px rgba(0,0,0,1)",
                 }}
                 whileHover={{ letterSpacing: "0.24em", textShadow: "0 0 24px rgba(255,255,255,0.25)" }}
                 transition={{ duration: 0.3 }}
@@ -453,10 +454,11 @@ export default function Home() {
                   fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
                   fontSize: "clamp(1.5rem, 3.2vw, 2.6rem)",
                   fontWeight: 300,
-                  color: "rgba(255,255,255,0.88)",
+                  color: "rgba(255,255,255,0.95)",
                   lineHeight: 1.25,
                   cursor: "default",
                   letterSpacing: "0.01em",
+                  textShadow: "0 2px 30px rgba(0,0,0,0.98), 0 1px 4px rgba(0,0,0,1), 0 0 60px rgba(0,0,0,0.7)",
                 }}>
                   Your business can hire AI employees<br />
                   <em style={{ color: "#00d4ff", fontStyle: "italic" }}>that never clock out.</em>
@@ -465,10 +467,11 @@ export default function Home() {
                   fontFamily: "'Inter', system-ui, sans-serif",
                   fontSize: "clamp(0.75rem, 1.1vw, 0.92rem)",
                   fontWeight: 400,
-                  color: "rgba(255,255,255,0.38)",
+                  color: "rgba(255,255,255,0.55)",
                   marginTop: "10px",
                   letterSpacing: "0.04em",
                   lineHeight: 1.6,
+                  textShadow: "0 1px 12px rgba(0,0,0,0.9)",
                 }}>
                   Custom AI receptionists, sales agents, support teams & automation — built for your business.
                 </p>
