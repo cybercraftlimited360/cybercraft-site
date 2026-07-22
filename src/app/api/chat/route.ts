@@ -133,26 +133,45 @@ const EXTRACTION_PROMPT = `You are a lead data extractor. Given a conversation, 
 {"name":"","company":"","challenge":"","phone":""}
 Use empty string "" for any field not yet mentioned. Never guess or infer — only use what was explicitly stated. Phone numbers can be in any format.`;
 
-async function groqChat(
+async function cerebrasChat(
   apiKey: string,
   messages: { role: string; content: string }[],
   systemPrompt: string,
-  opts: { maxTokens: number; jsonMode?: boolean; temperature?: number }
+  opts: { maxTokens: number; temperature?: number }
 ) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: "gpt-oss-120b",
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       max_tokens: opts.maxTokens,
       temperature: opts.temperature ?? 0.7,
-      ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}),
+      stream: false,
     }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "Groq error");
+  if (!res.ok) throw new Error(data.error?.message || "Cerebras error");
   return data.choices[0].message.content as string;
+}
+
+// Lightweight JSON extraction using a smaller/faster call
+async function extractLeadData(apiKey: string, messages: { role: string; content: string }[]): Promise<string> {
+  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "gemma-4-31b",
+      messages: [{ role: "system", content: EXTRACTION_PROMPT }, ...messages],
+      max_tokens: 100,
+      temperature: 0,
+      stream: false,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "Cerebras error");
+  const raw = data.choices[0].message.content as string;
+  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 }
 
 export async function POST(req: NextRequest) {
@@ -161,17 +180,16 @@ export async function POST(req: NextRequest) {
     const messages: { role: string; content: string }[] = Array.isArray(body.messages) ? body.messages : [];
     const { blueprintContext } = body;
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.CEREBRAS_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "API key not configured." }, { status: 500 });
 
     const userCount = messages.filter((m: { role: string }) => m.role === "user").length;
+    const trimmedMessages = messages.slice(-10);
 
-    // Build enriched prompt once — include learned examples + blueprint context if provided
-    const trimmedForExtraction = messages.slice(-10);
     const [examples, extractedRaw] = await Promise.all([
       buildIrisExamples(),
       userCount >= 2
-        ? groqChat(apiKey, trimmedForExtraction, EXTRACTION_PROMPT, { maxTokens: 80, jsonMode: true, temperature: 0 })
+        ? extractLeadData(apiKey, trimmedMessages)
         : Promise.resolve(null),
     ]);
 
@@ -181,11 +199,7 @@ export async function POST(req: NextRequest) {
 
     const enrichedPrompt = SYSTEM_PROMPT + blueprintSection + examples;
 
-    // Trim to last 10 messages to prevent context overflow on long conversations
-    const trimmedMessages = messages.slice(-10);
-
-    // Single Groq call with full context
-    const finalReply = await groqChat(apiKey, trimmedMessages, enrichedPrompt, { maxTokens: 300 });
+    const finalReply = await cerebrasChat(apiKey, trimmedMessages, enrichedPrompt, { maxTokens: 300 });
 
     let lead: { name: string; company: string; challenge: string; phone?: string } | null = null;
     if (extractedRaw) {
