@@ -7,6 +7,29 @@ import React from "react";
 
 const OWNER_EMAIL = "cybercraftlimited@gmail.com";
 
+function stripJsonFences(raw: string): string {
+  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+}
+
+async function cerebrasCall(prompt: string, maxTokens: number): Promise<string> {
+  const apiKey = process.env.CEREBRAS_API_KEY;
+  if (!apiKey) throw new Error("CEREBRAS_API_KEY not configured");
+  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "gpt-oss-120b",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      stream: false,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "Cerebras error");
+  return stripJsonFences(data.choices[0].message.content as string);
+}
+
 async function generateSocialContent(title: string, subtitle: string, chapters: { title: string; content: string }[], businessName: string, industry: string): Promise<{
   linkedin: string[];
   instagram: string[];
@@ -20,7 +43,7 @@ eBook: "${title}" — ${subtitle}
 Chapter summaries:
 ${summary}
 
-Return ONLY valid JSON:
+Return ONLY valid JSON (no markdown, no code fences):
 {
   "linkedin": [
     "Full LinkedIn post 1 (150-200 words, professional tone, ends with a question or CTA, include 3-5 relevant hashtags)",
@@ -48,20 +71,7 @@ Return ONLY valid JSON:
   ]
 }`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 3000,
-      temperature: 0.75,
-      response_format: { type: "json_object" },
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "Social content generation failed");
-  return JSON.parse(data.choices[0].message.content);
+  return JSON.parse(await cerebrasCall(prompt, 3000));
 }
 
 async function generateEbookContent(form: {
@@ -77,7 +87,7 @@ Target Audience: ${form.audience}
 Tone: ${form.tone}
 Key Points to Cover: ${form.keyPoints}
 
-Write a complete, professional eBook. Return ONLY valid JSON in this exact format:
+Write a complete, professional eBook. Return ONLY valid JSON (no markdown, no code fences) in this exact format:
 {
   "title": "compelling eBook title",
   "subtitle": "one sentence subtitle that explains the value",
@@ -92,21 +102,7 @@ Write a complete, professional eBook. Return ONLY valid JSON in this exact forma
   "authorBio": "2-3 sentence professional bio for ${form.name} of ${form.businessName}"
 }`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 4000,
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "AI generation failed");
-  return JSON.parse(data.choices[0].message.content);
+  return JSON.parse(await cerebrasCall(prompt, 4000));
 }
 
 export async function POST(req: NextRequest) {

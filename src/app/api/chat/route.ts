@@ -206,7 +206,9 @@ async function groqChat(
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, blueprintContext } = await req.json();
+    const body = await req.json();
+    const messages: { role: string; content: string }[] = Array.isArray(body.messages) ? body.messages : [];
+    const { blueprintContext } = body;
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "API key not configured." }, { status: 500 });
