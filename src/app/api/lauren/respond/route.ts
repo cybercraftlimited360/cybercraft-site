@@ -389,16 +389,44 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
 
     const reply = await callLLM(history, systemPrompt);
     const shouldEnd = /\[END_CALL\]/i.test(reply);
-    const hasBooking = /\[BOOK_EMAIL:/i.test(reply);
+    let hasBooking = /\[BOOK_EMAIL:/i.test(reply);
 
     history.push({ role: "assistant", content: reply });
+
+    // Extract and persist confirmed email from Amy's readback turns
+    const stateKey = `lauren:state:${callSid}`;
+    const callState = await redis.get<{ email?: string; time?: string }>(stateKey) ?? {};
+
+    // Detect when Amy just read back an email (look for letter-by-letter spelling pattern)
+    const emailReadbackMatch = reply.match(/([a-z](?:-[a-z])+)[,\s]+at[,\s]+([a-z](?:-[a-z])+)(?:[,\s]+dot[,\s]+([a-z](?:-[a-z0-9]+)*))/i);
+    if (emailReadbackMatch) {
+      const user = emailReadbackMatch[1].replace(/-/g, "");
+      const domain = emailReadbackMatch[2].replace(/-/g, "");
+      const tld = emailReadbackMatch[3]?.replace(/-/g, "") ?? "com";
+      callState.email = `${user}@${domain}.${tld}`;
+    }
+
+    // Detect time preference from user's last message
+    const lastUser = speechResult.toLowerCase();
+    if (/morning/i.test(lastUser)) callState.time = "mornings";
+    else if (/afternoon/i.test(lastUser)) callState.time = "afternoons";
+    else if (/evening/i.test(lastUser)) callState.time = "evenings";
+    else if (/anytime|flexible|any time/i.test(lastUser)) callState.time = "flexible";
+
+    await redis.set(stateKey, callState, { ex: 3600 });
+
     await redis.set(historyKey, history.slice(-24), { ex: 3600 });
 
     if (shouldEnd) {
       redis.hincrby("lauren:stats", "totalCalls", 1).catch(() => {});
       saveLearning(history, hasBooking).catch(() => {});
 
-      if (hasBooking) {
+      // If LLM forgot to emit [BOOK_EMAIL] but we captured email during the call, book anyway
+      if (!hasBooking && callState.email) {
+        const syntheticReply = `[BOOK_EMAIL: ${callState.email} | ${callState.time ?? "flexible"}]`;
+        handleBooking(syntheticReply, name, company, callSid).catch(() => {});
+        hasBooking = true;
+      } else if (hasBooking) {
         handleBooking(reply, name, company, callSid).catch(() => {});
       }
 
