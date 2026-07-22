@@ -55,24 +55,27 @@ WHAT MAKES COPY FEEL EXPENSIVE:
 - It acknowledges the reader is smart — it doesn't over-explain
 - The CTA feels like the natural next step, not a pressure tactic`;
 
-async function groq(apiKey: string, prompt: string): Promise<string> {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+async function callLLM(apiKey: string, prompt: string): Promise<string> {
+  // Use Cerebras (unlimited, already configured for Amy)
+  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.3-70b",
       messages: [
         { role: "system", content: SYSTEM },
         { role: "user", content: prompt },
       ],
       max_tokens: 2200,
       temperature: 0.9,
-      response_format: { type: "json_object" },
+      stream: false,
     }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "Groq error");
-  return data.choices[0].message.content as string;
+  if (!res.ok) throw new Error(data.error?.message || "Cerebras error");
+  // Strip markdown code fences if model wraps JSON in ```json ... ```
+  const raw = data.choices[0].message.content as string;
+  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 }
 
 export async function POST(req: NextRequest) {
@@ -80,8 +83,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const { audience, goal, tone } = await req.json();
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "Missing GROQ_API_KEY" }, { status: 500 });
+    const apiKey = process.env.CEREBRAS_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: "Missing CEREBRAS_API_KEY" }, { status: 500 });
 
     const brief = `WHO THIS AD IS FOR: ${audience}
 WHAT WE WANT THEM TO DO: ${goal}
@@ -89,7 +92,7 @@ TONE: ${tone}`;
 
     const [linkedinRaw, facebookRaw, instagramRaw] = await Promise.all([
 
-      groq(apiKey, `${brief}
+      callLLM(apiKey, `${brief}
 
 Write 3 LinkedIn ad variations for CyberCraft360. These will run as sponsored LinkedIn posts targeting business owners and decision-makers.
 
@@ -114,7 +117,7 @@ Variation 3 — Lead with authority and restraint. Saad Imran / CyberCraft360 ma
 
 QUALITY BAR: If a LinkedIn user saw this in their feed and thought "who wrote this — this is actually good", you've done it right. If it reads like an ad template, rewrite it.`),
 
-      groq(apiKey, `${brief}
+      callLLM(apiKey, `${brief}
 
 Write 3 Facebook ad variations for CyberCraft360. These appear in the Facebook news feed — the reader is scrolling on their phone, half-distracted. You have 1.5 seconds to stop them.
 
@@ -140,7 +143,7 @@ Variation 3 — Open with a short, unexpected statement that creates curiosity. 
 
 QUALITY BAR: If someone screenshots this and sends it to a friend saying "look at this ad", you've done it right.`),
 
-      groq(apiKey, `${brief}
+      callLLM(apiKey, `${brief}
 
 Write 3 Instagram ad caption variations for CyberCraft360. Instagram is visual-first — the image does the heavy lifting, the caption does the closing. Your job is to be real, specific, and human. No corporate voice whatsoever.
 
