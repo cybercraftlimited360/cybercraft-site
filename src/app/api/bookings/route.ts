@@ -139,8 +139,9 @@ export async function POST(req: NextRequest) {
 
     try {
       await sendConfirmationEmails(booking);
-    } catch (emailErr) {
-      console.error("Email send failed:", emailErr);
+    } catch (emailErr: any) {
+      console.error("[bookings] Confirmation email failed:", emailErr?.message || emailErr);
+      // Booking is still saved — email failure does not cancel the booking
     }
 
     import("@/lib/activity").then(({ logActivity }) =>

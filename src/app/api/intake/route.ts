@@ -213,17 +213,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Save to Redis (non-blocking, don't await)
+    // Save full intake to Redis + fire lead to dashboard (both awaited)
     const record = { ...form, submittedAt: new Date().toISOString() };
-    redis.get<object[]>("intakes:all").then(all => {
+    await redis.get<object[]>("intakes:all").then(all => {
       const list = all ?? [];
       list.push(record);
       return redis.set("intakes:all", list);
-    }).catch(err => console.error("Redis save error:", err));
+    }).catch(err => console.error("[intake] Redis save error:", err));
 
-    // Fire lead to dashboard (non-blocking)
     const baseUrl = req.nextUrl.origin;
-    fetch(`${baseUrl}/api/leads`, {
+    await fetch(`${baseUrl}/api/leads`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -233,7 +232,7 @@ export async function POST(req: NextRequest) {
         source: "intake",
         ...(form.phone ? { phone: form.phone } : {}),
       }),
-    }).catch(() => {});
+    }).catch(err => console.error("[intake] Lead save error:", err));
 
     // Send owner notification (non-blocking)
     sendOwnerNotificationEmail(form).catch(err =>

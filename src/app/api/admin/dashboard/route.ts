@@ -157,7 +157,8 @@ export async function GET(req: NextRequest) {
         upcoming: upcoming.length,
         thisMonth: bookingsThisMonth.length,
         cancelled: cancelledBookings.length,
-        upcomingList: upcoming.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10),
+        upcomingList: upcoming.sort((a, b) => a.date.localeCompare(b.date)),
+        pastList: bookings.filter(b => b.date < todayStr && b.status !== "cancelled").sort((a, b) => b.date.localeCompare(a.date)),
       },
       invoices: {
         total: invoices.length,
