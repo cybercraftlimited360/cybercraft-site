@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
       text,
       model_id: "eleven_flash_v2_5",
       voice_settings: {
-        stability: 0.40,
-        similarity_boost: 0.85,
-        style: 0.30,
+        stability: 0.45,
+        similarity_boost: 0.80,
+        style: 0.0,
         use_speaker_boost: true,
       },
     }),
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     headers: {
       "Content-Type": "audio/mpeg",
       "Content-Length": String(audio.byteLength),
-      "Cache-Control": "no-store",
+      "Cache-Control": "public, max-age=3600",
       "Accept-Ranges": "bytes",
     },
   });
