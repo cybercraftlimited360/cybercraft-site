@@ -1,0 +1,92 @@
+---
+title: "How We Built an AI That Books Appointments While You Sleep"
+description: "A behind-the-scenes look at how CyberCraft360 built Amy — a voice AI that handles inbound calls, qualifies leads, and books strategy sessions 24/7."
+date: "2025-08-07"
+tags: ["AI", "Case Study", "Voice Agents"]
+---
+
+One of the most common things we hear from business owners is some version of: "I know I'm losing leads after hours, I just don't know what to do about it."
+
+We heard it enough times that we decided to build a solution and run it ourselves first — before recommending it to anyone. The result is Amy, our own AI voice agent that handles every inbound call to CyberCraft360.
+
+Here's exactly how she works, what we learned building her, and what the results have looked like.
+
+## The Problem We Were Solving
+
+CyberCraft360 gets inbound calls at all hours. Potential clients are often business owners themselves — they research and reach out when they finally have a free moment, which is frequently evenings and weekends.
+
+We had two options: hire someone to cover phones around the clock, or build an AI that could do it. We built the AI.
+
+The goals were clear:
+1. Answer every call instantly, no matter the time
+2. Sound like a real person — warm, conversational, not robotic
+3. Qualify the lead (understand their business and what they need)
+4. Book a strategy call with Saad directly on the call
+5. If they're not ready to book, capture their email and follow up
+
+## How We Built It
+
+Amy runs on a stack of three components working together:
+
+**Voice (ElevenLabs)** — Amy's voice is generated in real time using ElevenLabs, one of the most realistic AI voice platforms available. The settings are tuned specifically for phone calls — fast, clear, no unnatural pauses between sentences. Most callers genuinely can't tell they're not talking to a person.
+
+**Brain (Cerebras AI)** — The language model that powers Amy's responses runs on Cerebras, which is fast enough to generate a reply in under a second. This is critical for voice — any noticeable lag kills the conversation. We use two models in sequence, with automatic fallback if one is unavailable.
+
+**Memory (Redis)** — Amy remembers everything said during a call. If a caller gives their email in the third minute, Amy recalls it in the seventh minute without asking again. State is tracked per call so nothing gets lost.
+
+**Phone (Twilio)** — Twilio handles the actual call infrastructure — routing, speech-to-text for what the caller says, and serving Amy's audio responses.
+
+## What Amy Actually Does on a Call
+
+When someone calls the CyberCraft360 number, Amy answers on the first ring.
+
+For inbound calls, she greets warmly: *"Thank you for calling CyberCraft360, this is Amy — how can I help you today?"*
+
+From there, she listens. She doesn't run through a script — she responds to what the caller actually says. If they're asking about pricing, she talks about pricing. If they're venting about a problem, she empathizes before pivoting. If they're clearly ready to book, she moves straight to the close.
+
+When a caller agrees to a strategy call, Amy:
+1. Asks for their email address
+2. Reads it back letter by letter to confirm accuracy
+3. Asks whether mornings or afternoons work better
+4. Checks if they have any other questions
+5. Closes warmly and sends a confirmation
+
+The entire booking happens on the call, without anyone on our team being involved.
+
+## What We Learned
+
+**The hardest part isn't the technology — it's the personality.**
+
+Early versions of Amy were technically functional but felt robotic. The problem wasn't the voice or the speed — it was the system prompt. When we wrote the instructions as a rigid step-by-step script, Amy sounded like she was following a script. When we rewrote it to describe how a great salesperson *thinks and responds*, the quality jumped dramatically.
+
+The lesson: AI voice agents fail when they're programmed like a form. They succeed when they're designed like a person.
+
+**Response length matters enormously.**
+
+On a phone call, two sentences is usually right. Three sentences is occasionally fine. Four sentences is too long — the caller starts to feel talked at. We cap every Amy response at 2–3 sentences and it makes a significant difference in how natural the call feels.
+
+**Speed is non-negotiable.**
+
+If Amy takes more than 1.5 seconds to respond, callers start talking over her or think the call dropped. We optimized everything — the AI model, the audio delivery, the call infrastructure — to keep response time under a second in normal conditions.
+
+## The Results
+
+Since deploying Amy:
+
+- **Zero missed calls** — every inbound call is answered, day or night
+- **Consistent quality** — every caller gets the same warm, professional experience regardless of time or day
+- **Bookings on nights and weekends** — roughly 30% of strategy calls booked through Amy happen outside business hours
+
+The calls that require a human — complex situations, existing clients with specific questions, anything that needs Saad's direct involvement — get flagged and handled by us. Everything else, Amy handles.
+
+## What This Looks Like for Your Business
+
+The same system we built for ourselves can be built for any service business:
+
+- A dental office where Amy books cleanings and consultations
+- A law firm where Amy screens potential clients and books intake calls
+- A home services company where Amy captures emergency requests at 10pm
+
+The specifics change. The core system — always available, instantly responsive, books while you sleep — stays the same.
+
+If you want to see what this would look like for your business, book a free strategy call. You can even call the number directly and talk to Amy first.

@@ -10,9 +10,14 @@ export async function GET(req: NextRequest) {
   const firstName = hasName ? name.split(" ")[0] : "";
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-  const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
+  const isInbound = !hasName && !req.nextUrl.searchParams.has("company");
+  const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}${isInbound ? "&amp;inbound=true" : ""}`;
 
-  const greeting = hasName ? `Hi, may I speak with ${firstName}?` : `Hey, who am I speaking with?`;
+  const greeting = isInbound
+    ? `Thank you for calling CyberCraft360, this is Amy! How can I help you today?`
+    : hasName
+      ? `Hi, may I speak with ${firstName}?`
+      : `Hey, who am I speaking with?`;
   const noAnswer = `Hey, this is Amy from CyberCraft360 — I'll try you again soon. You can also visit cybercraft360.com whenever you're ready. Have a great day!`;
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>

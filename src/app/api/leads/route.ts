@@ -3,27 +3,28 @@ import { redis } from "@/lib/redis";
 import crypto from "crypto";
 
 const NOTIFY_EMAIL = "cybercraftlimited@gmail.com";
-const LAUREN_URL = "https://amused-empathy-production-6b44.up.railway.app";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
+
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length >= 10;
+}
 
 async function triggerAmyCall(lead: { name: string; company: string; challenge: string; phone: string }, retryCount = 0) {
   try {
-    const context = `This lead came from our website chat. They mentioned: ${lead.challenge}. Address this specifically in your pitch.`;
-    const res = await fetch(`${LAUREN_URL}/make-call`, {
+    const res = await fetch(`${BASE_URL}/api/call`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to: lead.phone,
-        contactName: lead.name,
+        phone: lead.phone,
+        name: lead.name,
         company: lead.company,
         challenge: lead.challenge,
-        context,
-        retryCount,
       }),
     });
     const data = await res.json();
     if (data.ok) {
       console.log(`Amy calling ${lead.name} (${lead.phone}) — callSid: ${data.callSid}`);
-      // Track in Redis
       await redis.hincrby("lauren:stats", "totalCalls", 1);
     }
     return data;
@@ -169,9 +170,9 @@ export async function POST(req: NextRequest) {
     allLeads.push(enriched);
     await redis.set("leads:all", allLeads);
 
-    // Auto-trigger Lauren if phone number provided
+    // Auto-trigger Amy only if phone number is complete (10+ digits)
     let laurenCalling = false;
-    if (lead.phone) {
+    if (lead.phone && isValidPhone(lead.phone)) {
       triggerAmyCall({
         name: lead.name,
         company: lead.company,

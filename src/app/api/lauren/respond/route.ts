@@ -97,7 +97,7 @@ If they won't book a call, get their email anyway so Saad can send them somethin
 
 **They seem excited or ready:** Move to the close immediately. Don't ask another question. "Sounds like you're ready — let me grab your email and get you on Saad's calendar right now."
 
-**Limited English:** Slow down. Shorter sentences. "Is English okay or would Spanish be easier?"
+**Language:** Detect the caller's language from their very first message and respond in that same language for the entire call. If they speak Spanish, respond fully in Spanish. If they speak French, respond in French, and so on. If they switch languages mid-call, switch with them. You are fluent in English, Spanish, French, Arabic, Portuguese, and Hindi. If someone seems to struggle in English, ask: "Is English okay or would you prefer another language?" — then match whatever they choose for the rest of the call.
 
 **Already booked:** "Oh perfect, you're already in the system! Did you have any questions before the call?"
 
@@ -113,6 +113,7 @@ If they won't book a call, get their email anyway so Saad can send them somethin
 - **NEVER say "biggest challenge" or "pain point."** Vary your probes every time.
 - **NEVER use [END_CALL] because you didn't understand something** or got interrupted. Always ask for clarification first.
 - **NEVER assume an email is correct** without reading it back letter by letter first and getting confirmation.
+- **NEVER ask the same question twice.** If someone skips, deflects, or refuses to answer something, move on. Don't circle back to it.
 - When the conversation is clearly over, put [END_CALL] at the very end. If you collected their email for booking, put [BOOK_EMAIL: email | time] before [END_CALL].`;
 
 async function loadLearnings(): Promise<string> {
@@ -284,6 +285,7 @@ export async function POST(req: NextRequest) {
     const company = req.nextUrl.searchParams.get("company") || "your business";
     const challenge = req.nextUrl.searchParams.get("challenge") || "";
     const stage = req.nextUrl.searchParams.get("stage") || "";
+    const isInbound = req.nextUrl.searchParams.get("inbound") === "true";
     let firstName = hasName ? name.split(" ")[0] : "";
 
     const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
@@ -298,6 +300,20 @@ export async function POST(req: NextRequest) {
     const systemPrompt = BASE_SYSTEM + learningsContext;
 
     if (stage === "opening") {
+      // Inbound: caller already told us what they need — just respond naturally
+      if (isInbound) {
+        history.push({ role: "assistant", content: `Thank you for calling CyberCraft360, this is Amy! How can I help you today?` });
+        history.push({ role: "user", content: speechResult || "Hi." });
+        const inboundPrompt = `Someone just called CyberCraft360. You answered as Amy. They said: "${speechResult || "Hi."}". Respond warmly and helpfully. If they haven't said their name, you can ask naturally — but only if it fits. Keep it under 2 sentences.`;
+        history.push({ role: "user", content: `[CONTEXT: ${inboundPrompt}]` });
+        const reply = await callLLM(history, BASE_SYSTEM);
+        const shouldEnd = /\[END_CALL\]/i.test(reply);
+        history.push({ role: "assistant", content: reply });
+        const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}&amp;inbound=true`;
+        await redis.set(historyKey, history.filter(m => !m.content?.startsWith("[CONTEXT:")), { ex: 3600 });
+        return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
+      }
+
       const confirmed = speechResult.toLowerCase();
       const isUnavailable = /no|wrong|not here|not available|busy|who\s/i.test(confirmed);
 
@@ -363,7 +379,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
       return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
-    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
+    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}${isInbound ? "&amp;inbound=true" : ""}`;
 
     if (speechResult) {
       history.push({ role: "user", content: speechResult });
