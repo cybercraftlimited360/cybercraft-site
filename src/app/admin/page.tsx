@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","calendar","ebooks","website","ads","followups","competitors","roi","referrals","reports"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","followups","competitors","roi","referrals","reports"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -88,6 +88,7 @@ const CARD_GROUPS = [
     label: "Intelligence & Reports", color: "#22c55e",
     cards: [
       { tab:"analytics"  as Tab, icon:"📈", title:"Analytics",   desc:"Traffic, funnels & performance" },
+      { tab:"traffic"    as Tab, icon:"📡", title:"Traffic",     desc:"Social media traffic & UTM campaign tracking" },
       { tab:"competitors" as Tab, icon:"🕵️", title:"Intel",      desc:"AI competitive analysis & counter-angles" },
       { tab:"roi"        as Tab, icon:"📑", title:"ROI Report",  desc:"Generate branded client PDF reports" },
       { tab:"reports"    as Tab, icon:"📬", title:"Reports",     desc:"Weekly AI report + proposal writer" },
@@ -212,6 +213,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="activity"   &&<ActivityTab    data={data}/>}
             {tab==="lauren"     &&<LaurenTab      data={data} token={token} h={h}/>}
             {tab==="analytics"  &&<AnalyticsTab   data={data}/>}
+            {tab==="traffic"    &&<TrafficTab     token={token}/>}
             {tab==="calendar"   &&<CalendarTab    data={data}/>}
             {tab==="ebooks"     &&<EbooksTab      token={token} h={h}/>}
             {tab==="website"    &&<WebsiteTab     data={data}/>}
@@ -2575,6 +2577,150 @@ function ReportsTab({token}:{token:string}){
 
 // ── Reports API route (GET saved reports) ─────────────────────────────────────
 // Note: this is a client-side fetch to /api/admin/reports which we need to create
+
+// ── Traffic Tab ───────────────────────────────────────────────────────────────
+function TrafficTab({token}:{token:string}){
+  const [data,setData]=useState<any>(null);
+  const [loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    fetch("/api/admin/traffic",{headers:{"x-admin-token":token}})
+      .then(r=>r.json()).then(setData).catch(()=>{}).finally(()=>setLoading(false));
+  },[token]);
+
+  if(loading) return <div style={{color:"rgba(255,255,255,0.4)",padding:40,textAlign:"center"}}>Loading traffic data…</div>;
+  if(!data) return <div style={{color:"#ef4444",padding:40,textAlign:"center"}}>Failed to load traffic data.</div>;
+
+  const S=data.summary||{};
+  const sourceColors:Record<string,string>={instagram:"#e1306c",facebook:"#1877f2",linkedin:"#0a66c2",google:"#34a853",twitter:"#1da1f2",direct:"#8b8fa8"};
+  const maxDailyVisits=Math.max(...(data.daily||[]).map((d:any)=>d.visits),1);
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:24}}>
+      <SectionHeader icon="📡" title="Traffic & Social Analytics" sub="Track visitors from Instagram, LinkedIn, Facebook and all UTM campaigns"/>
+
+      {/* Summary cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12}}>
+        {[
+          {label:"Total Visits (30d)",value:S.totalVisits??0,color:"#00d4ff"},
+          {label:"Today",value:S.todayVisits??0,color:"#22c55e"},
+          {label:"From Social",value:S.socialVisits??0,color:"#e1306c"},
+          {label:"Direct",value:S.directVisits??0,color:"#a78bfa"},
+        ].map(c=>(
+          <div key={c.label} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:"16px 18px"}}>
+            <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 6px"}}>{c.label}</p>
+            <p style={{fontSize:"1.8rem",fontWeight:800,color:c.color,margin:0,lineHeight:1}}>{c.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Daily chart */}
+      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+        <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Daily Visits — Last 30 Days</p>
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
+          {(data.daily||[]).map((d:any)=>(
+            <div key={d.date} title={`${d.date}: ${d.visits} visits`} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <div style={{width:"100%",background:d.visits>0?"#00d4ff":"rgba(255,255,255,0.05)",borderRadius:"3px 3px 0 0",height:`${Math.max((d.visits/maxDailyVisits)*72,d.visits>0?4:2)}px`,transition:"height 0.3s"}}/>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{data.daily?.[0]?.date}</span>
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{data.daily?.[data.daily.length-1]?.date}</span>
+        </div>
+      </div>
+
+      {/* Social sources */}
+      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+        <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Traffic by Source</p>
+        {(data.sources||[]).length===0
+          ? <p style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>No UTM-tagged visits yet. Add ?utm_source=instagram to your links.</p>
+          : <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {(data.sources||[]).map((s:any)=>{
+                const total=data.summary?.socialVisits||1;
+                const pct=Math.round((s.visits/total)*100);
+                const color=sourceColors[s.source.toLowerCase()]||"#a78bfa";
+                return(
+                  <div key={s.source}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:"#fff",textTransform:"capitalize"}}>{s.source}</span>
+                      <span style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>{s.visits} visits · {pct}%</span>
+                    </div>
+                    <div style={{height:6,background:"rgba(255,255,255,0.06)",borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:3,transition:"width 0.4s"}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+        }
+      </div>
+
+      {/* Top campaigns */}
+      {(data.campaigns||[]).length>0&&(
+        <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Top Campaigns</p>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {(data.campaigns||[]).slice(0,10).map((c:any,i:number)=>(
+              <div key={c.campaign} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.05)"}}>
+                <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.2)",width:18}}>#{i+1}</span>
+                <span style={{flex:1,fontSize:13,color:"#e4e6f0",fontFamily:"monospace"}}>{c.campaign}</span>
+                <span style={{fontSize:13,fontWeight:700,color:"#00d4ff"}}>{c.visits}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Blog performance */}
+      {(data.blogPerformance||[]).length>0&&(
+        <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Blog Post Performance</p>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {(data.blogPerformance||[]).map((p:any)=>(
+              <div key={p.page} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.05)"}}>
+                <span style={{fontSize:12,color:"#a78bfa",fontFamily:"monospace",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.page}</span>
+                <span style={{fontSize:13,fontWeight:700,color:"#22c55e",marginLeft:12,flexShrink:0}}>{p.visits} views</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top pages */}
+      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+        <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Top Pages</p>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {(data.topPages||[]).map((p:any)=>(
+            <div key={p.page} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.05)"}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontFamily:"monospace"}}>{p.page}</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#00d4ff",marginLeft:12,flexShrink:0}}>{p.visits}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* UTM link builder */}
+      <div style={{background:"rgba(167,139,250,0.05)",border:"1px solid rgba(167,139,250,0.2)",borderRadius:14,padding:20}}>
+        <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#a78bfa",margin:"0 0 8px"}}>UTM Link Builder</p>
+        <p style={{fontSize:12,color:"rgba(255,255,255,0.4)",margin:"0 0 14px"}}>Add these parameters to every link you post on social media so traffic shows up here.</p>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {[
+            {platform:"Instagram",url:"https://cybercraft360.com/blog?utm_source=instagram&utm_medium=social&utm_campaign=post-title"},
+            {platform:"LinkedIn",url:"https://cybercraft360.com/blog?utm_source=linkedin&utm_medium=social&utm_campaign=post-title"},
+            {platform:"Facebook",url:"https://cybercraft360.com/blog?utm_source=facebook&utm_medium=social&utm_campaign=post-title"},
+          ].map(({platform,url})=>(
+            <div key={platform} style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"10px 14px"}}>
+              <p style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.3)",margin:"0 0 4px",textTransform:"uppercase",letterSpacing:"0.1em"}}>{platform}</p>
+              <p style={{fontSize:11,color:"rgba(255,255,255,0.5)",fontFamily:"monospace",margin:0,wordBreak:"break-all"}}>{url}</p>
+            </div>
+          ))}
+          <p style={{fontSize:11,color:"rgba(255,255,255,0.3)",margin:"8px 0 0"}}>Replace <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 5px",borderRadius:4}}>post-title</code> with the name of your post (e.g. <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 5px",borderRadius:4}}>ai-receptionist-week1</code>)</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Shared section header ─────────────────────────────────────────────────────
 function SectionHeader({icon,title,sub}:{icon:string;title:string;sub:string}){

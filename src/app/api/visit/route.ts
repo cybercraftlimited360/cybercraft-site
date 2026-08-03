@@ -3,7 +3,7 @@ import { redis } from "@/lib/redis";
 
 export async function POST(req: NextRequest) {
   try {
-    const { page, referrer } = await req.json();
+    const { page, referrer, utm_source, utm_medium, utm_campaign, utm_content } = await req.json();
 
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     const isDatacenter = geo.hosting === true;
 
     const now = new Date();
+    const dateKey = now.toISOString().slice(0, 10);
     const visit = {
       ip,
       location,
@@ -45,7 +46,18 @@ export async function POST(req: NextRequest) {
       referrer: referrer || "",
       ua: ua.slice(0, 120),
       time: now.toISOString(),
+      utm_source: utm_source || "",
+      utm_medium: utm_medium || "",
+      utm_campaign: utm_campaign || "",
+      utm_content: utm_content || "",
     };
+
+    // Track UTM source stats
+    if (utm_source) {
+      await redis.hincrby("traffic:sources", utm_source, 1);
+      await redis.hincrby(`traffic:campaigns`, utm_campaign || utm_source, 1);
+      await redis.hincrby(`traffic:daily:${dateKey}:${utm_source}`, "visits", 1);
+    }
 
     // Save to Redis list (keep last 200)
     const existing = await redis.get<typeof visit[]>("visits:recent") ?? [];
@@ -53,7 +65,6 @@ export async function POST(req: NextRequest) {
     await redis.set("visits:recent", existing.slice(0, 200));
 
     // Increment daily counter
-    const dateKey = now.toISOString().slice(0, 10);
     await redis.hincrby("visits:daily", dateKey, 1);
 
     // Throttled email notification — max 1 per 5 minutes
