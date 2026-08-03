@@ -46,10 +46,11 @@ export default async function BlogPost({ params }: Props) {
   return (
     <main className="min-h-screen bg-[#0f1117] text-[#e4e6f0]">
       {/* Nav */}
-      <nav className="border-b border-white/5 px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
-        <Link href="/blog" className="text-sm font-medium text-[#a78bfa] hover:text-white transition-colors">
-          ← All Posts
-        </Link>
+      <nav className="sticky top-0 z-50 border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto" style={{ backdropFilter: "blur(20px)", backgroundColor: "rgba(15,17,23,0.92)" }}>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="text-xs uppercase tracking-[0.2em] text-[#a78bfa] font-medium hover:text-white transition-colors">← CyberCraft360</Link>
+          <Link href="/blog" className="text-sm text-[#8b8fa8] hover:text-white transition-colors">Blog</Link>
+        </div>
         <Link
           href="/book"
           className="text-sm bg-[#a78bfa] text-[#0f1117] font-semibold px-4 py-2 rounded-full hover:bg-white transition-colors"
