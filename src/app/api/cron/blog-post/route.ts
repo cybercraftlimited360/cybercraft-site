@@ -159,13 +159,39 @@ export async function GET(req: NextRequest) {
     usedRaw.push(keyword);
     await redis.set("blog:used_keywords", usedRaw);
 
+    // Auto-post to Facebook + LinkedIn
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
+    const blogLink = `${siteUrl}/blog/${slug}`;
+    const shareMessage = `New post: ${post.title}\n\nRead more → ${blogLink}`;
+    let socialResult: Record<string, unknown> = {};
+    try {
+      const [fbRes, liRes] = await Promise.all([
+        fetch(`${siteUrl}/api/social/post`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
+          body: JSON.stringify({ message: shareMessage, link: blogLink, platforms: ["facebook"] }),
+        }),
+        fetch(`${siteUrl}/api/social/linkedin`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
+          body: JSON.stringify({ text: shareMessage, link: blogLink }),
+        }),
+      ]);
+      socialResult = {
+        facebook: await fbRes.json(),
+        linkedin: await liRes.json(),
+      };
+    } catch (e) {
+      socialResult = { error: String(e) };
+    }
+
     // Log it
     const log = await redis.get<any[]>("blog:auto_posts") ?? [];
-    log.unshift({ slug, keyword, title: post.title, publishedAt: new Date().toISOString() });
+    log.unshift({ slug, keyword, title: post.title, publishedAt: new Date().toISOString(), social: socialResult });
     await redis.set("blog:auto_posts", log.slice(0, 100));
 
     console.log(`[blog-cron] Published: ${slug}`);
-    return NextResponse.json({ ok: true, slug, keyword, title: post.title });
+    return NextResponse.json({ ok: true, slug, keyword, title: post.title, social: socialResult });
 
   } catch (err) {
     console.error("[blog-cron] error:", err);
