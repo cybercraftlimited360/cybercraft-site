@@ -26,6 +26,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "CyberCraft360",
       type: "article",
       publishedTime: post.date,
+      images: [{
+        url: `https://cybercraft360.com/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(post.tags?.[0] ?? "AI Agency · Houston, TX")}`,
+        width: 1200,
+        height: 630,
+      }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: [`https://cybercraft360.com/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(post.tags?.[0] ?? "AI Agency · Houston, TX")}`],
     },
   };
 }

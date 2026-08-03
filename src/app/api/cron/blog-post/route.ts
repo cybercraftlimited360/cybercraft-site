@@ -166,6 +166,14 @@ export async function GET(req: NextRequest) {
     usedRaw.push(keyword);
     await redis.set("blog:used_keywords", usedRaw);
 
+    // Submit to Google Indexing API for same-day crawl
+    const blogUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com"}/blog/${slug}`;
+    fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com"}/api/seo/index-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
+      body: JSON.stringify({ url: blogUrl }),
+    }).catch(() => {});
+
     // Auto-post to Facebook + LinkedIn
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
     const blogLink = `${siteUrl}/blog/${slug}`;

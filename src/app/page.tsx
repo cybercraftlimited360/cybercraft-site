@@ -98,6 +98,9 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             );
           })}
           <li>
+              <a href="/blog" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors mr-4 no-underline">
+                Blog
+              </a>
               <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all mr-2">
                 Get a Quote
               </a>
@@ -168,10 +171,24 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
               </motion.button>
             );
           })}
-          <motion.div
+          <motion.a
+            href="/blog"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
             transition={{ duration: 0.3, delay: menuOpen ? navLinks.length * 0.06 : 0 }}
+            className="no-underline"
+            style={{
+              fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
+              fontSize: "clamp(2rem, 8vw, 3.5rem)",
+              color: "rgba(255,255,255,0.85)",
+            }}
+          >
+            Blog
+          </motion.a>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
+            transition={{ duration: 0.3, delay: menuOpen ? (navLinks.length + 1) * 0.06 : 0 }}
             className="mt-4 flex flex-col items-center gap-3 w-full px-8"
           >
             <button
