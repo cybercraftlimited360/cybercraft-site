@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Space_Grotesk } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import VisitTracker from "@/components/ui/visit-tracker";
 
@@ -28,6 +29,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${cormorant.variable} h-full antialiased`}>
+      <head>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-S3S1H7YRF4" strategy="afterInteractive" />
+        <Script id="ga4-init" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-S3S1H7YRF4', { page_path: window.location.pathname });
+        `}</Script>
+      </head>
       <body className="min-h-full flex flex-col">
         <VisitTracker />
         {children}
