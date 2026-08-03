@@ -10,7 +10,8 @@ async function postToFacebook(message: string, link?: string): Promise<{ id?: st
   const body: Record<string, string> = { message, access_token: token };
   if (link) body.link = link;
 
-  const res = await fetch(`${FB_API}/${pageId}/feed`, {
+  // Use /me/feed with page token (acts as the page itself)
+  const res = await fetch(`${FB_API}/me/feed`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
