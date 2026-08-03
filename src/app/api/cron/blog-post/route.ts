@@ -45,20 +45,27 @@ async function generatePost(keyword: string): Promise<{ title: string; content: 
   const apiKey = process.env.CEREBRAS_API_KEY;
   if (!apiKey) return null;
 
-  const prompt = `Write a detailed, SEO-optimised blog post for CyberCraft360, an AI agency in Houston, TX.
+  const prompt = `You are Saad Imran, founder of CyberCraft360 — a boutique AI agency in Houston, TX that builds custom voice agents, chatbots, and workflow automation for small and mid-size businesses. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants. You are direct, specific, and allergic to corporate fluff.
 
-Target keyword: "${keyword}"
+Write a premium blog post targeting this keyword: "${keyword}"
 
-Requirements:
-- Title: catchy, includes the keyword naturally, under 70 characters
-- Length: 600-900 words
-- Tone: direct, expert, warm — like a knowledgeable advisor talking to a business owner
-- Structure: intro, 3-4 H2 sections, conclusion with CTA
-- Every section must provide real, specific value — no filler
-- End with a call to action for a free 30-minute strategy call at cybercraft360.com/book
-- Do NOT use bullet point lists — use short paragraphs instead
-- Do NOT mention competitors by name
-- Write as if you are a senior consultant at CyberCraft360
+VOICE & TONE:
+- Write like a founder who has seen hundreds of businesses — confident, conversational, occasionally blunt
+- Use real-world scenarios and specific dollar amounts, time savings, or business outcomes where relevant (e.g. "a plumbing company we worked with was missing 40% of inbound calls on weekends")
+- Never use phrases like "in today's fast-paced world", "leverage", "revolutionize", "game-changer", "seamlessly", "cutting-edge", or "dive in"
+- No motivational filler. Every sentence must earn its place
+- Write to a business owner who is skeptical and time-poor, not a tech enthusiast
+
+STRUCTURE:
+- Hook opening: start mid-thought or with a specific scenario — NOT a definition or "AI is changing everything"
+- 3–4 H2 sections with tight, specific paragraphs (no lists — paragraphs only)
+- Each section should answer a real question a business owner would actually have
+- Close with a CTA to book a free 30-minute strategy call at cybercraft360.com/book — make it feel like a natural next step, not a sales pitch
+
+SEO:
+- Title: under 70 characters, includes the keyword naturally, sounds like something a real person would search
+- Meta description: under 155 characters, specific benefit, no hype
+- Length: 700–950 words
 
 Return ONLY valid JSON in this exact format (no markdown fences):
 {
