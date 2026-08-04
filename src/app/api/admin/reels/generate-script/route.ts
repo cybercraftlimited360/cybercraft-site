@@ -172,19 +172,27 @@ async function fetchPexelsVideos(queries: string[]): Promise<any[]> {
   const results: any[] = [];
   for (const q of queries.slice(0, 3)) {
     const res = await fetch(
-      `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=6&orientation=landscape`,
+      `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=8&orientation=portrait`,
       { headers: { Authorization: apiKey } }
     );
     if (!res.ok) continue;
     const d = await res.json();
-    const clips = (d.videos ?? []).map((v: any) => ({
-      id: v.id,
-      duration: v.duration,
-      thumbnail: v.image,
-      url: v.video_files?.find((f: any) => f.quality === "hd" || f.quality === "sd")?.link,
-      photographer: v.user?.name,
-      query: q,
-    })).filter((v: any) => v.url && v.duration >= 3 && v.duration <= 30);
+    const clips = (d.videos ?? []).map((v: any) => {
+      // Prefer HD portrait file, fall back to SD portrait, then any HD
+      const files: any[] = v.video_files ?? [];
+      const portraitHD = files.find((f: any) => f.quality === "hd" && f.height > f.width);
+      const portraitSD = files.find((f: any) => f.quality === "sd" && f.height > f.width);
+      const anyHD = files.find((f: any) => f.quality === "hd");
+      const chosen = portraitHD ?? portraitSD ?? anyHD ?? files[0];
+      return {
+        id: v.id,
+        duration: v.duration,
+        thumbnail: v.image,
+        url: chosen?.link,
+        photographer: v.user?.name,
+        query: q,
+      };
+    }).filter((v: any) => v.url && v.duration >= 3 && v.duration <= 30);
     results.push(...clips);
     if (results.length >= 12) break;
   }
