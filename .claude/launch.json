@@ -4,8 +4,9 @@
     {
       "name": "cybercraft-site",
       "runtimeExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeArgs": ["run", "dev", "--", "-p", "3456"],
+      "port": 3456,
+      "cwd": "C:\\Users\\19293\\OneDrive\\Desktop\\Claude Code\\cybercraft-site"
     }
   ]
 }
