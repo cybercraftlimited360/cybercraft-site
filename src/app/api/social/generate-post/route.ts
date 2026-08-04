@@ -80,7 +80,7 @@ const INSTAGRAM_BASE_TAGS = "#AIEngineering #BusinessAutomation #AIAgency #Houst
 
 const LINKEDIN_BASE_TAGS = "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #BusinessInfrastructure #AIArchitecture #HoustonBusiness #CyberCraft360";
 
-async function generateCustomCopy(customPrompt: string, ctaIndex: number): Promise<{
+type CopyResult = {
   imageHeadline: string;
   imageSubline: string;
   imageBody: string;
@@ -88,51 +88,91 @@ async function generateCustomCopy(customPrompt: string, ctaIndex: number): Promi
   instagramCaption: string;
   facebookCaption: string;
   photoKeyword: string;
-} | null> {
-  const apiKey = process.env.CEREBRAS_API_KEY;
-  if (!apiKey) return null;
+};
 
-  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
+const BRAND_SYSTEM = `You are the Chief Creative Officer of CyberCraft360 — an AI Engineering firm based in Houston, TX. You write copy that gets mistaken for Apple, Stripe, Linear, or Porsche marketing. Your work appears on billboards, not brochures.
 
-  const prompt = `You are the Creative Director and Brand Strategist for CyberCraft360 — an AI Engineering company based in Houston, TX that designs intelligent automation systems for small and mid-size businesses.
+WHO WE ARE:
+CyberCraft360 engineers intelligent business infrastructure for ambitious small and mid-size companies. We are NOT a software vendor, chatbot company, or automation tool. We are an AI Engineering Company — the operational backbone behind businesses that outperform their size.
 
-BRAND POSITIONING:
-CyberCraft360 is NOT a software company, chatbot company, or automation tool.
-CyberCraft360 IS: an AI Engineering Company, Intelligent Systems Partner, Business Infrastructure Partner.
+VOICE & TONE — STUDY THESE BRANDS:
+• Apple: declarative, present tense, no adjectives that don't earn their place. "The best camera is the one that's always with you." Not "our innovative camera solution empowers users."
+• Stripe: precise, confident, never breathless. "Payments infrastructure for the internet." Not "a revolutionary payment platform that transforms businesses."
+• Linear: dry wit, intelligence assumed, zero fluff. "Built for the ones who care." Not "designed for passionate teams who want to make a difference."
+• Porsche: restraint as a power move. One fact. Silence does the rest. "0–60 in 2.9 seconds." Not "an exhilarating driving experience that excites every sense."
+• McLaren: technical authority, earned swagger. "Every component questioned." Not "cutting-edge engineering innovations."
 
-BRAND PERSONALITY:
-Confident. Minimal. Sophisticated. Calm. Intelligent. Executive. Modern. Editorial.
-Never loud. Never salesy. Never desperate. Never exaggerated.
-Write like Apple. Not like marketers.
+THE VOICE IS:
+Intelligent. Calm. Precise. Declarative. Confident without arrogance. Strategic without jargon. Editorial without pretension.
 
-RULES:
-- Never use: "leverage", "revolutionize", "game-changer", "seamlessly", "cutting-edge", "dive in", "in today's world", "unlock", "empower", "harness", "transform"
-- Never describe CyberCraft360 as software, tool, or chatbot company
-- Every sentence must earn its place
-- Avoid buzzwords, hype, emojis, excessive punctuation
-- Use confidence instead of excitement
+ABSOLUTE PROHIBITIONS — any of these is a failure:
+• Banned words: leverage, revolutionize, game-changer, seamlessly, cutting-edge, dive in, unlock, empower, harness, transform, disrupt, innovative, solution, ecosystem, synergy, streamline, robust, scalable (as a lazy adjective), paradigm, holistic, world-class, best-in-class, state-of-the-art, next-level, skyrocket, unprecedented
+• No exclamation marks
+• No rhetorical questions (especially to open a caption)
+• No "in today's fast-paced world" or similar throat-clearing
+• No emoji in captions (they cheapen the brand)
+• No passive voice unless intentional
+• Never describe CyberCraft360 as a tool, platform, software, or chatbot company
+• Never say "we help you" — say what we do, not how it helps
+• Never pad word count — every word must justify its existence`;
 
-CUSTOM INSTRUCTIONS FROM OWNER:
-${customPrompt}
+const COPY_FORMAT = (cta: string) => `
+IMAGE TEXT RULES (these appear large on a visual — they must be elegant at scale):
 
-imageHeadline: Maximum 8 words. Bold, direct, minimal. No question marks.
-imageSubline: 4-6 words. Calm, editorial. Category or context line.
-imageBody: ONE sentence only. 12-18 words max. Expand the headline with a calm, intelligent insight.
-linkedinCaption: Executive tone. 120-160 words. End with: "${cta}  CyberCraft360.com" then a blank line then exactly: "${LINKEDIN_BASE_TAGS}"
-instagramCaption: Strong opening line. 60-80 words. End with: "${cta}  CyberCraft360.com" then a blank line then exactly: "${INSTAGRAM_BASE_TAGS}"
-facebookCaption: Storytelling approach. 80-110 words. No hashtags. End with: "${cta}  CyberCraft360.com"
-photoKeyword: A premium, descriptive Pexels search phrase relevant to this post's visual direction.
+imageHeadline:
+• Maximum 8 words. Ideally 3–6.
+• Statement, not a question. Present tense. No punctuation except a period at the end if it reads as a complete thought.
+• Think: billboard at 90mph. It must land in 1 second.
+• STRONG examples: "The System Runs. You Lead." / "Complexity Is a Design Problem." / "Infrastructure That Disappears." / "Precision Runs the Business." / "Built Once. Runs Forever."
+• WEAK examples (reject these): "Transform Your Business With AI" / "Unlock Your Potential Today" / "Revolutionize How You Work"
 
-Return ONLY valid JSON, no markdown fences:
+imageSubline:
+• 3–5 words. Calm category label or location anchor.
+• Examples: "AI Engineering · Houston, TX" / "Intelligent Systems Design" / "Business Infrastructure" / "Operational Intelligence"
+• Not a sentence. Not a pitch. A quiet label.
+
+imageBody:
+• ONE sentence. Exactly 10–16 words.
+• Expands the headline with one precise, earned insight. No pitch. No CTA. No "we."
+• Examples: "The businesses that scale fastest are the ones that engineered silence into their operations." / "Every missed call is a system that wasn't built."
+• NOT: "CyberCraft360 provides powerful automation solutions to help your business grow."
+
+CAPTION RULES:
+
+linkedinCaption:
+• 130–180 words. Executive register. Reads like a memo from a senior partner, not a marketing post.
+• Structure: open with a sharp observation or counterintuitive truth (not a question). Build the idea for 3–4 sentences. Land CyberCraft360 once, naturally, as the punchline — never upfront. Close with a single direct sentence.
+• End exactly with: "${cta}  CyberCraft360.com" then one blank line then exactly: "${LINKEDIN_BASE_TAGS}"
+
+instagramCaption:
+• 70–100 words. First line must be the strongest — it's the preview text. No fluff opener.
+• Tone: confident editorial. More personal than LinkedIn but still precise. Like a thoughtful industry insider sharing an observation, not a brand shouting.
+• End exactly with: "${cta}  CyberCraft360.com" then one blank line then exactly: "${INSTAGRAM_BASE_TAGS}"
+
+facebookCaption:
+• 90–130 words. Narrative. Tell a story or scenario — a business problem, a moment of clarity, a before/after. More accessible than LinkedIn, more structured than Instagram.
+• No hashtags. End exactly with: "${cta}  CyberCraft360.com"
+
+photoKeyword:
+• A precise Pexels search phrase for a cinematic, premium background image.
+• Think: what would a luxury brand use as their campaign backdrop?
+• Strong examples: "minimalist executive boardroom dark", "architectural glass facade headquarters", "warm concrete luxury office interior", "aerial city dusk premium editorial", "industrial precision machinery dark"
+• NOT: "business people working" / "happy team meeting" / "technology abstract"
+
+Return ONLY valid JSON — no markdown, no explanation, no preamble:
 {
-  "imageHeadline": "HEADLINE HERE",
-  "imageSubline": "Category · Context",
-  "imageBody": "One precise sentence.",
+  "imageHeadline": "...",
+  "imageSubline": "...",
+  "imageBody": "...",
   "linkedinCaption": "...",
   "instagramCaption": "...",
   "facebookCaption": "...",
-  "photoKeyword": "premium descriptive phrase"
+  "photoKeyword": "..."
 }`;
+
+async function callCerebras(prompt: string): Promise<CopyResult | null> {
+  const apiKey = process.env.CEREBRAS_API_KEY;
+  if (!apiKey) return null;
 
   const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
     method: "POST",
@@ -141,98 +181,7 @@ Return ONLY valid JSON, no markdown fences:
       model: "zai-glm-4.7",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 4096,
-      temperature: 0.8,
-      stream: false,
-    }),
-  });
-
-  if (!res.ok) return null;
-
-  const data = await res.json();
-  const raw = data.choices?.[0]?.message?.content ?? "";
-  const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-
-  try {
-    return JSON.parse(clean);
-  } catch {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (match) {
-      try { return JSON.parse(match[0]); } catch { /* fall through */ }
-    }
-    return null;
-  }
-}
-
-async function generateCopy(campaign: typeof CAMPAIGNS[0], ctaIndex: number): Promise<{
-  imageHeadline: string;
-  imageSubline: string;
-  imageBody: string;
-  linkedinCaption: string;
-  instagramCaption: string;
-  facebookCaption: string;
-  photoKeyword: string;
-} | null> {
-  const apiKey = process.env.CEREBRAS_API_KEY;
-  if (!apiKey) return null;
-
-  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
-  const industryContext = campaign.industry ? `\n\nThis post targets the ${campaign.industry} industry. Every word and image should be directly relevant to ${campaign.industry} businesses.` : "";
-
-  const prompt = `You are the Creative Director and Brand Strategist for CyberCraft360 — an AI Engineering company based in Houston, TX that designs intelligent automation systems for small and mid-size businesses.
-
-BRAND POSITIONING:
-CyberCraft360 is NOT a software company, chatbot company, or automation tool.
-CyberCraft360 IS: an AI Engineering Company, Intelligent Systems Partner, Business Infrastructure Partner.
-
-CAMPAIGN: "${campaign.campaign}"
-WEEK ${campaign.week} — ${campaign.day}
-CONTENT ANGLE: ${campaign.angle}${industryContext}
-
-BRAND PERSONALITY:
-Confident. Minimal. Sophisticated. Calm. Intelligent. Executive. Modern. Editorial.
-Never loud. Never salesy. Never desperate. Never exaggerated.
-Write like Apple. Not like marketers.
-
-RULES:
-- Never use: "leverage", "revolutionize", "game-changer", "seamlessly", "cutting-edge", "dive in", "in today's world", "unlock", "empower", "harness", "transform"
-- Never describe CyberCraft360 as software, tool, or chatbot company
-- Every sentence must earn its place
-- Avoid buzzwords, hype, emojis, excessive punctuation
-- Use confidence instead of excitement
-
-imageHeadline: Maximum 8 words. Bold, direct, minimal. No question marks. Examples: "The Best Systems Are Invisible." / "Built For Scale." / "Complexity Ends Here." / "Infrastructure Wins."
-
-imageSubline: 4-6 words. Calm, editorial. Category or context line. Example: "AI Engineering · Houston, TX" or "Intelligent Systems Design"
-
-imageBody: ONE sentence only. 12-18 words max. Expand the headline with a calm, intelligent insight. No pitch.
-
-linkedinCaption: Executive tone. 120-160 words. Teach one idea. Position CyberCraft360 naturally — never force it. End with: "${cta}  CyberCraft360.com" then a blank line then exactly: "${LINKEDIN_BASE_TAGS}"
-
-instagramCaption: Strong opening line. 60-80 words. Editorial, confident. End with: "${cta}  CyberCraft360.com" then a blank line then exactly: "${INSTAGRAM_BASE_TAGS}"
-
-facebookCaption: Storytelling approach. 80-110 words. Educational. No hashtags. End with: "${cta}  CyberCraft360.com"
-
-photoKeyword: A premium, descriptive Pexels search phrase. Use the visual direction of this campaign. Examples from the brand: "luxury executive boardroom minimal", "dark concrete architecture office", "modern glass headquarters interior", "architectural interior warm editorial". Return a phrase that will find a cinematic, premium image relevant to this post's content.
-
-Return ONLY valid JSON, no markdown fences:
-{
-  "imageHeadline": "HEADLINE HERE",
-  "imageSubline": "Category · Context",
-  "imageBody": "One precise sentence that expands the headline.",
-  "linkedinCaption": "...",
-  "instagramCaption": "...",
-  "facebookCaption": "...",
-  "photoKeyword": "premium descriptive phrase"
-}`;
-
-  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "zai-glm-4.7",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 4096,
-      temperature: 0.8,
+      temperature: 0.75,
       stream: false,
     }),
   });
@@ -255,6 +204,42 @@ Return ONLY valid JSON, no markdown fences:
     }
     return null;
   }
+}
+
+async function generateCustomCopy(customPrompt: string, ctaIndex: number): Promise<CopyResult | null> {
+  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
+
+  const prompt = `${BRAND_SYSTEM}
+
+ASSIGNMENT — CUSTOM POST:
+The owner has given you specific direction. Execute it with full brand discipline — the direction tells you the topic and angle, but the voice, quality bar, and rules above are non-negotiable.
+
+OWNER'S DIRECTION:
+${customPrompt}
+
+${COPY_FORMAT(cta)}`;
+
+  return callCerebras(prompt);
+}
+
+async function generateCopy(campaign: typeof CAMPAIGNS[0], ctaIndex: number): Promise<CopyResult | null> {
+  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
+  const industryLine = campaign.industry
+    ? `\nINDUSTRY FOCUS: Every word must be directly relevant to ${campaign.industry} businesses. Speak their language, reference their reality.`
+    : "";
+
+  const prompt = `${BRAND_SYSTEM}
+
+ASSIGNMENT — CAMPAIGN POST:
+Campaign: "${campaign.campaign}"
+Week ${campaign.week} · ${campaign.day}${industryLine}
+
+STRATEGIC ANGLE (use this as your creative brief — don't copy it, interpret it):
+${campaign.angle}
+
+${COPY_FORMAT(cta)}`;
+
+  return callCerebras(prompt);
 }
 
 async function fetchPexelsPhoto(queries: string[]): Promise<string | null> {
