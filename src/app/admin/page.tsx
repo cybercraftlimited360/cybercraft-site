@@ -3344,13 +3344,13 @@ function SocialTab({token}:{token:string}){
 }
 
 // ── Reels Tab — CyberCraft360 Commercial Engine v1.0 ─────────────────────────
-const REEL_CAMPAIGN_SCHEDULE = Array.from({length:36},(_,i)=>{
+const REEL_CAMPAIGN_SCHEDULE=Array.from({length:36},(_,i)=>{
   const weeks=["We Don't Build Software","Every Great Business Runs On Great Systems","The Best Systems Are Invisible","Automation Should Feel Human","Designed For Your Industry","Remove The Friction","Every Minute Matters","From Chaos To Clarity","Intelligence That Learns","Your Business. One System.","Built To Scale","The Future Is Already Working"];
   const days=["Monday","Wednesday","Friday"];
   return {week:Math.floor(i/3)+1,day:days[i%3],campaign:weeks[Math.floor(i/3)]};
 });
 
-const VOICE_PRESETS = [
+const VOICE_PRESETS=[
   {id:"pNInz6obpgDQGcFmaJgB",name:"Adam",desc:"Deep · Authoritative · Narration"},
   {id:"ErXwobaYiN019PkySvjV",name:"Antoni",desc:"Confident · Well-rounded · Executive"},
   {id:"VR6AewLTigWG4xSOukaG",name:"Arnold",desc:"Crisp · Commanding · Professional"},
@@ -3392,8 +3392,42 @@ function ReelsTab({token}:{token:string}){
   const [postResult,setPostResult]=useState<any>(null);
   const [postError,setPostError]=useState<string|null>(null);
 
+  // Pending reels queue
+  const [pendingReels,setPendingReels]=useState<any[]>([]);
+  const [pendingLoading,setPendingLoading]=useState(false);
+  const [expandedPending,setExpandedPending]=useState<string|null>(null);
+
   // Active section
-  const [section,setSection]=useState<"generate"|"upload">("generate");
+  const [section,setSection]=useState<"generate"|"upload"|"pending">("generate");
+
+  async function loadPending(){
+    setPendingLoading(true);
+    try{
+      const res=await fetch("/api/admin/reels/pending",{headers:{"x-admin-token":token}});
+      const d=await res.json();
+      if(d.ok)setPendingReels(d.reels||[]);
+    }catch{}
+    finally{setPendingLoading(false);}
+  }
+
+  async function deletePending(id:string){
+    await fetch("/api/admin/reels/pending",{method:"DELETE",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({id})});
+    setPendingReels(prev=>prev.filter((r:any)=>r.id!==id));
+  }
+
+  function approvePending(reel:any){
+    // Pre-load script, captions, audio into generate state, then switch to upload
+    if(reel.script){
+      setScript(reel.script);
+      setClips(reel.suggestedClips||[]);
+      const vo=reel.script.voiceoverScript||"";
+      setReelLI(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360 #HoustonBusiness`);
+      setReelIG(`${reel.script.hook||vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #WorkflowAutomation #IntelligentSystems #CyberCraft360`);
+      setReelFB(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com`);
+      if(reel.audioUrl)setAudioUrl(reel.audioUrl);
+    }
+    setSection("upload");
+  }
 
   async function generateScript(){
     setGenerating(true);setGenError(null);setScript(null);setClips([]);setAudioUrl(null);
@@ -3476,10 +3510,10 @@ function ReelsTab({token}:{token:string}){
       </div>
 
       {/* ── Section toggle ── */}
-      <div style={{display:"flex",gap:8,marginBottom:24}}>
-        {([["generate","✦ Generate Commercial","Script + Voice + B-roll"],["upload","📤 Upload & Post","Finished reel → all platforms"]] as const).map(([s,label,sub])=>(
-          <button key={s} onClick={()=>setSection(s)} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left"}}>
-            <div style={{fontWeight:700}}>{label}</div>
+      <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
+        {([["generate","✦ Generate Commercial","Script + Voice + B-roll"],["pending","📋 Pending Review",`${pendingReels.length} awaiting approval`],["upload","📤 Upload & Post","Finished reel → all platforms"]] as const).map(([s,label,sub])=>(
+          <button key={s} onClick={()=>{setSection(s as any);if(s==="pending")loadPending();}} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left",position:"relative"}}>
+            <div style={{fontWeight:700}}>{label}{s==="pending"&&pendingReels.length>0&&<span style={{marginLeft:8,background:"rgba(0,213,255,0.2)",border:"1px solid rgba(0,213,255,0.35)",borderRadius:10,padding:"1px 7px",fontSize:10,color:C,fontWeight:800}}>{pendingReels.length}</span>}</div>
             <div style={{fontSize:11,fontWeight:400,color:section===s?"rgba(0,213,255,0.6)":"rgba(255,255,255,0.25)",marginTop:2}}>{sub}</div>
           </button>
         ))}
@@ -3659,6 +3693,112 @@ function ReelsTab({token}:{token:string}){
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ══════════════════════════ PENDING QUEUE SECTION ══════════════════════════ */}
+      {section==="pending"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.35)"}}>Cron-generated reels awaiting your review. Preview the storyboard and voiceover, then approve to move to Upload & Post.</div>
+            <button onClick={loadPending} disabled={pendingLoading} style={{...btn,padding:"7px 16px",borderRadius:8,fontSize:12,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",opacity:pendingLoading?0.5:1}}>{pendingLoading?"⏳ Loading…":"↻ Refresh"}</button>
+          </div>
+
+          {pendingReels.length===0&&!pendingLoading&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px dashed rgba(255,255,255,0.08)",borderRadius:14,padding:"44px 24px",textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:12}}>🎬</div>
+              <div style={{fontSize:14,color:"rgba(255,255,255,0.4)",fontWeight:600}}>No pending reels</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.25)",marginTop:6}}>Cron runs Tue/Thu/Sat at 11am CST — or generate one manually above</div>
+            </div>
+          )}
+
+          {pendingReels.map((reel:any)=>{
+            const expanded=expandedPending===reel.id;
+            const dateStr=reel.generatedAt?new Date(reel.generatedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+            return(
+              <div key={reel.id} style={{background:"rgba(0,213,255,0.03)",border:`1px solid ${expanded?"rgba(0,213,255,0.25)":"rgba(255,255,255,0.08)"}`,borderRadius:14,overflow:"hidden"}}>
+                {/* Header row */}
+                <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedPending(expanded?null:reel.id)}>
+                  <div style={{flexShrink:0,width:32,height:32,borderRadius:10,background:"rgba(0,213,255,0.1)",border:"1px solid rgba(0,213,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🎬</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:800,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{reel.script?.title||reel.campaign||"Untitled Reel"}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginTop:2}}>Wk {reel.week} · {reel.day} · generated {dateStr}</div>
+                  </div>
+                  {reel.audioUrl&&<span style={{fontSize:10,fontWeight:700,color:"#22c55e",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:6,padding:"2px 8px",flexShrink:0}}>✓ Audio</span>}
+                  <span style={{fontSize:16,color:"rgba(255,255,255,0.3)",transition:"transform 0.2s",transform:expanded?"rotate(180deg)":"none",flexShrink:0}}>▼</span>
+                </div>
+
+                {/* Expanded storyboard */}
+                {expanded&&(
+                  <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"18px 18px 20px"}}>
+                    {/* Scene cards */}
+                    {reel.script?.scenes?.length>0&&(
+                      <div style={{marginBottom:18}}>
+                        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Storyboard</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                          {reel.script.scenes.map((sc:any,i:number)=>{
+                            // Find matching B-roll clip for this scene
+                            const clip=reel.suggestedClips?.find((c:any)=>c.query&&sc.pexelsQuery&&c.query.toLowerCase().includes(sc.pexelsQuery.split(" ")[0]?.toLowerCase()))||reel.suggestedClips?.[i];
+                            return(
+                              <div key={i} style={{display:"flex",gap:12,background:"rgba(0,0,0,0.25)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.05)"}}>
+                                {clip?.thumbnail&&<img src={clip.thumbnail} alt="" style={{width:96,height:54,objectFit:"cover",borderRadius:6,flexShrink:0,border:"1px solid rgba(255,255,255,0.08)"}}/>}
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+                                    <span style={{fontSize:10,fontWeight:700,color:C}}>{sc.timeCode}</span>
+                                    <span style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>{sc.duration}</span>
+                                  </div>
+                                  <div style={{fontSize:13,color:"#fff",fontWeight:600,marginBottom:3,lineHeight:1.4}}>"{sc.narration}"</div>
+                                  <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",lineHeight:1.5}}>{sc.visualDirection}</div>
+                                  {sc.pexelsQuery&&<div style={{fontSize:10,color:"rgba(0,213,255,0.45)",marginTop:3,fontStyle:"italic"}}>Pexels: {sc.pexelsQuery}</div>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Full voiceover */}
+                    {reel.script?.voiceoverScript&&(
+                      <div style={{background:"rgba(0,0,0,0.3)",borderRadius:10,padding:"13px 15px",marginBottom:16,border:"1px solid rgba(255,255,255,0.06)"}}>
+                        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:7}}>Full Voiceover Script</div>
+                        <p style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.75,margin:0,fontStyle:"italic"}}>{reel.script.voiceoverScript}</p>
+                      </div>
+                    )}
+
+                    {/* Audio player */}
+                    {reel.audioUrl&&(
+                      <div style={{background:"rgba(0,213,255,0.06)",border:"1px solid rgba(0,213,255,0.18)",borderRadius:10,padding:"13px 15px",marginBottom:16}}>
+                        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:C,marginBottom:8}}>Voiceover Preview</div>
+                        <audio controls src={reel.audioUrl} style={{width:"100%"}}/>
+                        <a href={reel.audioUrl} download="voiceover.mp3" style={{display:"inline-block",marginTop:10,padding:"7px 18px",borderRadius:7,background:"rgba(0,213,255,0.1)",color:C,fontSize:11,fontWeight:700,textDecoration:"none",border:"1px solid rgba(0,213,255,0.22)"}}>⬇ Download MP3</a>
+                      </div>
+                    )}
+
+                    {/* Music / color grade */}
+                    {(reel.script?.musicDirection||reel.script?.colorGrade)&&(
+                      <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
+                        {reel.script.musicDirection&&<div style={{flex:1,background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.05)",minWidth:160}}>
+                          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",marginBottom:4}}>MUSIC</div>
+                          <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",lineHeight:1.5}}>{reel.script.musicDirection}</div>
+                        </div>}
+                        {reel.script.colorGrade&&<div style={{flex:1,background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.05)",minWidth:160}}>
+                          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",marginBottom:4}}>COLOR GRADE</div>
+                          <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",lineHeight:1.5}}>{reel.script.colorGrade}</div>
+                        </div>}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                      <button onClick={()=>approvePending(reel)} style={{...btn,padding:"11px 24px",borderRadius:10,background:GRAD,color:"#fff",fontSize:13}}>✓ Approve → Upload & Post</button>
+                      <button onClick={()=>deletePending(reel.id)} style={{...btn,padding:"11px 20px",borderRadius:10,background:"rgba(239,68,68,0.08)",color:"#ef4444",fontSize:13,border:"1px solid rgba(239,68,68,0.2)"}}>✕ Discard</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
