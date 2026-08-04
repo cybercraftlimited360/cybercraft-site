@@ -2,16 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 
 const FB_API = "https://graph.facebook.com/v20.0";
 
+async function getPageAccessToken(systemUserToken: string, pageId: string): Promise<string | null> {
+  const res = await fetch(
+    `${FB_API}/${pageId}?fields=access_token&access_token=${systemUserToken}`
+  );
+  const data = await res.json();
+  return data.access_token ?? null;
+}
+
 async function postToFacebook(message: string, link?: string): Promise<{ id?: string; error?: string }> {
   const pageId = process.env.FB_PAGE_ID;
-  const token = process.env.FB_PAGE_TOKEN;
-  if (!pageId || !token) return { error: "FB_PAGE_ID or FB_PAGE_TOKEN not set" };
+  const systemToken = process.env.FB_PAGE_TOKEN;
+  if (!pageId || !systemToken) return { error: "FB_PAGE_ID or FB_PAGE_TOKEN not set" };
 
-  const body: Record<string, string> = { message, access_token: token };
+  // Exchange system user token for page access token
+  const pageToken = await getPageAccessToken(systemToken, pageId);
+  if (!pageToken) return { error: "Could not retrieve page access token from system user token" };
+
+  const body: Record<string, string> = { message, access_token: pageToken };
   if (link) body.link = link;
 
-  // Use /me/feed with page token (acts as the page itself)
-  const res = await fetch(`${FB_API}/me/feed`, {
+  const res = await fetch(`${FB_API}/${pageId}/feed`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
