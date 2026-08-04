@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   // If preview data passed, post it directly (user already approved it)
   if (previewData?.copy && previewData?.squareImageUrl && previewData?.landscapeImageUrl) {
-    const { copy, squareImageUrl, landscapeImageUrl, themeIndex } = previewData;
+    const { copy, squareImageUrl, landscapeImageUrl, campaignIndex } = previewData;
 
     const [igRes, fbRes, liRes] = await Promise.all([
       fetch(`${siteUrl}/api/social/post`, {
@@ -61,12 +61,12 @@ export async function POST(req: NextRequest) {
     });
     await redis.set("social:auto_posts", log.slice(0, 50));
 
-    // Mark theme as used
-    if (typeof themeIndex === "number") {
-      const used = await redis.get<number[]>("social:used_theme_indexes") ?? [];
-      if (!used.includes(themeIndex)) {
-        used.push(themeIndex);
-        await redis.set("social:used_theme_indexes", used);
+    // Mark campaign as used
+    if (typeof campaignIndex === "number") {
+      const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
+      if (!used.includes(campaignIndex)) {
+        used.push(campaignIndex);
+        await redis.set("social:used_campaign_indexes", used);
       }
     }
 

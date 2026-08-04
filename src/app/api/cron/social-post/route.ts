@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
-// Rotate through 4 premium layouts
-function pickLayout(themeIndex: number): number {
-  return (themeIndex % 4) + 1;
+function pickLayout(campaignIndex: number): number {
+  return (campaignIndex % 4) + 1;
 }
 
 export async function GET(req: NextRequest) {
@@ -15,31 +14,22 @@ export async function GET(req: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
 
   try {
-    // Track theme rotation in Redis
-    const usedIndexes = await redis.get<number[]>("social:used_theme_indexes") ?? [];
-    const TOTAL_THEMES = 20;
-    const available = Array.from({ length: TOTAL_THEMES }, (_, i) => i).filter(i => !usedIndexes.includes(i));
-    const pool = available.length > 0 ? available : Array.from({ length: TOTAL_THEMES }, (_, i) => i);
-    const themeIndex = pool[Math.floor(Math.random() * pool.length)];
-
-    // Step 1: Generate copy + fetch Pexels photo
+    // Step 1: Generate copy + fetch Pexels photo (campaign index tracked inside generate-post)
     const genRes = await fetch(`${siteUrl}/api/social/generate-post`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-      body: JSON.stringify({ themeIndex }),
+      body: JSON.stringify({}),
     });
 
     if (!genRes.ok) {
       return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
     }
 
-    const { copy, photoUrl, theme } = await genRes.json();
+    const { copy, photoUrl, campaign, week, day, campaignIndex } = await genRes.json();
+    const layout = pickLayout(campaignIndex ?? 0);
 
-    // Step 2: Build social image URLs
-    // Both square (Instagram) and landscape (Facebook/LinkedIn)
+    // Step 2: Build image URLs
     const imageBase = `${siteUrl}/social-image`;
-    const layout = pickLayout(themeIndex);
-
     const imageParams = new URLSearchParams({
       hl: copy.imageHeadline,
       sl: copy.imageSubline,
@@ -51,38 +41,22 @@ export async function GET(req: NextRequest) {
     const squareImageUrl = `${imageBase}?${imageParams.toString()}&aspect=square`;
     const landscapeImageUrl = `${imageBase}?${imageParams.toString()}&aspect=landscape`;
 
-    // Step 3: Post to all 3 platforms simultaneously
+    // Step 3: Post to all platforms simultaneously
     const [igRes, fbRes, liRes] = await Promise.all([
-      // Instagram — square image, punchy caption
       fetch(`${siteUrl}/api/social/post`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        body: JSON.stringify({
-          message: copy.instagramCaption,
-          imageUrl: squareImageUrl,
-          platforms: ["instagram"],
-        }),
+        body: JSON.stringify({ message: copy.instagramCaption, imageUrl: squareImageUrl, platforms: ["instagram"] }),
       }),
-
-      // Facebook — landscape image, conversational caption
       fetch(`${siteUrl}/api/social/post`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        body: JSON.stringify({
-          message: copy.facebookCaption,
-          imageUrl: landscapeImageUrl,
-          platforms: ["facebook"],
-        }),
+        body: JSON.stringify({ message: copy.facebookCaption, imageUrl: landscapeImageUrl, platforms: ["facebook"] }),
       }),
-
-      // LinkedIn — landscape image, professional caption
       fetch(`${siteUrl}/api/social/linkedin`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        body: JSON.stringify({
-          text: copy.linkedinCaption,
-          imageUrl: landscapeImageUrl,
-        }),
+        body: JSON.stringify({ text: copy.linkedinCaption, imageUrl: landscapeImageUrl }),
       }),
     ]);
 
@@ -92,15 +66,20 @@ export async function GET(req: NextRequest) {
       linkedin: await liRes.json().catch(() => ({ error: "parse failed" })),
     };
 
-    // Step 4: Mark theme as used
-    usedIndexes.push(themeIndex);
-    await redis.set("social:used_theme_indexes", usedIndexes);
+    // Step 4: Mark campaign as used
+    const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
+    if (!used.includes(campaignIndex)) {
+      used.push(campaignIndex);
+      await redis.set("social:used_campaign_indexes", used);
+    }
 
     // Step 5: Log it
     const log = await redis.get<unknown[]>("social:auto_posts") ?? [];
     log.unshift({
-      themeIndex,
-      theme,
+      campaignIndex,
+      campaign,
+      week,
+      day,
       layout,
       headline: copy.imageHeadline,
       photoUrl,
@@ -111,16 +90,8 @@ export async function GET(req: NextRequest) {
     });
     await redis.set("social:auto_posts", log.slice(0, 50));
 
-    console.log(`[social-cron] Posted: ${copy.imageHeadline}`);
-    return NextResponse.json({
-      ok: true,
-      headline: copy.imageHeadline,
-      layout,
-      photoUrl,
-      squareImageUrl,
-      landscapeImageUrl,
-      results,
-    });
+    console.log(`[social-cron] Week ${week} ${day} — ${copy.imageHeadline}`);
+    return NextResponse.json({ ok: true, headline: copy.imageHeadline, campaign, week, day, layout, photoUrl, squareImageUrl, landscapeImageUrl, results });
 
   } catch (err) {
     console.error("[social-cron] error:", err);

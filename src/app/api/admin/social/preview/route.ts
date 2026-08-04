@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Copy generation failed" }, { status: 500 });
   }
 
-  const { copy, photoUrl, themeIndex, theme } = await genRes.json();
+  const { copy, photoUrl, campaignIndex, campaign, week, day } = await genRes.json();
 
-  const layout = pickLayout(themeIndex);
+  const layout = pickLayout(campaignIndex ?? 0);
 
   const imageParams = new URLSearchParams({
     hl: copy.imageHeadline,
@@ -49,8 +49,10 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    themeIndex,
-    theme,
+    campaignIndex,
+    campaign,
+    week,
+    day,
     layout,
     copy,
     photoUrl,
