@@ -70,13 +70,19 @@ Return ONLY valid JSON, no markdown fences:
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "gpt-oss-120b",
+      model: "llama-3.3-70b",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 1200,
       temperature: 0.85,
       stream: false,
     }),
   });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    console.error("[generate-post] Cerebras error", res.status, errText);
+    return null;
+  }
 
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
@@ -85,6 +91,7 @@ Return ONLY valid JSON, no markdown fences:
   try {
     return JSON.parse(clean);
   } catch {
+    console.error("[generate-post] JSON parse failed, raw:", raw.slice(0, 300));
     return null;
   }
 }
@@ -127,7 +134,8 @@ export async function POST(req: NextRequest) {
 
   const copy = await generateCopy(theme);
   if (!copy) {
-    return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
+    const hasKey = !!process.env.CEREBRAS_API_KEY;
+    return NextResponse.json({ ok: false, error: "Copy generation failed", debug: { hasKey } }, { status: 500 });
   }
 
   const photoUrl = await fetchPexelsPhoto(copy.photoKeyword);
