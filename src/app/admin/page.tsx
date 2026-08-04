@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","followups","competitors","roi","referrals","reports"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -79,6 +79,7 @@ const CARD_GROUPS = [
     label: "Marketing", color: "#f59e0b",
     cards: [
       { tab:"ads"        as Tab, icon:"🎯", title:"AI Ads",      desc:"Generate LinkedIn, Facebook & Instagram ads" },
+      { tab:"social"     as Tab, icon:"📲", title:"Social",      desc:"Auto-post to all 3 platforms — trigger manually or let the cron run" },
       { tab:"ebooks"     as Tab, icon:"📖", title:"eBooks",      desc:"Lead magnet downloads & tracking" },
       { tab:"website"    as Tab, icon:"🌐", title:"Website",     desc:"Live site stats & quick edits" },
       { tab:"referrals"  as Tab, icon:"🤝", title:"Referrals",   desc:"Referral links & conversion tracking" },
@@ -218,6 +219,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="ebooks"     &&<EbooksTab      token={token} h={h}/>}
             {tab==="website"    &&<WebsiteTab     data={data}/>}
             {tab==="ads"        &&<AdsTab         token={token}/>}
+            {tab==="social"     &&<SocialTab      token={token}/>}
             {tab==="followups"  &&<FollowUpsTab   token={token}/>}
             {tab==="competitors"&&<CompetitorTab  token={token}/>}
             {tab==="roi"        &&<ROIReportTab   token={token}/>}
@@ -2731,6 +2733,135 @@ function SectionHeader({icon,title,sub}:{icon:string;title:string;sub:string}){
         <h2 style={{fontSize:"1.05rem",fontWeight:800,color:"#fff",margin:0}}>{title}</h2>
       </div>
       <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:0,lineHeight:1.5}}>{sub}</p>
+    </div>
+  );
+}
+
+// ── Social Tab ────────────────────────────────────────────────────────────────
+function SocialTab({token}:{token:string}) {
+  const accent="#a78bfa";
+  const [posting,setPosting]=useState(false);
+  const [result,setResult]=useState<any>(null);
+  const [error,setError]=useState<string|null>(null);
+  const [log,setLog]=useState<any[]>([]);
+  const [loadingLog,setLoadingLog]=useState(true);
+  const [previewUrl,setPreviewUrl]=useState<string|null>(null);
+
+  useEffect(()=>{
+    fetch("/api/admin/social/log",{headers:{"x-admin-token":token}})
+      .then(r=>r.json()).then(d=>{ if(d.posts) setLog(d.posts); })
+      .catch(()=>{})
+      .finally(()=>setLoadingLog(false));
+  },[token]);
+
+  async function triggerPost() {
+    setPosting(true); setError(null); setResult(null);
+    try {
+      const res=await fetch("/api/admin/social/trigger",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-admin-token":token},
+      });
+      const d=await res.json();
+      if(!res.ok){setError(d.error||"Post failed.");return;}
+      setResult(d);
+      if(d.squareImageUrl) setPreviewUrl(d.squareImageUrl);
+      // Prepend to log
+      setLog(prev=>[{headline:d.headline,layout:d.layout,photoUrl:d.photoUrl,squareImageUrl:d.squareImageUrl,postedAt:new Date().toISOString(),results:d.results},...prev].slice(0,20));
+    } catch(e:any){setError(e.message);}
+    finally{setPosting(false);}
+  }
+
+  const scheduleInfo = [
+    { day:"Tuesday",   time:"10:00 AM CST", label:"Today" },
+    { day:"Thursday",  time:"10:00 AM CST", label:"" },
+    { day:"Saturday",  time:"10:00 AM CST", label:"" },
+  ];
+
+  return (
+    <div style={{padding:"0 0 40px"}}>
+      <TabHeader icon="📲" title="Social Media Automation" sub="Auto-posts to Instagram, Facebook & LinkedIn every Tuesday · Thursday · Saturday at 10 AM CST" />
+
+      {/* Schedule strip */}
+      <div style={{display:"flex",gap:10,marginBottom:28,flexWrap:"wrap"}}>
+        {scheduleInfo.map(s=>(
+          <div key={s.day} style={{flex:"1 1 140px",background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.18)",borderRadius:12,padding:"14px 16px"}}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:accent,marginBottom:4}}>{s.day} {s.label&&<span style={{color:"#22c55e",marginLeft:4}}>{s.label}</span>}</div>
+            <div style={{fontSize:13,color:"rgba(255,255,255,0.55)"}}>{s.time}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Post Now button */}
+      <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:28,flexWrap:"wrap"}}>
+        <button
+          onClick={triggerPost}
+          disabled={posting}
+          style={{
+            padding:"14px 32px",borderRadius:12,border:"none",cursor:posting?"not-allowed":"pointer",
+            background:posting?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,
+            color:"#fff",fontSize:14,fontWeight:700,letterSpacing:"0.05em",
+            opacity:posting?0.5:1,transition:"opacity 0.2s",
+          }}
+        >
+          {posting?"⏳ Generating & posting…":"⚡ Post Now"}
+        </button>
+        <span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Generates fresh AI copy + picks a Pexels photo + posts to all 3 platforms</span>
+      </div>
+
+      {/* Error */}
+      {error&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 16px",color:"#ef4444",fontSize:13,marginBottom:20}}>{error}</div>}
+
+      {/* Result card */}
+      {result&&(
+        <div style={{background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.2)",borderRadius:14,padding:20,marginBottom:28}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:12}}>Last Post</div>
+          <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{result.headline}</div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
+            {["instagram","facebook","linkedin"].map(p=>{
+              const r=result.results?.[p];
+              const ok=r&&!r.error&&(r.ok!==false);
+              return(
+                <div key={p} style={{display:"flex",alignItems:"center",gap:6,background:ok?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${ok?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"}`,borderRadius:8,padding:"6px 12px"}}>
+                  <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:ok?"#22c55e":"#ef4444"}}>{ok?"✓":"✗"} {p}</span>
+                </div>
+              );
+            })}
+          </div>
+          {previewUrl&&(
+            <div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase"}}>Image Preview (square)</div>
+              <img src={previewUrl} alt="Post preview" style={{width:"100%",maxWidth:360,borderRadius:10,border:"1px solid rgba(255,255,255,0.08)"}} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Post log */}
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>Post History</div>
+        {loadingLog&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>Loading…</div>}
+        {!loadingLog&&log.length===0&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>No posts yet. Hit "Post Now" to start.</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {log.map((p:any,i:number)=>(
+            <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px",display:"flex",gap:14,alignItems:"flex-start"}}>
+              {p.squareImageUrl&&(
+                <img src={p.squareImageUrl} alt="" style={{width:64,height:64,borderRadius:8,objectFit:"cover",flexShrink:0,border:"1px solid rgba(255,255,255,0.08)"}} />
+              )}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.headline||"—"}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{p.postedAt?new Date(p.postedAt).toLocaleString():"—"}</div>
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {["instagram","facebook","linkedin"].map(pl=>{
+                  const r=p.results?.[pl];
+                  const ok=r&&!r.error;
+                  return <span key={pl} style={{fontSize:10,fontWeight:700,color:ok?"#22c55e":"rgba(255,255,255,0.2)",letterSpacing:"0.08em",textTransform:"uppercase"}}>{ok?"✓":"–"}{pl.slice(0,2).toUpperCase()}</span>;
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
