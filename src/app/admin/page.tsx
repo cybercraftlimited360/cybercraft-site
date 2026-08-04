@@ -2810,7 +2810,7 @@ function SocialTab({token}:{token:string}) {
 
   return (
     <div style={{padding:"0 0 40px"}}>
-      <TabHeader icon="📲" title="Social Media Automation" sub="Auto-posts to Instagram · Facebook · LinkedIn every Tuesday, Thursday & Saturday at 10 AM CST" />
+      <SectionHeader icon="📲" title="Social Media Automation" sub="Auto-posts to Instagram · Facebook · LinkedIn every Tuesday, Thursday & Saturday at 10 AM CST" />
 
       {/* Schedule strip */}
       <div style={{display:"flex",gap:10,marginBottom:28,flexWrap:"wrap"}}>
