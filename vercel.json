@@ -11,10 +11,6 @@
     {
       "path": "/api/cron/blog-post",
       "schedule": "0 9 * * 2"
-    },
-    {
-      "path": "/api/cron/publish-scheduled",
-      "schedule": "0 9 * * *"
     }
   ]
 }
