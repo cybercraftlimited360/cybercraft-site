@@ -2740,12 +2740,19 @@ function SectionHeader({icon,title,sub}:{icon:string;title:string;sub:string}){
 // ── Social Tab ────────────────────────────────────────────────────────────────
 function SocialTab({token}:{token:string}) {
   const accent="#a78bfa";
+
+  // Preview state (generated but not yet posted)
+  const [previewing,setPreviewing]=useState(false);
+  const [preview,setPreview]=useState<any>(null); // {copy, photoUrl, squareImageUrl, landscapeImageUrl, layout, themeIndex}
+
+  // Posting state
   const [posting,setPosting]=useState(false);
-  const [result,setResult]=useState<any>(null);
+  const [postResult,setPostResult]=useState<any>(null);
+
   const [error,setError]=useState<string|null>(null);
   const [log,setLog]=useState<any[]>([]);
   const [loadingLog,setLoadingLog]=useState(true);
-  const [previewUrl,setPreviewUrl]=useState<string|null>(null);
+  const [activeCaption,setActiveCaption]=useState<"instagram"|"facebook"|"linkedin">("instagram");
 
   useEffect(()=>{
     fetch("/api/admin/social/log",{headers:{"x-admin-token":token}})
@@ -2754,108 +2761,175 @@ function SocialTab({token}:{token:string}) {
       .finally(()=>setLoadingLog(false));
   },[token]);
 
-  async function triggerPost() {
-    setPosting(true); setError(null); setResult(null);
+  async function generatePreview() {
+    setPreviewing(true); setError(null); setPreview(null); setPostResult(null);
     try {
-      const res=await fetch("/api/admin/social/trigger",{
+      const res=await fetch("/api/admin/social/preview",{
         method:"POST",
         headers:{"Content-Type":"application/json","x-admin-token":token},
       });
       const d=await res.json();
+      if(!res.ok){setError(d.error||"Preview generation failed.");return;}
+      setPreview(d);
+    } catch(e:any){setError(e.message);}
+    finally{setPreviewing(false);}
+  }
+
+  async function confirmAndPost() {
+    if(!preview) return;
+    setPosting(true); setError(null);
+    try {
+      const res=await fetch("/api/admin/social/trigger",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-admin-token":token},
+        body:JSON.stringify({
+          previewData: preview,
+        }),
+      });
+      const d=await res.json();
       if(!res.ok){setError(d.error||"Post failed.");return;}
-      setResult(d);
-      if(d.squareImageUrl) setPreviewUrl(d.squareImageUrl);
-      // Prepend to log
-      setLog(prev=>[{headline:d.headline,layout:d.layout,photoUrl:d.photoUrl,squareImageUrl:d.squareImageUrl,postedAt:new Date().toISOString(),results:d.results},...prev].slice(0,20));
+      setPostResult(d);
+      setLog(prev=>[{
+        headline:preview.copy?.imageHeadline,
+        squareImageUrl:preview.squareImageUrl,
+        postedAt:new Date().toISOString(),
+        results:d.results,
+      },...prev].slice(0,30));
+      setPreview(null);
     } catch(e:any){setError(e.message);}
     finally{setPosting(false);}
   }
 
-  const scheduleInfo = [
-    { day:"Tuesday",   time:"10:00 AM CST", label:"Today" },
-    { day:"Thursday",  time:"10:00 AM CST", label:"" },
-    { day:"Saturday",  time:"10:00 AM CST", label:"" },
+  const scheduleInfo=[
+    {day:"Tuesday",time:"10:00 AM CST"},
+    {day:"Thursday",time:"10:00 AM CST"},
+    {day:"Saturday",time:"10:00 AM CST"},
   ];
+
+  const btnBase:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,letterSpacing:"0.06em",transition:"opacity 0.15s"};
 
   return (
     <div style={{padding:"0 0 40px"}}>
-      <TabHeader icon="📲" title="Social Media Automation" sub="Auto-posts to Instagram, Facebook & LinkedIn every Tuesday · Thursday · Saturday at 10 AM CST" />
+      <TabHeader icon="📲" title="Social Media Automation" sub="Auto-posts to Instagram · Facebook · LinkedIn every Tuesday, Thursday & Saturday at 10 AM CST" />
 
       {/* Schedule strip */}
       <div style={{display:"flex",gap:10,marginBottom:28,flexWrap:"wrap"}}>
         {scheduleInfo.map(s=>(
           <div key={s.day} style={{flex:"1 1 140px",background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.18)",borderRadius:12,padding:"14px 16px"}}>
-            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:accent,marginBottom:4}}>{s.day} {s.label&&<span style={{color:"#22c55e",marginLeft:4}}>{s.label}</span>}</div>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:accent,marginBottom:4}}>{s.day}</div>
             <div style={{fontSize:13,color:"rgba(255,255,255,0.55)"}}>{s.time}</div>
           </div>
         ))}
       </div>
 
-      {/* Post Now button */}
-      <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:28,flexWrap:"wrap"}}>
-        <button
-          onClick={triggerPost}
-          disabled={posting}
-          style={{
-            padding:"14px 32px",borderRadius:12,border:"none",cursor:posting?"not-allowed":"pointer",
-            background:posting?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,
-            color:"#fff",fontSize:14,fontWeight:700,letterSpacing:"0.05em",
-            opacity:posting?0.5:1,transition:"opacity 0.2s",
-          }}
-        >
-          {posting?"⏳ Generating & posting…":"⚡ Post Now"}
-        </button>
-        <span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Generates fresh AI copy + picks a Pexels photo + posts to all 3 platforms</span>
-      </div>
-
       {/* Error */}
       {error&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 16px",color:"#ef4444",fontSize:13,marginBottom:20}}>{error}</div>}
 
-      {/* Result card */}
-      {result&&(
-        <div style={{background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.2)",borderRadius:14,padding:20,marginBottom:28}}>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:12}}>Last Post</div>
-          <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{result.headline}</div>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
-            {["instagram","facebook","linkedin"].map(p=>{
-              const r=result.results?.[p];
-              const ok=r&&!r.error&&(r.ok!==false);
-              return(
-                <div key={p} style={{display:"flex",alignItems:"center",gap:6,background:ok?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${ok?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"}`,borderRadius:8,padding:"6px 12px"}}>
-                  <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:ok?"#22c55e":"#ef4444"}}>{ok?"✓":"✗"} {p}</span>
-                </div>
-              );
-            })}
-          </div>
-          {previewUrl&&(
-            <div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:8,letterSpacing:"0.08em",textTransform:"uppercase"}}>Image Preview (square)</div>
-              <img src={previewUrl} alt="Post preview" style={{width:"100%",maxWidth:360,borderRadius:10,border:"1px solid rgba(255,255,255,0.08)"}} />
+      {/* Success result */}
+      {postResult&&!preview&&(
+        <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:12,padding:"16px 20px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}>
+          <span style={{fontSize:22}}>✅</span>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:"#22c55e",marginBottom:4}}>Posted successfully to all 3 platforms</div>
+            <div style={{display:"flex",gap:10}}>
+              {["instagram","facebook","linkedin"].map(p=>{
+                const r=postResult.results?.[p];
+                const ok=r&&!r.error&&r.ok!==false;
+                return <span key={p} style={{fontSize:11,fontWeight:700,color:ok?"#22c55e":"#ef4444",letterSpacing:"0.08em",textTransform:"uppercase"}}>{ok?"✓":"✗"} {p}</span>;
+              })}
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Post log */}
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>Post History</div>
+      {/* STEP 1 — Generate Preview */}
+      {!preview&&(
+        <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:24,marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>Step 1 — Generate Preview</div>
+          <p style={{fontSize:14,color:"rgba(255,255,255,0.5)",margin:"0 0 20px",lineHeight:1.6}}>AI picks a theme, writes captions for all 3 platforms, fetches a Pexels photo, and renders the branded image. You review everything before it goes live.</p>
+          <button
+            onClick={generatePreview}
+            disabled={previewing}
+            style={{...btnBase,padding:"14px 32px",borderRadius:12,background:previewing?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,color:"#fff",fontSize:14,opacity:previewing?0.5:1}}
+          >
+            {previewing?"⏳ Generating preview…":"✨ Generate Preview"}
+          </button>
+        </div>
+      )}
+
+      {/* STEP 2 — Preview + Confirm */}
+      {preview&&(
+        <div style={{background:"rgba(167,139,250,0.05)",border:"1px solid rgba(167,139,250,0.22)",borderRadius:14,padding:24,marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:16}}>Step 2 — Review & Confirm</div>
+
+          {/* Image preview side-by-side */}
+          <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+            <div style={{flex:"1 1 200px"}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Square (Instagram)</div>
+              <img src={preview.squareImageUrl} alt="Square preview" style={{width:"100%",maxWidth:280,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",display:"block"}} />
+            </div>
+            <div style={{flex:"1 1 280px"}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Landscape (Facebook · LinkedIn)</div>
+              <img src={preview.landscapeImageUrl} alt="Landscape preview" style={{width:"100%",maxWidth:440,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",display:"block"}} />
+            </div>
+          </div>
+
+          {/* Caption tabs */}
+          <div style={{marginBottom:16}}>
+            <div style={{display:"flex",gap:6,marginBottom:12}}>
+              {(["instagram","facebook","linkedin"] as const).map(p=>(
+                <button key={p} onClick={()=>setActiveCaption(p)} style={{...btnBase,padding:"7px 16px",borderRadius:8,background:activeCaption===p?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.04)",color:activeCaption===p?accent:"rgba(255,255,255,0.45)",fontSize:12,border:`1px solid ${activeCaption===p?"rgba(167,139,250,0.35)":"rgba(255,255,255,0.08)"}`}}>
+                  {p.charAt(0).toUpperCase()+p.slice(1)}
+                </button>
+              ))}
+            </div>
+            <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"14px 16px",fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:180,overflow:"auto"}}>
+              {activeCaption==="instagram"&&preview.copy?.instagramCaption}
+              {activeCaption==="facebook"&&preview.copy?.facebookCaption}
+              {activeCaption==="linkedin"&&preview.copy?.linkedinCaption}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+            <button
+              onClick={confirmAndPost}
+              disabled={posting}
+              style={{...btnBase,padding:"13px 28px",borderRadius:10,background:posting?"rgba(255,255,255,0.05)":"#22c55e",color:"#000",fontSize:14,opacity:posting?0.5:1}}
+            >
+              {posting?"⏳ Posting…":"🚀 Confirm & Post to All 3"}
+            </button>
+            <button
+              onClick={()=>{setPreview(null);setPostResult(null);}}
+              disabled={posting}
+              style={{...btnBase,padding:"13px 24px",borderRadius:10,background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.5)",fontSize:13,border:"1px solid rgba(255,255,255,0.08)"}}
+            >
+              Discard & Regenerate
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Post History */}
+      <div>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",marginBottom:14}}>Post History</div>
         {loadingLog&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>Loading…</div>}
-        {!loadingLog&&log.length===0&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>No posts yet. Hit "Post Now" to start.</div>}
+        {!loadingLog&&log.length===0&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>No posts yet — generate your first preview above.</div>}
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {log.map((p:any,i:number)=>(
-            <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px",display:"flex",gap:14,alignItems:"flex-start"}}>
+            <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px",display:"flex",gap:14,alignItems:"center"}}>
               {p.squareImageUrl&&(
-                <img src={p.squareImageUrl} alt="" style={{width:64,height:64,borderRadius:8,objectFit:"cover",flexShrink:0,border:"1px solid rgba(255,255,255,0.08)"}} />
+                <img src={p.squareImageUrl} alt="" style={{width:56,height:56,borderRadius:8,objectFit:"cover",flexShrink:0,border:"1px solid rgba(255,255,255,0.08)"}} />
               )}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.headline||"—"}</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{p.postedAt?new Date(p.postedAt).toLocaleString():"—"}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.headline||"—"}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.28)"}}>{p.postedAt?new Date(p.postedAt).toLocaleString():"—"}</div>
               </div>
-              <div style={{display:"flex",gap:6,flexShrink:0}}>
+              <div style={{display:"flex",gap:8,flexShrink:0}}>
                 {["instagram","facebook","linkedin"].map(pl=>{
                   const r=p.results?.[pl];
-                  const ok=r&&!r.error;
-                  return <span key={pl} style={{fontSize:10,fontWeight:700,color:ok?"#22c55e":"rgba(255,255,255,0.2)",letterSpacing:"0.08em",textTransform:"uppercase"}}>{ok?"✓":"–"}{pl.slice(0,2).toUpperCase()}</span>;
+                  const ok=r&&!r.error&&r.ok!==false;
+                  return <span key={pl} style={{fontSize:10,fontWeight:700,color:ok?"#22c55e":"rgba(255,255,255,0.18)",letterSpacing:"0.07em",textTransform:"uppercase"}}>{ok?"✓":"–"} {pl.slice(0,2).toUpperCase()}</span>;
                 })}
               </div>
             </div>
