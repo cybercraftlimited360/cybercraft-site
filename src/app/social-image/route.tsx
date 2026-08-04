@@ -80,42 +80,43 @@ function CTAButton({ dark = false }: { dark?: boolean }) {
 }
 
 // ── Layout 1: Dark Immersive ──────────────────────────────────────────────────
-// Full photo, heavy bottom gradient, text bottom-left, logo top-right
+// Full photo, deep bottom gradient, text bottom-left, logo top-right
 function Layout1({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const large = W === 1080;
-  const headSize = headline.length > 28 ? (large ? 80 : 66) : (large ? 100 : 80);
+  const isSquare = W === H;
+  const headSize = headline.length > 30 ? (isSquare ? 62 : 52) : headline.length > 20 ? (isSquare ? 72 : 60) : (isSquare ? 82 : 68);
+  const bodySize = isSquare ? 18 : 16;
 
   return (
-    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#000" }}>
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#060606" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.82 }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.78 }} />
       )}
-      {/* Cinematic gradient */}
+      {/* Deep cinematic gradient — covers bottom 70% so long body text is always readable */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex",
-        background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.68) 62%, rgba(0,0,0,0.92) 100%)",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.08) 22%, rgba(0,0,0,0.55) 48%, rgba(0,0,0,0.88) 68%, rgba(0,0,0,0.97) 100%)",
       }} />
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 36, right: 40, display: "flex" }}>
-        <LogoMark size={68} />
+        <LogoMark size={62} />
       </div>
-      {/* Content bottom */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: large ? "0 56px 48px" : "0 44px 40px", display: "flex", flexDirection: "column", gap: "0" }}>
+      {/* Content anchored to bottom */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: isSquare ? "0 52px 44px" : "0 48px 36px", display: "flex", flexDirection: "column" }}>
         {subline && (
-          <span style={{ color: ACCENT, fontSize: "13px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "14px" }}>
+          <span style={{ color: ACCENT, fontSize: "12px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: "12px" }}>
             {subline}
           </span>
         )}
-        <span style={{ color: "#fff", fontSize: headSize, fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.02em", whiteSpace: "pre-wrap", marginBottom: "20px" }}>
+        <span style={{ color: "#fff", fontSize: headSize, fontWeight: 900, lineHeight: 1.02, letterSpacing: "-0.025em", whiteSpace: "pre-wrap", marginBottom: "18px" }}>
           {headline}
         </span>
         {body && (
-          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: "17px", lineHeight: 1.45, marginBottom: "24px", maxWidth: "680px" }}>
+          <span style={{ color: "rgba(255,255,255,0.78)", fontSize: bodySize, lineHeight: 1.6, marginBottom: "28px", maxWidth: isSquare ? "820px" : "960px" }}>
             {body}
           </span>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", letterSpacing: "0.06em" }}>{DOMAIN}</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px", letterSpacing: "0.08em" }}>{DOMAIN}</span>
           <CTAButton />
         </div>
       </div>
@@ -124,47 +125,48 @@ function Layout1({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
 }
 
 // ── Layout 2: Light Editorial Split ──────────────────────────────────────────
-// Left: off-white with large dark text. Right: photo. Logo on photo side.
+// Left: off-white text panel. Right: photo. Body text is the hero of this layout.
 function Layout2({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
   const isSquare = W === H;
-  const textW = isSquare ? Math.floor(W * 0.47) : Math.floor(W * 0.44);
+  // Give text side more room when there's a long body
+  const textW = isSquare ? Math.floor(W * 0.52) : Math.floor(W * 0.50);
   const photoW = W - textW;
-  const headSize = headline.length > 35 ? (isSquare ? 50 : 42) : (isSquare ? 62 : 52);
+  const headSize = headline.length > 30 ? (isSquare ? 42 : 36) : headline.length > 20 ? (isSquare ? 50 : 42) : (isSquare ? 58 : 48);
+  const bodySize = isSquare ? 15 : 14;
 
   return (
-    <div style={{ width: W, height: H, display: "flex", background: "#F5F3EF" }}>
-      {/* Text side */}
-      <div style={{ width: textW, height: H, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: isSquare ? "48px 40px" : "40px 44px", background: "#F5F3EF" }}>
-        <LogoMarkDark size={60} />
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <div style={{ width: W, height: H, display: "flex", background: "#F4F2EE" }}>
+      {/* Text panel */}
+      <div style={{ width: textW, height: H, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: isSquare ? "44px 36px 40px" : "36px 40px 32px", background: "#F4F2EE" }}>
+        <LogoMarkDark size={54} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", flex: 1, justifyContent: "center", padding: isSquare ? "28px 0" : "20px 0" }}>
           {subline && (
-            <span style={{ color: ACCENT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+            <span style={{ color: ACCENT, fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" }}>
               {subline}
             </span>
           )}
-          <span style={{ color: DARK, fontSize: headSize, fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.025em", whiteSpace: "pre-wrap" }}>
+          <span style={{ color: DARK, fontSize: headSize, fontWeight: 900, lineHeight: 1.02, letterSpacing: "-0.025em", whiteSpace: "pre-wrap" }}>
             {headline}
           </span>
           {body && (
-            <span style={{ color: "#555", fontSize: "15px", lineHeight: 1.55, marginTop: "4px" }}>
+            <span style={{ color: "#3a3a3a", fontSize: bodySize, lineHeight: 1.65, marginTop: "6px" }}>
               {body}
             </span>
           )}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <CTAButton dark />
-          <span style={{ color: "#aaa", fontSize: "12px", letterSpacing: "0.04em" }}>{DOMAIN}</span>
+          <span style={{ color: "#b0a898", fontSize: "11px", letterSpacing: "0.05em" }}>{DOMAIN}</span>
         </div>
       </div>
-      {/* Photo side */}
+      {/* Photo panel */}
       <div style={{ width: photoW, height: H, display: "flex", position: "relative" }}>
         {photoUrl && (
           <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         )}
-        {/* Subtle left edge fade */}
         <div style={{
-          position: "absolute", top: 0, left: 0, bottom: 0, width: "80px", display: "flex",
-          background: "linear-gradient(to right, #F5F3EF, rgba(245,243,239,0))",
+          position: "absolute", top: 0, left: 0, bottom: 0, width: "90px", display: "flex",
+          background: "linear-gradient(to right, #F4F2EE, rgba(244,242,238,0))",
         }} />
       </div>
     </div>
@@ -172,46 +174,48 @@ function Layout2({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
 }
 
 // ── Layout 3: Top Photo ───────────────────────────────────────────────────────
-// Photo fills top 52%, white content panel below.
+// Photo fills top 42%, generous white content panel below for long-form body.
 function Layout3({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const photoH = Math.floor(H * 0.52);
+  const isSquare = W === H;
+  const photoH = Math.floor(H * (isSquare ? 0.40 : 0.44));
   const contentH = H - photoH;
-  const headSize = headline.length > 38 ? 44 : 56;
+  const headSize = headline.length > 30 ? (isSquare ? 42 : 36) : headline.length > 20 ? (isSquare ? 50 : 42) : (isSquare ? 58 : 48);
+  const bodySize = isSquare ? 17 : 15;
 
   return (
     <div style={{ width: W, height: H, display: "flex", flexDirection: "column", background: "#fff" }}>
       {/* Photo */}
       <div style={{ width: W, height: photoH, display: "flex", position: "relative" }}>
         {photoUrl && (
-          <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%" }} />
         )}
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: "110px", display: "flex",
+          position: "absolute", bottom: 0, left: 0, right: 0, height: "90px", display: "flex",
           background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)",
         }} />
-        <div style={{ position: "absolute", top: 28, right: 36, display: "flex" }}>
-          <LogoMark size={64} />
+        <div style={{ position: "absolute", top: 24, right: 32, display: "flex" }}>
+          <LogoMark size={58} />
         </div>
       </div>
-      {/* Content */}
-      <div style={{ width: W, height: contentH, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "18px 56px 44px", background: "#fff" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {/* Content panel */}
+      <div style={{ width: W, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: isSquare ? "14px 52px 40px" : "12px 52px 32px", background: "#fff" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {subline && (
-            <span style={{ color: ACCENT, fontSize: "12px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+            <span style={{ color: ACCENT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" }}>
               {subline}
             </span>
           )}
-          <span style={{ color: DARK, fontSize: headSize, fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.025em", whiteSpace: "pre-wrap" }}>
+          <span style={{ color: DARK, fontSize: headSize, fontWeight: 900, lineHeight: 1.02, letterSpacing: "-0.025em", whiteSpace: "pre-wrap" }}>
             {headline}
           </span>
           {body && (
-            <span style={{ color: "#666", fontSize: "17px", lineHeight: 1.5, marginTop: "4px" }}>
+            <span style={{ color: "#444", fontSize: bodySize, lineHeight: 1.65, marginTop: "6px" }}>
               {body}
             </span>
           )}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: "#bbb", fontSize: "13px", letterSpacing: "0.04em" }}>{DOMAIN}</span>
+          <span style={{ color: "#c0bbb4", fontSize: "12px", letterSpacing: "0.05em" }}>{DOMAIN}</span>
           <CTAButton dark />
         </div>
       </div>
@@ -220,44 +224,45 @@ function Layout3({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
 }
 
 // ── Layout 4: Centered Dark Statement ────────────────────────────────────────
-// Full photo, dark uniform overlay, all text centered, accent line above.
+// Full photo, rich dark overlay, centered composition with body as editorial pull-quote.
 function Layout4({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const large = W === H;
-  const headSize = headline.length > 32 ? (large ? 70 : 58) : (large ? 90 : 72);
+  const isSquare = W === H;
+  const headSize = headline.length > 30 ? (isSquare ? 58 : 48) : headline.length > 20 ? (isSquare ? 68 : 56) : (isSquare ? 78 : 64);
+  const bodySize = isSquare ? 17 : 15;
 
   return (
-    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#000" }}>
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#040404" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.38 }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.32 }} />
       )}
+      {/* Rich vignette overlay */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex",
-        background: "rgba(0,0,0,0.48)",
+        background: "radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.72) 100%)",
       }} />
       {/* Logo top-right */}
-      <div style={{ position: "absolute", top: 36, right: 40, display: "flex" }}>
-        <LogoMark size={68} />
+      <div style={{ position: "absolute", top: 34, right: 40, display: "flex" }}>
+        <LogoMark size={62} />
       </div>
       {/* Domain bottom-left */}
-      <div style={{ position: "absolute", bottom: 40, left: 48, display: "flex" }}>
-        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px", letterSpacing: "0.06em" }}>{DOMAIN}</span>
+      <div style={{ position: "absolute", bottom: 36, left: 48, display: "flex" }}>
+        <span style={{ color: "rgba(255,255,255,0.28)", fontSize: "12px", letterSpacing: "0.08em" }}>{DOMAIN}</span>
       </div>
       {/* CTA bottom-right */}
-      <div style={{ position: "absolute", bottom: 36, right: 40, display: "flex" }}>
+      <div style={{ position: "absolute", bottom: 32, right: 40, display: "flex" }}>
         <CTAButton />
       </div>
-      {/* Centered content */}
+      {/* Centered editorial block */}
       <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex",
-        flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 72px",
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 80, display: "flex",
+        flexDirection: "column", alignItems: "center", justifyContent: "center", padding: isSquare ? "0 80px" : "0 88px",
       }}>
-        {/* Gradient accent line */}
         <div style={{
-          width: "52px", height: "3px", marginBottom: "32px", display: "flex",
+          width: "44px", height: "2px", marginBottom: "28px", display: "flex",
           background: `linear-gradient(to right, ${GRAD_START}, ${GRAD_END})`,
         }} />
         {subline && (
-          <span style={{ color: ACCENT, fontSize: "13px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", textAlign: "center", marginBottom: "18px" }}>
+          <span style={{ color: ACCENT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.28em", textTransform: "uppercase", textAlign: "center", marginBottom: "16px" }}>
             {subline}
           </span>
         )}
@@ -265,7 +270,7 @@ function Layout4({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
           {headline}
         </span>
         {body && (
-          <span style={{ color: "rgba(255,255,255,0.68)", fontSize: "19px", lineHeight: 1.55, textAlign: "center", maxWidth: "660px", marginTop: "26px" }}>
+          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: bodySize, lineHeight: 1.65, textAlign: "center", maxWidth: isSquare ? "720px" : "840px", marginTop: "22px" }}>
             {body}
           </span>
         )}

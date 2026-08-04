@@ -132,10 +132,12 @@ imageSubline:
 • Not a sentence. Not a pitch. A quiet label.
 
 imageBody:
-• ONE sentence. Exactly 10–16 words.
-• Expands the headline with one precise, earned insight. No pitch. No CTA. No "we."
-• Examples: "The businesses that scale fastest are the ones that engineered silence into their operations." / "Every missed call is a system that wasn't built."
-• NOT: "CyberCraft360 provides powerful automation solutions to help your business grow."
+• 2–3 sentences. 35–60 words total. This is the paragraph clients read and share.
+• Opens with a sharp, earned insight. Builds with one specific truth. Closes with the consequence or the implication — something that makes the reader pause.
+• Editorial in register. Precise nouns. Active verbs. No hedging, no qualifying, no pitching.
+• Think: the kind of copy that gets screenshotted and texted to a business partner.
+• Strong example: "Most businesses confuse tools with infrastructure. A CRM is a tool. A connected intelligence system that routes leads, answers calls, and triggers follow-ups without human input — that is infrastructure. The distinction is what separates businesses that scale from businesses that survive."
+• NOT: "CyberCraft360 helps your business grow with powerful automation solutions designed for success."
 
 CAPTION RULES:
 
