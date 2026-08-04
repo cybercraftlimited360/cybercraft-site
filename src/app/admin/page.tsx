@@ -2738,202 +2738,408 @@ function SectionHeader({icon,title,sub}:{icon:string;title:string;sub:string}){
 }
 
 // ── Social Tab ────────────────────────────────────────────────────────────────
-function SocialTab({token}:{token:string}) {
+// ── Social Tab ────────────────────────────────────────────────────────────────
+const CAMPAIGN_SCHEDULE=[
+  {week:1,day:"Monday",campaign:"We Don't Build Software"},{week:1,day:"Wednesday",campaign:"We Don't Build Software"},{week:1,day:"Friday",campaign:"We Don't Build Software"},
+  {week:2,day:"Monday",campaign:"Every Great Business Runs On Great Systems"},{week:2,day:"Wednesday",campaign:"Every Great Business Runs On Great Systems"},{week:2,day:"Friday",campaign:"Every Great Business Runs On Great Systems"},
+  {week:3,day:"Monday",campaign:"The Best Systems Are Invisible"},{week:3,day:"Wednesday",campaign:"The Best Systems Are Invisible"},{week:3,day:"Friday",campaign:"The Best Systems Are Invisible"},
+  {week:4,day:"Monday",campaign:"Automation Should Feel Human"},{week:4,day:"Wednesday",campaign:"Automation Should Feel Human"},{week:4,day:"Friday",campaign:"Automation Should Feel Human"},
+  {week:5,day:"Monday",campaign:"Designed For Your Industry — HVAC"},{week:5,day:"Wednesday",campaign:"Designed For Your Industry — Real Estate"},{week:5,day:"Friday",campaign:"Designed For Your Industry — Healthcare"},
+  {week:6,day:"Monday",campaign:"Remove The Friction"},{week:6,day:"Wednesday",campaign:"Remove The Friction"},{week:6,day:"Friday",campaign:"Remove The Friction"},
+  {week:7,day:"Monday",campaign:"Every Minute Matters"},{week:7,day:"Wednesday",campaign:"Every Minute Matters"},{week:7,day:"Friday",campaign:"Every Minute Matters"},
+  {week:8,day:"Monday",campaign:"From Chaos To Clarity"},{week:8,day:"Wednesday",campaign:"From Chaos To Clarity"},{week:8,day:"Friday",campaign:"From Chaos To Clarity"},
+  {week:9,day:"Monday",campaign:"Intelligence That Learns"},{week:9,day:"Wednesday",campaign:"Intelligence That Learns"},{week:9,day:"Friday",campaign:"Intelligence That Learns"},
+  {week:10,day:"Monday",campaign:"Your Business. One System."},{week:10,day:"Wednesday",campaign:"Your Business. One System."},{week:10,day:"Friday",campaign:"Your Business. One System."},
+  {week:11,day:"Monday",campaign:"Built To Scale"},{week:11,day:"Wednesday",campaign:"Built To Scale"},{week:11,day:"Friday",campaign:"Built To Scale"},
+  {week:12,day:"Monday",campaign:"The Future Is Already Working"},{week:12,day:"Wednesday",campaign:"The Future Is Already Working"},{week:12,day:"Friday",campaign:"The Future Is Already Working"},
+];
+
+function getUpcomingDates(weeks:number=2){
+  const slots=[];
+  const now=new Date();
+  const dayMap:Record<string,number>={Monday:1,Wednesday:3,Friday:5};
+  for(let d=0;d<weeks*7+2;d++){
+    const date=new Date(now); date.setDate(now.getDate()+d);
+    const dayName=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][date.getDay()];
+    if(dayMap[dayName]!==undefined){
+      date.setHours(16,0,0,0); // 10am CST = 4pm UTC
+      slots.push({date,dayName,label:date.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})});
+    }
+    if(slots.length>=6) break;
+  }
+  return slots;
+}
+
+function CharCount({text,limit}:{text:string;limit:number}){
+  const n=text?.length||0;
+  const over=n>limit;
+  return <span style={{fontSize:11,color:over?"#ef4444":"rgba(255,255,255,0.3)",fontWeight:600}}>{n}/{limit}</span>;
+}
+
+function EditableField({label,value,onChange,multiline=false,limit}:{label:string;value:string;onChange:(v:string)=>void;multiline?:boolean;limit?:number}){
+  return(
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)"}}>{label}</span>
+        {limit&&<CharCount text={value} limit={limit}/>}
+      </div>
+      {multiline
+        ?<textarea value={value} onChange={e=>onChange(e.target.value)} rows={5}
+            style={{width:"100%",background:"rgba(0,0,0,0.4)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:13,lineHeight:1.65,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+        :<input value={value} onChange={e=>onChange(e.target.value)}
+            style={{width:"100%",background:"rgba(0,0,0,0.4)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
+      }
+    </div>
+  );
+}
+
+function SocialTab({token}:{token:string}){
   const accent="#a78bfa";
+  const btnBase:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,letterSpacing:"0.06em",transition:"opacity 0.15s"};
 
-  // Preview state (generated but not yet posted)
+  // State
   const [previewing,setPreviewing]=useState(false);
-  const [preview,setPreview]=useState<any>(null); // {copy, photoUrl, squareImageUrl, landscapeImageUrl, layout, themeIndex}
-
-  // Posting state
+  const [preview,setPreview]=useState<any>(null);
   const [posting,setPosting]=useState(false);
   const [postResult,setPostResult]=useState<any>(null);
-
   const [error,setError]=useState<string|null>(null);
   const [log,setLog]=useState<any[]>([]);
   const [loadingLog,setLoadingLog]=useState(true);
-  const [activeCaption,setActiveCaption]=useState<"instagram"|"facebook"|"linkedin">("instagram");
+  const [activeCaption,setActiveCaption]=useState<"instagram"|"facebook"|"linkedin">("linkedin");
+  const [activeEdit,setActiveEdit]=useState<"image"|"captions">("image");
+  const [photoSearch,setPhotoSearch]=useState("");
+  const [swappingPhoto,setSwappingPhoto]=useState(false);
+  const [platforms,setPlatforms]=useState({instagram:true,facebook:true,linkedin:true});
+  const [nextCampaignIdx,setNextCampaignIdx]=useState<number>(0);
+  const [regenMode,setRegenMode]=useState<"all"|"copy"|"photo">("all");
+
+  // Editable copy fields
+  const [editHeadline,setEditHeadline]=useState("");
+  const [editSubline,setEditSubline]=useState("");
+  const [editBody,setEditBody]=useState("");
+  const [editIG,setEditIG]=useState("");
+  const [editFB,setEditFB]=useState("");
+  const [editLI,setEditLI]=useState("");
+  const [editLayout,setEditLayout]=useState(1);
 
   useEffect(()=>{
     fetch("/api/admin/social/log",{headers:{"x-admin-token":token}})
-      .then(r=>r.json()).then(d=>{ if(d.posts) setLog(d.posts); })
-      .catch(()=>{})
-      .finally(()=>setLoadingLog(false));
+      .then(r=>r.json()).then(d=>{if(d.posts)setLog(d.posts);})
+      .catch(()=>{}).finally(()=>setLoadingLog(false));
   },[token]);
 
-  async function generatePreview() {
-    setPreviewing(true); setError(null); setPreview(null); setPostResult(null);
-    try {
-      const res=await fetch("/api/admin/social/preview",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-admin-token":token},
-      });
+  function applyPreviewToEdits(d:any){
+    setEditHeadline(d.copy?.imageHeadline||"");
+    setEditSubline(d.copy?.imageSubline||"");
+    setEditBody(d.copy?.imageBody||"");
+    setEditIG(d.copy?.instagramCaption||"");
+    setEditFB(d.copy?.facebookCaption||"");
+    setEditLI(d.copy?.linkedinCaption||"");
+    setEditLayout(d.layout||1);
+    setNextCampaignIdx((d.campaignIndex||0)+1);
+  }
+
+  async function generatePreview(){
+    setPreviewing(true);setError(null);setPreview(null);setPostResult(null);
+    try{
+      const res=await fetch("/api/admin/social/preview",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token}});
       const d=await res.json();
       if(!res.ok){setError(d.error||"Preview generation failed.");return;}
-      setPreview(d);
-    } catch(e:any){setError(e.message);}
+      setPreview(d);applyPreviewToEdits(d);
+    }catch(e:any){setError(e.message);}
     finally{setPreviewing(false);}
   }
 
-  async function confirmAndPost() {
-    if(!preview) return;
-    setPosting(true); setError(null);
-    try {
+  async function swapPhoto(){
+    if(!preview||!photoSearch.trim())return;
+    setSwappingPhoto(true);
+    try{
+      const params=new URLSearchParams({hl:editHeadline,sl:editSubline,bd:editBody,layout:String(editLayout),photo:""});
+      // Fetch a new Pexels photo via generate-post with custom keyword hint
+      const res=await fetch("/api/admin/social/preview",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({photoKeyword:photoSearch})});
+      const d=await res.json();
+      if(res.ok&&d.photoUrl){
+        const siteUrl="https://cybercraft360.com";
+        const imageParams=new URLSearchParams({hl:editHeadline,sl:editSubline,bd:editBody,layout:String(editLayout),photo:d.photoUrl});
+        setPreview((prev:any)=>({...prev,photoUrl:d.photoUrl,squareImageUrl:`${siteUrl}/social-image?${imageParams.toString()}&aspect=square`,landscapeImageUrl:`${siteUrl}/social-image?${imageParams.toString()}&aspect=landscape`}));
+      }
+    }catch{}
+    finally{setSwappingPhoto(false);setPhotoSearch("");}
+  }
+
+  function rebuildImageUrls(hl:string,sl:string,bd:string,layout:number,photo:string){
+    const siteUrl="https://cybercraft360.com";
+    const p=new URLSearchParams({hl,sl,bd,layout:String(layout),...(photo?{photo}:{})});
+    setPreview((prev:any)=>({...prev,squareImageUrl:`${siteUrl}/social-image?${p.toString()}&aspect=square`,landscapeImageUrl:`${siteUrl}/social-image?${p.toString()}&aspect=landscape`}));
+  }
+
+  function updateField(field:"hl"|"sl"|"bd"|"layout",val:string|number){
+    const hl=field==="hl"?String(val):editHeadline;
+    const sl=field==="sl"?String(val):editSubline;
+    const bd=field==="bd"?String(val):editBody;
+    const lay=field==="layout"?Number(val):editLayout;
+    if(field==="hl")setEditHeadline(String(val));
+    if(field==="sl")setEditSubline(String(val));
+    if(field==="bd")setEditBody(String(val));
+    if(field==="layout")setEditLayout(Number(val));
+    if(preview?.photoUrl) rebuildImageUrls(hl,sl,bd,lay,preview.photoUrl);
+  }
+
+  async function confirmAndPost(){
+    if(!preview)return;
+    setPosting(true);setError(null);
+    const mergedPreview={
+      ...preview,
+      copy:{...preview.copy,imageHeadline:editHeadline,imageSubline:editSubline,imageBody:editBody,instagramCaption:editIG,facebookCaption:editFB,linkedinCaption:editLI},
+    };
+    const enabledPlatforms=Object.entries(platforms).filter(([,v])=>v).map(([k])=>k);
+    try{
       const res=await fetch("/api/admin/social/trigger",{
         method:"POST",
         headers:{"Content-Type":"application/json","x-admin-token":token},
-        body:JSON.stringify({
-          previewData: preview,
-        }),
+        body:JSON.stringify({previewData:mergedPreview,platforms:enabledPlatforms}),
       });
       const d=await res.json();
       if(!res.ok){setError(d.error||"Post failed.");return;}
       setPostResult(d);
-      setLog(prev=>[{
-        headline:preview.copy?.imageHeadline,
-        squareImageUrl:preview.squareImageUrl,
-        postedAt:new Date().toISOString(),
-        results:d.results,
-      },...prev].slice(0,30));
+      setLog(prev=>[{headline:editHeadline,campaign:preview.campaign,week:preview.week,squareImageUrl:preview.squareImageUrl,landscapeImageUrl:preview.landscapeImageUrl,postedAt:new Date().toISOString(),results:d.results,source:"manual"},...prev].slice(0,50));
       setPreview(null);
-    } catch(e:any){setError(e.message);}
+    }catch(e:any){setError(e.message);}
     finally{setPosting(false);}
   }
 
-  const scheduleInfo=[
-    {day:"Tuesday",time:"10:00 AM CST"},
-    {day:"Thursday",time:"10:00 AM CST"},
-    {day:"Saturday",time:"10:00 AM CST"},
-  ];
+  const upcoming=getUpcomingDates(2);
+  const totalPosts=36;
+  const postedCount=log.filter((p:any)=>p.postedAt).length;
 
-  const btnBase:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,letterSpacing:"0.06em",transition:"opacity 0.15s"};
+  return(
+    <div style={{padding:"0 0 60px"}}>
+      <SectionHeader icon="📲" title="Social Media Automation" sub="12-week premium campaign · Auto-posts Mon/Wed/Fri at 10 AM CST"/>
 
-  return (
-    <div style={{padding:"0 0 40px"}}>
-      <SectionHeader icon="📲" title="Social Media Automation" sub="Auto-posts to Instagram · Facebook · LinkedIn every Tuesday, Thursday & Saturday at 10 AM CST" />
-
-      {/* Schedule strip */}
-      <div style={{display:"flex",gap:10,marginBottom:28,flexWrap:"wrap"}}>
-        {scheduleInfo.map(s=>(
-          <div key={s.day} style={{flex:"1 1 140px",background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.18)",borderRadius:12,padding:"14px 16px"}}>
-            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:accent,marginBottom:4}}>{s.day}</div>
-            <div style={{fontSize:13,color:"rgba(255,255,255,0.55)"}}>{s.time}</div>
+      {/* ── Campaign Progress ── */}
+      <div style={{background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.18)",borderRadius:14,padding:"18px 20px",marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:accent,marginBottom:4}}>Campaign Progress</div>
+            <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>
+              {CAMPAIGN_SCHEDULE[Math.min(nextCampaignIdx,35)]
+                ? `Next: Week ${CAMPAIGN_SCHEDULE[Math.min(nextCampaignIdx,35)].week} · ${CAMPAIGN_SCHEDULE[Math.min(nextCampaignIdx,35)].campaign}`
+                : "12-Week Campaign Complete — Restarting"}
+            </div>
           </div>
-        ))}
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:22,fontWeight:800,color:"#fff"}}>{Math.min(postedCount,totalPosts)}<span style={{fontSize:13,color:"rgba(255,255,255,0.3)"}}>/{totalPosts}</span></div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.08em"}}>POSTS DONE</div>
+          </div>
+        </div>
+        <div style={{height:6,background:"rgba(255,255,255,0.06)",borderRadius:3,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${Math.min((postedCount/totalPosts)*100,100)}%`,background:`linear-gradient(90deg,${accent},#7c3aed)`,borderRadius:3,transition:"width 0.5s"}}/>
+        </div>
       </div>
 
-      {/* Error */}
+      {/* ── Upcoming Schedule (2 weeks) ── */}
+      <div style={{marginBottom:24}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>Upcoming Schedule — Next 2 Weeks</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {upcoming.map((slot,i)=>{
+            const idx=(nextCampaignIdx+i)%36;
+            const c=CAMPAIGN_SCHEDULE[idx];
+            const isNext=i===0;
+            return(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:14,background:isNext?"rgba(167,139,250,0.08)":"rgba(255,255,255,0.02)",border:`1px solid ${isNext?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.06)"}`,borderRadius:10,padding:"12px 16px"}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:isNext?accent:"rgba(255,255,255,0.15)",flexShrink:0}}/>
+                <div style={{flex:"0 0 120px"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:isNext?"#fff":"rgba(255,255,255,0.6)"}}>{slot.label}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>10:00 AM CST</div>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,color:isNext?accent:"rgba(255,255,255,0.35)",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Week {c?.week} · {slot.dayName}</div>
+                  <div style={{fontSize:12,color:isNext?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.4)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c?.campaign||"—"}</div>
+                </div>
+                {isNext&&<span style={{fontSize:10,fontWeight:800,letterSpacing:"0.1em",color:accent,background:"rgba(167,139,250,0.15)",padding:"4px 10px",borderRadius:20}}>NEXT</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Error ── */}
       {error&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 16px",color:"#ef4444",fontSize:13,marginBottom:20}}>{error}</div>}
 
-      {/* Success result */}
+      {/* ── Success ── */}
       {postResult&&!preview&&(
         <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:12,padding:"16px 20px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}>
           <span style={{fontSize:22}}>✅</span>
           <div>
-            <div style={{fontSize:14,fontWeight:700,color:"#22c55e",marginBottom:4}}>Posted successfully to all 3 platforms</div>
-            <div style={{display:"flex",gap:10}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#22c55e",marginBottom:6}}>Posted successfully</div>
+            <div style={{display:"flex",gap:12}}>
               {["instagram","facebook","linkedin"].map(p=>{
                 const r=postResult.results?.[p];
                 const ok=r&&!r.error&&r.ok!==false;
-                return <span key={p} style={{fontSize:11,fontWeight:700,color:ok?"#22c55e":"#ef4444",letterSpacing:"0.08em",textTransform:"uppercase"}}>{ok?"✓":"✗"} {p}</span>;
+                const skipped=!platforms[p as keyof typeof platforms];
+                return<span key={p} style={{fontSize:11,fontWeight:700,color:skipped?"rgba(255,255,255,0.2)":ok?"#22c55e":"#ef4444",letterSpacing:"0.08em",textTransform:"uppercase"}}>{skipped?"–":ok?"✓":"✗"} {p}</span>;
               })}
             </div>
           </div>
         </div>
       )}
 
-      {/* STEP 1 — Generate Preview */}
+      {/* ── STEP 1: Generate ── */}
       {!preview&&(
         <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:24,marginBottom:24}}>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>Step 1 — Generate Preview</div>
-          <p style={{fontSize:14,color:"rgba(255,255,255,0.5)",margin:"0 0 20px",lineHeight:1.6}}>AI picks a theme, writes captions for all 3 platforms, fetches a Pexels photo, and renders the branded image. You review everything before it goes live.</p>
-          <button
-            onClick={generatePreview}
-            disabled={previewing}
-            style={{...btnBase,padding:"14px 32px",borderRadius:12,background:previewing?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,color:"#fff",fontSize:14,opacity:previewing?0.5:1}}
-          >
-            {previewing?"⏳ Generating preview…":"✨ Generate Preview"}
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Generate Post</div>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 20px",lineHeight:1.65}}>AI follows the 12-week campaign brief — writes branded copy, selects a premium Pexels photo, and renders the image. Review and edit everything before it goes live.</p>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
+            {(["all","copy","photo"] as const).map(m=>(
+              <button key={m} onClick={()=>setRegenMode(m)} style={{...btnBase,padding:"8px 16px",borderRadius:8,fontSize:12,border:`1px solid ${regenMode===m?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,background:regenMode===m?"rgba(167,139,250,0.12)":"transparent",color:regenMode===m?accent:"rgba(255,255,255,0.4)"}}>
+                {m==="all"?"✨ Full Generate":m==="copy"?"📝 Copy Only":"🖼 Photo Only"}
+              </button>
+            ))}
+          </div>
+          <button onClick={generatePreview} disabled={previewing} style={{...btnBase,padding:"14px 32px",borderRadius:12,background:previewing?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,color:"#fff",fontSize:14,opacity:previewing?0.5:1}}>
+            {previewing?"⏳ Generating…":"✨ Generate Preview"}
           </button>
         </div>
       )}
 
-      {/* STEP 2 — Preview + Confirm */}
+      {/* ── STEP 2: Edit & Confirm ── */}
       {preview&&(
-        <div style={{background:"rgba(167,139,250,0.05)",border:"1px solid rgba(167,139,250,0.22)",borderRadius:14,padding:24,marginBottom:24}}>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:16}}>Step 2 — Review & Confirm</div>
+        <div style={{background:"rgba(167,139,250,0.04)",border:"1px solid rgba(167,139,250,0.2)",borderRadius:16,padding:24,marginBottom:24}}>
 
-          {/* Image preview side-by-side */}
-          <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
-            <div style={{flex:"1 1 200px"}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Square (Instagram)</div>
-              <img src={preview.squareImageUrl} alt="Square preview" style={{width:"100%",maxWidth:280,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",display:"block"}} />
+          {/* Header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:10}}>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:4}}>Review & Edit</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Week {preview.week} · {preview.day} · <span style={{color:"rgba(255,255,255,0.7)"}}>{preview.campaign}</span></div>
             </div>
-            <div style={{flex:"1 1 280px"}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Landscape (Facebook · LinkedIn)</div>
-              <img src={preview.landscapeImageUrl} alt="Landscape preview" style={{width:"100%",maxWidth:440,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",display:"block"}} />
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setActiveEdit("image")} style={{...btnBase,padding:"7px 16px",borderRadius:8,fontSize:12,border:`1px solid ${activeEdit==="image"?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,background:activeEdit==="image"?"rgba(167,139,250,0.12)":"transparent",color:activeEdit==="image"?accent:"rgba(255,255,255,0.4)"}}>🖼 Image</button>
+              <button onClick={()=>setActiveEdit("captions")} style={{...btnBase,padding:"7px 16px",borderRadius:8,fontSize:12,border:`1px solid ${activeEdit==="captions"?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,background:activeEdit==="captions"?"rgba(167,139,250,0.12)":"transparent",color:activeEdit==="captions"?accent:"rgba(255,255,255,0.4)"}}>📝 Captions</button>
             </div>
           </div>
 
-          {/* Caption tabs */}
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {activeEdit==="image"&&(
+            <>
+              {/* Image previews */}
+              <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+                <div style={{flex:"1 1 200px"}}>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Square · Instagram (1080×1080)</div>
+                  <img src={preview.squareImageUrl} alt="Square" style={{width:"100%",maxWidth:260,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",display:"block"}}/>
+                </div>
+                <div style={{flex:"1 1 280px"}}>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Landscape · Facebook & LinkedIn (1200×630)</div>
+                  <img src={preview.landscapeImageUrl} alt="Landscape" style={{width:"100%",maxWidth:420,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",display:"block"}}/>
+                </div>
+              </div>
+
+              {/* Layout switcher */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Layout</div>
+                <div style={{display:"flex",gap:8}}>
+                  {[1,2,3,4].map(n=>(
+                    <button key={n} onClick={()=>updateField("layout",n)} style={{...btnBase,width:44,height:36,borderRadius:8,fontSize:13,border:`1px solid ${editLayout===n?"rgba(167,139,250,0.5)":"rgba(255,255,255,0.1)"}`,background:editLayout===n?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.04)",color:editLayout===n?accent:"rgba(255,255,255,0.45)"}}>
+                      {n}
+                    </button>
+                  ))}
+                  <span style={{fontSize:11,color:"rgba(255,255,255,0.25)",alignSelf:"center",marginLeft:6}}>1=Dark · 2=Editorial · 3=Top Photo · 4=Centered</span>
+                </div>
+              </div>
+
+              {/* Editable image text */}
+              <EditableField label="Headline" value={editHeadline} onChange={v=>{setEditHeadline(v);updateField("hl",v);}} limit={50}/>
+              <EditableField label="Subline" value={editSubline} onChange={v=>{setEditSubline(v);updateField("sl",v);}} limit={60}/>
+              <EditableField label="Body Text" value={editBody} onChange={v=>{setEditBody(v);updateField("bd",v);}} limit={120}/>
+
+              {/* Photo swap */}
+              <div style={{background:"rgba(0,0,0,0.2)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"14px 16px",marginBottom:4}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Swap Photo</div>
+                <div style={{display:"flex",gap:8}}>
+                  <input value={photoSearch} onChange={e=>setPhotoSearch(e.target.value)} placeholder="e.g. luxury executive boardroom minimal…" onKeyDown={e=>e.key==="Enter"&&swapPhoto()}
+                    style={{flex:1,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:13,fontFamily:"inherit"}}/>
+                  <button onClick={swapPhoto} disabled={swappingPhoto||!photoSearch.trim()} style={{...btnBase,padding:"10px 18px",borderRadius:8,background:"rgba(167,139,250,0.15)",color:accent,fontSize:13,border:"1px solid rgba(167,139,250,0.3)",opacity:swappingPhoto||!photoSearch.trim()?0.4:1}}>
+                    {swappingPhoto?"…":"Search"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeEdit==="captions"&&(
+            <>
+              {/* Platform tabs */}
+              <div style={{display:"flex",gap:6,marginBottom:16}}>
+                {(["linkedin","instagram","facebook"] as const).map(p=>(
+                  <button key={p} onClick={()=>setActiveCaption(p)} style={{...btnBase,padding:"8px 18px",borderRadius:8,background:activeCaption===p?"rgba(167,139,250,0.18)":"rgba(255,255,255,0.04)",color:activeCaption===p?accent:"rgba(255,255,255,0.4)",fontSize:12,border:`1px solid ${activeCaption===p?"rgba(167,139,250,0.35)":"rgba(255,255,255,0.08)"}`}}>
+                    {p==="linkedin"?"LinkedIn":p==="instagram"?"Instagram":"Facebook"}
+                  </button>
+                ))}
+              </div>
+              {activeCaption==="linkedin"&&<EditableField label="LinkedIn Caption" value={editLI} onChange={setEditLI} multiline limit={3000}/>}
+              {activeCaption==="instagram"&&<EditableField label="Instagram Caption" value={editIG} onChange={setEditIG} multiline limit={2200}/>}
+              {activeCaption==="facebook"&&<EditableField label="Facebook Caption" value={editFB} onChange={setEditFB} multiline limit={63206}/>}
+            </>
+          )}
+
+          {/* Platform toggles */}
+          <div style={{marginTop:20,marginBottom:20,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"14px 16px"}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Post To</div>
+            <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
               {(["instagram","facebook","linkedin"] as const).map(p=>(
-                <button key={p} onClick={()=>setActiveCaption(p)} style={{...btnBase,padding:"7px 16px",borderRadius:8,background:activeCaption===p?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.04)",color:activeCaption===p?accent:"rgba(255,255,255,0.45)",fontSize:12,border:`1px solid ${activeCaption===p?"rgba(167,139,250,0.35)":"rgba(255,255,255,0.08)"}`}}>
-                  {p.charAt(0).toUpperCase()+p.slice(1)}
-                </button>
+                <label key={p} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                  <div onClick={()=>setPlatforms(prev=>({...prev,[p]:!prev[p]}))}
+                    style={{width:18,height:18,borderRadius:5,border:`2px solid ${platforms[p]?accent:"rgba(255,255,255,0.2)"}`,background:platforms[p]?"rgba(167,139,250,0.3)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",cursor:"pointer"}}>
+                    {platforms[p]&&<span style={{color:accent,fontSize:12,fontWeight:900}}>✓</span>}
+                  </div>
+                  <span style={{fontSize:13,color:platforms[p]?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.3)",textTransform:"capitalize",fontWeight:600}}>{p}</span>
+                </label>
               ))}
             </div>
-            <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"14px 16px",fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:180,overflow:"auto"}}>
-              {activeCaption==="instagram"&&preview.copy?.instagramCaption}
-              {activeCaption==="facebook"&&preview.copy?.facebookCaption}
-              {activeCaption==="linkedin"&&preview.copy?.linkedinCaption}
-            </div>
           </div>
 
-          {/* Action buttons */}
-          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-            <button
-              onClick={confirmAndPost}
-              disabled={posting}
-              style={{...btnBase,padding:"13px 28px",borderRadius:10,background:posting?"rgba(255,255,255,0.05)":"#22c55e",color:"#000",fontSize:14,opacity:posting?0.5:1}}
-            >
-              {posting?"⏳ Posting…":"🚀 Confirm & Post to All 3"}
+          {/* Actions */}
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <button onClick={confirmAndPost} disabled={posting||!Object.values(platforms).some(Boolean)} style={{...btnBase,padding:"13px 28px",borderRadius:10,background:posting?"rgba(255,255,255,0.05)":"#22c55e",color:"#000",fontSize:14,opacity:posting||!Object.values(platforms).some(Boolean)?0.5:1}}>
+              {posting?"⏳ Posting…":"🚀 Confirm & Post"}
             </button>
-            <button
-              onClick={()=>{setPreview(null);setPostResult(null);}}
-              disabled={posting}
-              style={{...btnBase,padding:"13px 24px",borderRadius:10,background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.5)",fontSize:13,border:"1px solid rgba(255,255,255,0.08)"}}
-            >
-              Discard & Regenerate
+            <button onClick={generatePreview} disabled={previewing||posting} style={{...btnBase,padding:"13px 20px",borderRadius:10,background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.5)",fontSize:13,border:"1px solid rgba(255,255,255,0.08)",opacity:previewing||posting?0.4:1}}>
+              {previewing?"⏳ Regenerating…":"↺ Regenerate"}
+            </button>
+            <button onClick={()=>{setPreview(null);setPostResult(null);setError(null);}} disabled={posting} style={{...btnBase,padding:"13px 20px",borderRadius:10,background:"transparent",color:"rgba(255,255,255,0.3)",fontSize:13,border:"1px solid rgba(255,255,255,0.06)"}}>
+              Discard
             </button>
           </div>
         </div>
       )}
 
-      {/* Post History */}
+      {/* ── Post History ── */}
       <div>
         <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",marginBottom:14}}>Post History</div>
         {loadingLog&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>Loading…</div>}
         {!loadingLog&&log.length===0&&<div style={{color:"rgba(255,255,255,0.25)",fontSize:13}}>No posts yet — generate your first preview above.</div>}
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {log.map((p:any,i:number)=>(
-            <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:"14px 16px",display:"flex",gap:14,alignItems:"center"}}>
-              {p.squareImageUrl&&(
-                <img src={p.squareImageUrl} alt="" style={{width:56,height:56,borderRadius:8,objectFit:"cover",flexShrink:0,border:"1px solid rgba(255,255,255,0.08)"}} />
-              )}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.headline||"—"}</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,0.28)"}}>{p.postedAt?new Date(p.postedAt).toLocaleString():"—"}</div>
+          {log.map((p:any,i:number)=>{
+            const igOk=p.results?.instagram&&!p.results.instagram.error&&p.results.instagram.ok!==false;
+            const fbOk=p.results?.facebook&&!p.results.facebook.error&&p.results.facebook.ok!==false;
+            const liOk=p.results?.linkedin&&!p.results.linkedin.error&&p.results.linkedin.ok!==false;
+            return(
+              <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:12,padding:"14px 16px",display:"flex",gap:14,alignItems:"center"}}>
+                {p.squareImageUrl&&<img src={p.squareImageUrl} alt="" style={{width:60,height:60,borderRadius:8,objectFit:"cover",flexShrink:0,border:"1px solid rgba(255,255,255,0.08)"}}/>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.headline||"—"}</div>
+                  {p.campaign&&<div style={{fontSize:11,color:accent,fontWeight:600,marginBottom:3,letterSpacing:"0.04em"}}>{p.campaign}{p.week?` · Week ${p.week}`:""}</div>}
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.28)"}}>{p.postedAt?new Date(p.postedAt).toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}):"—"}{p.source==="manual"?" · Manual":""}</div>
+                </div>
+                <div style={{display:"flex",gap:8,flexShrink:0,flexDirection:"column",alignItems:"flex-end"}}>
+                  <div style={{display:"flex",gap:8}}>
+                    <span style={{fontSize:10,fontWeight:800,color:igOk?"#22c55e":"rgba(255,255,255,0.18)",letterSpacing:"0.06em"}}>IG {igOk?"✓":"✗"}</span>
+                    <span style={{fontSize:10,fontWeight:800,color:fbOk?"#22c55e":"rgba(255,255,255,0.18)",letterSpacing:"0.06em"}}>FB {fbOk?"✓":"✗"}</span>
+                    <span style={{fontSize:10,fontWeight:800,color:liOk?"#22c55e":"rgba(255,255,255,0.18)",letterSpacing:"0.06em"}}>LI {liOk?"✓":"✗"}</span>
+                  </div>
+                  {p.landscapeImageUrl&&<a href={p.landscapeImageUrl} target="_blank" rel="noreferrer" style={{fontSize:10,color:"rgba(167,139,250,0.5)",textDecoration:"none",letterSpacing:"0.06em"}}>View Image ↗</a>}
+                </div>
               </div>
-              <div style={{display:"flex",gap:8,flexShrink:0}}>
-                {["instagram","facebook","linkedin"].map(pl=>{
-                  const r=p.results?.[pl];
-                  const ok=r&&!r.error&&r.ok!==false;
-                  return <span key={pl} style={{fontSize:10,fontWeight:700,color:ok?"#22c55e":"rgba(255,255,255,0.18)",letterSpacing:"0.07em",textTransform:"uppercase"}}>{ok?"✓":"–"} {pl.slice(0,2).toUpperCase()}</span>;
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
