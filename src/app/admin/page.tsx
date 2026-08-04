@@ -2814,6 +2814,20 @@ function SocialTab({token}:{token:string}){
   const [regenMode,setRegenMode]=useState<"all"|"copy"|"photo">("all");
   const [customPrompt,setCustomPrompt]=useState("");
 
+  // Upload & Post mode
+  const [postMode,setPostMode]=useState<"generate"|"upload">("generate");
+  const [uploadFile,setUploadFile]=useState<File|null>(null);
+  const [uploadPreviewUrl,setUploadPreviewUrl]=useState<string|null>(null);
+  const [uploadImageUrl,setUploadImageUrl]=useState<string|null>(null); // hosted URL
+  const [uploading,setUploading]=useState(false);
+  const [uploadLI,setUploadLI]=useState("");
+  const [uploadIG,setUploadIG]=useState("");
+  const [uploadFB,setUploadFB]=useState("");
+  const [uploadPlatforms,setUploadPlatforms]=useState({instagram:true,facebook:true,linkedin:true});
+  const [uploadPosting,setUploadPosting]=useState(false);
+  const [uploadResult,setUploadResult]=useState<any>(null);
+  const [uploadError,setUploadError]=useState<string|null>(null);
+
   // Editable copy fields
   const [editHeadline,setEditHeadline]=useState("");
   const [editSubline,setEditSubline]=useState("");
@@ -2909,6 +2923,66 @@ function SocialTab({token}:{token:string}){
     finally{setPosting(false);}
   }
 
+  function handleFileSelect(file:File){
+    setUploadFile(file);
+    setUploadImageUrl(null);
+    setUploadResult(null);
+    setUploadError(null);
+    const reader=new FileReader();
+    reader.onload=e=>setUploadPreviewUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function uploadImage(){
+    if(!uploadFile)return;
+    setUploading(true);setUploadError(null);
+    try{
+      const fd=new FormData();
+      fd.append("image",uploadFile);
+      const res=await fetch("/api/admin/social/upload-image",{method:"POST",headers:{"x-admin-token":token},body:fd});
+      const d=await res.json();
+      if(!res.ok){setUploadError(d.error||"Upload failed");return;}
+      setUploadImageUrl(d.imageUrl);
+    }catch(e:any){setUploadError(e.message);}
+    finally{setUploading(false);}
+  }
+
+  async function postUploadedImage(){
+    if(!uploadImageUrl)return;
+    setUploadPosting(true);setUploadError(null);
+    const siteUrl="https://cybercraft360.com";
+    try{
+      const enabled=Object.entries(uploadPlatforms).filter(([,v])=>v).map(([k])=>k);
+      const calls:Promise<Response>[]=[];
+      if(enabled.includes("instagram")&&uploadIG.trim()){
+        calls.push(fetch(`${siteUrl}/api/social/post`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET||""}`},body:JSON.stringify({message:uploadIG,imageUrl:uploadImageUrl,platforms:["instagram"]})}));
+      }
+      if(enabled.includes("facebook")&&uploadFB.trim()){
+        calls.push(fetch(`${siteUrl}/api/social/post`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET||""}`},body:JSON.stringify({message:uploadFB,imageUrl:uploadImageUrl,platforms:["facebook"]})}));
+      }
+      if(enabled.includes("linkedin")&&uploadLI.trim()){
+        calls.push(fetch(`${siteUrl}/api/social/linkedin`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET||""}`},body:JSON.stringify({text:uploadLI,imageUrl:uploadImageUrl})}));
+      }
+
+      // Route through trigger so auth is handled server-side
+      const res=await fetch("/api/admin/social/trigger",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-admin-token":token},
+        body:JSON.stringify({previewData:{
+          copy:{imageHeadline:"Uploaded Post",instagramCaption:uploadIG,facebookCaption:uploadFB,linkedinCaption:uploadLI},
+          squareImageUrl:uploadImageUrl,
+          landscapeImageUrl:uploadImageUrl,
+          campaignIndex:-1,
+        },platforms:enabled}),
+      });
+      const d=await res.json();
+      if(!res.ok){setUploadError(d.error||"Post failed");return;}
+      setUploadResult(d);
+      setLog(prev=>[{headline:"Uploaded Post",squareImageUrl:uploadImageUrl,landscapeImageUrl:uploadImageUrl,postedAt:new Date().toISOString(),results:d.results,source:"upload"},...prev].slice(0,50));
+    }catch(e:any){setUploadError(e.message);}
+    finally{setUploadPosting(false);}
+  }
+
   const upcoming=getUpcomingDates(2);
   const totalPosts=36;
   const postedCount=log.filter((p:any)=>p.postedAt).length;
@@ -2964,11 +3038,114 @@ function SocialTab({token}:{token:string}){
         </div>
       </div>
 
+      {/* ── Mode Toggle ── */}
+      {!preview&&(
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          {([["generate","✨ Generate Post"],["upload","📤 Upload & Post"]] as const).map(([m,label])=>(
+            <button key={m} onClick={()=>{setPostMode(m);setUploadResult(null);setUploadError(null);}} style={{...btnBase,padding:"10px 22px",borderRadius:10,fontSize:13,border:`1px solid ${postMode===m?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,background:postMode===m?"rgba(167,139,250,0.12)":"rgba(255,255,255,0.02)",color:postMode===m?accent:"rgba(255,255,255,0.45)"}}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Upload & Post ── */}
+      {postMode==="upload"&&!preview&&(
+        <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:24,marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Upload & Post</div>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 20px",lineHeight:1.65}}>Upload an existing image and post it directly to your platforms. Write a caption for each platform below.</p>
+
+          {/* Drop zone */}
+          {!uploadPreviewUrl?(
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,border:"2px dashed rgba(167,139,250,0.25)",borderRadius:12,padding:"40px 24px",cursor:"pointer",background:"rgba(167,139,250,0.03)",marginBottom:20,transition:"border-color 0.2s"}}
+              onDragOver={e=>{e.preventDefault();}}
+              onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f&&f.type.startsWith("image/"))handleFileSelect(f);}}>
+              <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFileSelect(f);}}/>
+              <span style={{fontSize:32}}>🖼</span>
+              <span style={{fontSize:14,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>Drop image here or click to browse</span>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.25)"}}>JPG, PNG, WebP · max 8MB</span>
+            </label>
+          ):(
+            <div style={{marginBottom:20}}>
+              <div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap",marginBottom:14}}>
+                <img src={uploadPreviewUrl} alt="Preview" style={{width:180,height:180,objectFit:"cover",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",flexShrink:0}}/>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginBottom:10}}>{uploadFile?.name} · {uploadFile?Math.round(uploadFile.size/1024)+" KB":""}</div>
+                  {!uploadImageUrl?(
+                    <button onClick={uploadImage} disabled={uploading} style={{...btnBase,padding:"10px 22px",borderRadius:10,background:uploading?"rgba(255,255,255,0.05)":`linear-gradient(135deg,${accent},#7c3aed)`,color:"#fff",fontSize:13,opacity:uploading?0.5:1,marginBottom:8}}>
+                      {uploading?"⏳ Uploading…":"☁️ Upload Image"}
+                    </button>
+                  ):(
+                    <div style={{fontSize:12,color:"#22c55e",fontWeight:700,marginBottom:8}}>✓ Uploaded — ready to post</div>
+                  )}
+                  <div><button onClick={()=>{setUploadFile(null);setUploadPreviewUrl(null);setUploadImageUrl(null);setUploadResult(null);}} style={{...btnBase,fontSize:11,padding:"4px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.35)"}}>Remove</button></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Captions */}
+          {uploadPreviewUrl&&(
+            <>
+              <div style={{display:"flex",gap:6,marginBottom:12}}>
+                {(["linkedin","instagram","facebook"] as const).map(p=>(
+                  <button key={p} onClick={()=>setActiveCaption(p)} style={{...btnBase,padding:"7px 16px",borderRadius:8,fontSize:12,background:activeCaption===p?"rgba(167,139,250,0.15)":"rgba(255,255,255,0.03)",color:activeCaption===p?accent:"rgba(255,255,255,0.4)",border:`1px solid ${activeCaption===p?"rgba(167,139,250,0.3)":"rgba(255,255,255,0.07)"}`}}>
+                    {p==="linkedin"?"LinkedIn":p==="instagram"?"Instagram":"Facebook"}
+                  </button>
+                ))}
+              </div>
+              {activeCaption==="linkedin"&&<EditableField label="LinkedIn Caption" value={uploadLI} onChange={setUploadLI} multiline limit={3000}/>}
+              {activeCaption==="instagram"&&<EditableField label="Instagram Caption" value={uploadIG} onChange={setUploadIG} multiline limit={2200}/>}
+              {activeCaption==="facebook"&&<EditableField label="Facebook Caption" value={uploadFB} onChange={setUploadFB} multiline limit={63206}/>}
+
+              {/* Platform toggles */}
+              <div style={{background:"rgba(0,0,0,0.2)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Post To</div>
+                <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                  {(["instagram","facebook","linkedin"] as const).map(p=>(
+                    <label key={p} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                      <div onClick={()=>setUploadPlatforms(prev=>({...prev,[p]:!prev[p]}))}
+                        style={{width:18,height:18,borderRadius:5,border:`2px solid ${uploadPlatforms[p]?accent:"rgba(255,255,255,0.2)"}`,background:uploadPlatforms[p]?"rgba(167,139,250,0.3)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+                        {uploadPlatforms[p]&&<span style={{color:accent,fontSize:12,fontWeight:900}}>✓</span>}
+                      </div>
+                      <span style={{fontSize:13,color:uploadPlatforms[p]?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.3)",textTransform:"capitalize",fontWeight:600}}>{p}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {uploadError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 16px",color:"#ef4444",fontSize:13,marginBottom:16}}>{uploadError}</div>}
+
+              {uploadResult&&(
+                <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:10,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:20}}>✅</span>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#22c55e",marginBottom:4}}>Posted successfully</div>
+                    <div style={{display:"flex",gap:10}}>
+                      {["instagram","facebook","linkedin"].map(p=>{
+                        const r=uploadResult.results?.[p];
+                        const ok=r&&!r.error&&r.ok!==false;
+                        const skipped=!uploadPlatforms[p as keyof typeof uploadPlatforms];
+                        return<span key={p} style={{fontSize:11,fontWeight:700,color:skipped?"rgba(255,255,255,0.2)":ok?"#22c55e":"#ef4444",letterSpacing:"0.08em",textTransform:"uppercase"}}>{skipped?"–":ok?"✓":"✗"} {p}</span>;
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={postUploadedImage} disabled={uploadPosting||!uploadImageUrl} style={{...btnBase,padding:"14px 32px",borderRadius:12,background:uploadPosting||!uploadImageUrl?"rgba(255,255,255,0.05)":`linear-gradient(135deg,#22c55e,#16a34a)`,color:"#fff",fontSize:14,opacity:uploadPosting||!uploadImageUrl?0.5:1}}>
+                {uploadPosting?"⏳ Posting…":!uploadImageUrl?"Upload image first →":"🚀 Post Now"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── Error ── */}
-      {error&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 16px",color:"#ef4444",fontSize:13,marginBottom:20}}>{error}</div>}
+      {postMode==="generate"&&error&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 16px",color:"#ef4444",fontSize:13,marginBottom:20}}>{error}</div>}
 
       {/* ── Success ── */}
-      {postResult&&!preview&&(
+      {postMode==="generate"&&postResult&&!preview&&(
         <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:12,padding:"16px 20px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}>
           <span style={{fontSize:22}}>✅</span>
           <div>
@@ -2986,7 +3163,7 @@ function SocialTab({token}:{token:string}){
       )}
 
       {/* ── STEP 1: Generate ── */}
-      {!preview&&(
+      {postMode==="generate"&&!preview&&(
         <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:24,marginBottom:24}}>
           <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Generate Post</div>
           <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 16px",lineHeight:1.65}}>AI follows the 12-week campaign brief by default. Add custom instructions below to override — describe the topic, tone, industry, or visual style you want.</p>
