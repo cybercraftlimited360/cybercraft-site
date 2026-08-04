@@ -72,7 +72,7 @@ Return ONLY valid JSON, no markdown fences:
     body: JSON.stringify({
       model: "zai-glm-4.7",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 1200,
+      max_tokens: 4096,
       temperature: 0.85,
       stream: false,
     }),
