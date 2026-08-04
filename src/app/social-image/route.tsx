@@ -284,18 +284,35 @@ interface LayoutProps {
   H: number;
 }
 
+async function fetchPhotoAsDataUri(url: string): Promise<string> {
+  if (!url) return "";
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    if (!res.ok) return url;
+    const buf = await res.arrayBuffer();
+    const contentType = res.headers.get("content-type") ?? "image/jpeg";
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    return `data:${contentType};base64,${b64}`;
+  } catch {
+    return url;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
 
   const headline = searchParams.get("hl") ?? "AUTOMATE\nEVERYTHING.";
   const subline = searchParams.get("sl") ?? "AI Agency · Houston, TX";
   const body = searchParams.get("bd") ?? "";
-  const photoUrl = searchParams.get("photo") ?? "";
+  const rawPhotoUrl = searchParams.get("photo") ?? "";
   const layout = parseInt(searchParams.get("layout") ?? "1");
   const aspect = searchParams.get("aspect") ?? "square";
 
   const W = aspect === "landscape" ? 1200 : 1080;
   const H = aspect === "landscape" ? 630 : 1080;
+
+  // Fetch photo as data URI so Satori doesn't need to make external requests
+  const photoUrl = rawPhotoUrl ? await fetchPhotoAsDataUri(rawPhotoUrl) : "";
 
   const props: LayoutProps = { photoUrl, headline, subline, body, W, H };
 
