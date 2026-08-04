@@ -3363,6 +3363,7 @@ const PIPELINE_STEPS=["Writing Script","Generating Voiceover","Rendering Video",
 function ReelsTab({token}:{token:string}){
   const C="#00D5FF";
   const GRAD="linear-gradient(135deg,#00D5FF,#E64DFF)";
+  const btn:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,letterSpacing:"0.06em",transition:"all 0.15s"};
   // Post-Now pipeline state
   const [postNowMode,setPostNowMode]=useState<"auto"|"custom">("auto");
   const [postNowPrompt,setPostNowPrompt]=useState("");
@@ -3753,7 +3754,7 @@ function ReelsTab({token}:{token:string}){
 
                     {/* Actions */}
                     <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                      <button onClick={()=>approvePending(reel)} style={{...btn,padding:"11px 24px",borderRadius:10,background:GRAD,color:"#fff",fontSize:13}}>✓ Approve → Upload & Post</button>
+                      <button onClick={()=>{const vo=reel.script?.voiceoverScript||"";const h=reel.script?.hook||vo;setReelIG(`${h}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #CyberCraft360`);setReelFB(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com`);setReelLI(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #CyberCraft360`);setSection("upload");}} style={{...btn,padding:"11px 24px",borderRadius:10,background:GRAD,color:"#fff",fontSize:13}}>✓ Approve → Upload & Post</button>
                       <button onClick={()=>deletePending(reel.id)} style={{...btn,padding:"11px 20px",borderRadius:10,background:"rgba(239,68,68,0.08)",color:"#ef4444",fontSize:13,border:"1px solid rgba(239,68,68,0.2)"}}>✕ Discard</button>
                     </div>
                   </div>
