@@ -174,13 +174,14 @@ export async function GET(req: NextRequest) {
       body: JSON.stringify({ url: blogUrl }),
     }).catch(() => {});
 
-    // Auto-post to Facebook + LinkedIn
+    // Auto-post to Facebook + LinkedIn + Instagram
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
     const blogLink = `${siteUrl}/blog/${slug}`;
     const shareMessage = `New post: ${post.title}\n\nRead more → ${blogLink}`;
+    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(post.tags?.[0] ?? "AI Agency · Houston, TX")}`;
     let socialResult: Record<string, unknown> = {};
     try {
-      const [fbRes, liRes] = await Promise.all([
+      const [fbRes, liRes, igRes] = await Promise.all([
         fetch(`${siteUrl}/api/social/post`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
@@ -191,10 +192,16 @@ export async function GET(req: NextRequest) {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
           body: JSON.stringify({ text: shareMessage, link: blogLink }),
         }),
+        fetch(`${siteUrl}/api/social/post`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
+          body: JSON.stringify({ message: shareMessage, imageUrl: ogImageUrl, platforms: ["instagram"] }),
+        }),
       ]);
       socialResult = {
         facebook: await fbRes.json(),
         linkedin: await liRes.json(),
+        instagram: await igRes.json(),
       };
     } catch (e) {
       socialResult = { error: String(e) };
