@@ -91,8 +91,12 @@ Return ONLY valid JSON, no markdown fences:
   try {
     return JSON.parse(clean);
   } catch {
-    console.error("[generate-post] JSON parse failed, raw:", raw.slice(0, 300));
-    return null;
+    // Try extracting JSON object from anywhere in the response
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+    }
+    throw new Error(`JSON parse failed. Raw (first 400): ${raw.slice(0, 400)}`);
   }
 }
 
