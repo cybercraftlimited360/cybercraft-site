@@ -70,7 +70,7 @@ Return ONLY valid JSON, no markdown fences:
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "llama3.1-70b",
+      model: "zai-glm-4.7",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 1200,
       temperature: 0.85,
