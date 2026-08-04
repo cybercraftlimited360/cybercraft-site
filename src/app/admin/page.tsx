@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","reels","followups","competitors","roi","referrals","reports"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",reels:"🎬",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",reels:"Reels",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -80,6 +80,7 @@ const CARD_GROUPS = [
     cards: [
       { tab:"ads"        as Tab, icon:"🎯", title:"AI Ads",      desc:"Generate LinkedIn, Facebook & Instagram ads" },
       { tab:"social"     as Tab, icon:"📲", title:"Social",      desc:"Auto-post to all 3 platforms — trigger manually or let the cron run" },
+      { tab:"reels"      as Tab, icon:"🎬", title:"Reels",       desc:"CyberCraft360 Commercial Engine — cinematic brand films for all platforms" },
       { tab:"ebooks"     as Tab, icon:"📖", title:"eBooks",      desc:"Lead magnet downloads & tracking" },
       { tab:"website"    as Tab, icon:"🌐", title:"Website",     desc:"Live site stats & quick edits" },
       { tab:"referrals"  as Tab, icon:"🤝", title:"Referrals",   desc:"Referral links & conversion tracking" },
@@ -220,6 +221,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="website"    &&<WebsiteTab     data={data}/>}
             {tab==="ads"        &&<AdsTab         token={token}/>}
             {tab==="social"     &&<SocialTab      token={token}/>}
+            {tab==="reels"      &&<ReelsTab       token={token}/>}
             {tab==="followups"  &&<FollowUpsTab   token={token}/>}
             {tab==="competitors"&&<CompetitorTab  token={token}/>}
             {tab==="roi"        &&<ROIReportTab   token={token}/>}
@@ -3337,6 +3339,416 @@ function SocialTab({token}:{token:string}){
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Reels Tab — CyberCraft360 Commercial Engine v1.0 ─────────────────────────
+const REEL_CAMPAIGN_SCHEDULE = Array.from({length:36},(_,i)=>{
+  const weeks=["We Don't Build Software","Every Great Business Runs On Great Systems","The Best Systems Are Invisible","Automation Should Feel Human","Designed For Your Industry","Remove The Friction","Every Minute Matters","From Chaos To Clarity","Intelligence That Learns","Your Business. One System.","Built To Scale","The Future Is Already Working"];
+  const days=["Monday","Wednesday","Friday"];
+  return {week:Math.floor(i/3)+1,day:days[i%3],campaign:weeks[Math.floor(i/3)]};
+});
+
+const VOICE_PRESETS = [
+  {id:"pNInz6obpgDQGcFmaJgB",name:"Adam",desc:"Deep · Authoritative · Narration"},
+  {id:"ErXwobaYiN019PkySvjV",name:"Antoni",desc:"Confident · Well-rounded · Executive"},
+  {id:"VR6AewLTigWG4xSOukaG",name:"Arnold",desc:"Crisp · Commanding · Professional"},
+  {id:"21m00Tcm4TlvDq8ikWAM",name:"Rachel",desc:"Calm · Professional · Female"},
+  {id:"EXAVITQu4vr4xnSDxMaL",name:"Bella",desc:"Warm · Elegant · Female"},
+];
+
+function ReelsTab({token}:{token:string}){
+  const C="#00D5FF"; // site primary cyan
+  const GRAD="linear-gradient(135deg,#00D5FF,#E64DFF)";
+  const btn:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,letterSpacing:"0.06em",transition:"all 0.15s"};
+
+  // Script generation state
+  const [mode,setMode]=useState<"campaign"|"custom">("campaign");
+  const [campaignIdx,setCampaignIdx]=useState(0);
+  const [customPrompt,setCustomPrompt]=useState("");
+  const [generating,setGenerating]=useState(false);
+  const [script,setScript]=useState<any>(null);
+  const [clips,setClips]=useState<any[]>([]);
+  const [genError,setGenError]=useState<string|null>(null);
+
+  // Voiceover state
+  const [selectedVoice,setSelectedVoice]=useState(VOICE_PRESETS[0].id);
+  const [generatingVO,setGeneratingVO]=useState(false);
+  const [audioUrl,setAudioUrl]=useState<string|null>(null);
+  const [voiceError,setVoiceError]=useState<string|null>(null);
+
+  // Upload & post state
+  const [uploadFile,setUploadFile]=useState<File|null>(null);
+  const [uploadPreview,setUploadPreview]=useState<string|null>(null);
+  const [uploadedUrl,setUploadedUrl]=useState<string|null>(null);
+  const [uploading,setUploading]=useState(false);
+  const [reelLI,setReelLI]=useState("");
+  const [reelIG,setReelIG]=useState("");
+  const [reelFB,setReelFB]=useState("");
+  const [reelCapTab,setReelCapTab]=useState<"linkedin"|"instagram"|"facebook">("linkedin");
+  const [reelPlatforms,setReelPlatforms]=useState({instagram:true,facebook:true,linkedin:true});
+  const [posting,setPosting]=useState(false);
+  const [postResult,setPostResult]=useState<any>(null);
+  const [postError,setPostError]=useState<string|null>(null);
+
+  // Active section
+  const [section,setSection]=useState<"generate"|"upload">("generate");
+
+  async function generateScript(){
+    setGenerating(true);setGenError(null);setScript(null);setClips([]);setAudioUrl(null);
+    try{
+      const body=mode==="custom"?{customPrompt}:{campaignIndex:campaignIdx};
+      const res=await fetch("/api/admin/reels/generate-script",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(body)});
+      const d=await res.json();
+      if(!res.ok){setGenError(d.error||"Generation failed");return;}
+      setScript(d.script);
+      setClips(d.suggestedClips||[]);
+      // Pre-fill captions from script
+      const vo=d.script?.voiceoverScript||"";
+      const campaign=d.script?.title||"";
+      setReelLI(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360 #HoustonBusiness`);
+      setReelIG(`${d.script?.hook||vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #WorkflowAutomation #IntelligentSystems #CyberCraft360`);
+      setReelFB(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com`);
+    }catch(e:any){setGenError(e.message);}
+    finally{setGenerating(false);}
+  }
+
+  async function generateVoiceover(){
+    if(!script?.voiceoverScript)return;
+    setGeneratingVO(true);setVoiceError(null);setAudioUrl(null);
+    try{
+      const res=await fetch("/api/admin/reels/generate-voiceover",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({script:script.voiceoverScript,voiceId:selectedVoice})});
+      const d=await res.json();
+      if(!res.ok){setVoiceError(d.error||"Voiceover failed");return;}
+      setAudioUrl(d.audioUrl);
+    }catch(e:any){setVoiceError(e.message);}
+    finally{setGeneratingVO(false);}
+  }
+
+  function handleReelFile(file:File){
+    setUploadFile(file);setUploadedUrl(null);setPostResult(null);setPostError(null);
+    const r=new FileReader();
+    r.onload=e=>setUploadPreview(e.target?.result as string);
+    r.readAsDataURL(file);
+  }
+
+  async function uploadReel(){
+    if(!uploadFile)return;
+    setUploading(true);setPostError(null);
+    try{
+      const fd=new FormData();fd.append("image",uploadFile);
+      const res=await fetch("/api/admin/social/upload-image",{method:"POST",headers:{"x-admin-token":token},body:fd});
+      const d=await res.json();
+      if(!res.ok){setPostError(d.error||"Upload failed");return;}
+      setUploadedUrl(d.imageUrl);
+    }catch(e:any){setPostError(e.message);}
+    finally{setUploading(false);}
+  }
+
+  async function postReel(){
+    if(!uploadedUrl)return;
+    setPosting(true);setPostError(null);
+    try{
+      const res=await fetch("/api/admin/social/trigger",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({previewData:{copy:{imageHeadline:"Reel",instagramCaption:reelIG,facebookCaption:reelFB,linkedinCaption:reelLI},squareImageUrl:uploadedUrl,landscapeImageUrl:uploadedUrl,campaignIndex:-1}})});
+      const d=await res.json();
+      if(!res.ok){setPostError(d.error||"Post failed");return;}
+      setPostResult(d);
+    }catch(e:any){setPostError(e.message);}
+    finally{setPosting(false);}
+  }
+
+  return(
+    <div style={{padding:"0 0 80px"}}>
+      {/* ── Header ── */}
+      <div style={{marginBottom:28}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+          <span style={{fontSize:22}}>🎬</span>
+          <div>
+            <div style={{fontSize:18,fontWeight:800,color:"#fff",letterSpacing:"-0.01em"}}>Commercial Engine <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",color:C,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:20,padding:"2px 10px",verticalAlign:"middle"}}>v1.0</span></div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:2}}>Cinematic brand commercials · Apple-standard · Distributed as Reels</div>
+          </div>
+        </div>
+        {/* Philosophy bar */}
+        <div style={{background:"rgba(0,213,255,0.04)",border:"1px solid rgba(0,213,255,0.12)",borderRadius:10,padding:"10px 16px",fontSize:12,color:"rgba(255,255,255,0.5)",fontStyle:"italic",lineHeight:1.6}}>
+          "We don't create reels. We create 30-second Apple-style commercials that happen to be distributed on social media."
+        </div>
+      </div>
+
+      {/* ── Section toggle ── */}
+      <div style={{display:"flex",gap:8,marginBottom:24}}>
+        {([["generate","✦ Generate Commercial","Script + Voice + B-roll"],["upload","📤 Upload & Post","Finished reel → all platforms"]] as const).map(([s,label,sub])=>(
+          <button key={s} onClick={()=>setSection(s)} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left"}}>
+            <div style={{fontWeight:700}}>{label}</div>
+            <div style={{fontSize:11,fontWeight:400,color:section===s?"rgba(0,213,255,0.6)":"rgba(255,255,255,0.25)",marginTop:2}}>{sub}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════ GENERATE SECTION ══════════════════════════ */}
+      {section==="generate"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:20}}>
+
+          {/* Mode selector */}
+          <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>Commercial Brief</div>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              {(["campaign","custom"] as const).map(m=>(
+                <button key={m} onClick={()=>setMode(m)} style={{...btn,padding:"8px 18px",borderRadius:8,fontSize:12,border:`1px solid ${mode===m?"rgba(0,213,255,0.3)":"rgba(255,255,255,0.08)"}`,background:mode===m?"rgba(0,213,255,0.1)":"transparent",color:mode===m?C:"rgba(255,255,255,0.4)"}}>
+                  {m==="campaign"?"📅 12-Week Campaign":"✍️ Custom Brief"}
+                </button>
+              ))}
+            </div>
+
+            {mode==="campaign"?(
+              <div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:10}}>Select campaign slot:</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:6,maxHeight:220,overflowY:"auto"}}>
+                  {REEL_CAMPAIGN_SCHEDULE.map((c,i)=>(
+                    <button key={i} onClick={()=>setCampaignIdx(i)} style={{...btn,padding:"8px 12px",borderRadius:8,fontSize:11,textAlign:"left",border:`1px solid ${campaignIdx===i?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.06)"}`,background:campaignIdx===i?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:campaignIdx===i?C:"rgba(255,255,255,0.45)"}}>
+                      <div style={{fontWeight:700,fontSize:10,letterSpacing:"0.06em"}}>Wk {c.week} · {c.day}</div>
+                      <div style={{fontSize:10,color:campaignIdx===i?"rgba(0,213,255,0.7)":"rgba(255,255,255,0.3)",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.campaign}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ):(
+              <div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:8}}>Describe the commercial you want:</div>
+                <textarea value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)} rows={4}
+                  placeholder={'e.g. "A 30-second commercial about HVAC companies losing revenue from missed calls. Dark industrial visual. End with a strong CTA for AI voice agents."'}
+                  style={{width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:8,padding:"12px 14px",color:"#fff",fontSize:13,lineHeight:1.65,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+              </div>
+            )}
+
+            {genError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"10px 14px",color:"#ef4444",fontSize:12,marginTop:12}}>{genError}</div>}
+
+            <button onClick={generateScript} disabled={generating||(mode==="custom"&&!customPrompt.trim())} style={{...btn,marginTop:16,padding:"13px 28px",borderRadius:12,background:generating?"rgba(255,255,255,0.05)":GRAD,color:"#fff",fontSize:14,opacity:generating||(mode==="custom"&&!customPrompt.trim())?0.5:1}}>
+              {generating?"⏳ Writing Commercial…":"🎬 Generate Commercial"}
+            </button>
+          </div>
+
+          {/* Script output */}
+          {script&&(
+            <div style={{background:"rgba(0,213,255,0.03)",border:"1px solid rgba(0,213,255,0.15)",borderRadius:14,padding:22}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,flexWrap:"wrap",gap:10}}>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:C,marginBottom:4}}>Commercial Script</div>
+                  <div style={{fontSize:15,fontWeight:800,color:"#fff"}}>{script.title}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginTop:2}}>{script.duration} · {script.scenes?.length} scenes</div>
+                </div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"6px 12px",lineHeight:1.5}}>
+                  <div><strong style={{color:"rgba(255,255,255,0.6)"}}>Music:</strong> {script.musicDirection}</div>
+                  <div><strong style={{color:"rgba(255,255,255,0.6)"}}>Grade:</strong> {script.colorGrade}</div>
+                </div>
+              </div>
+
+              {/* Scene breakdown */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Scene Breakdown</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {script.scenes?.map((sc:any,i:number)=>(
+                    <div key={i} style={{display:"flex",gap:12,background:"rgba(0,0,0,0.25)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.05)"}}>
+                      <div style={{flexShrink:0,width:28,height:28,borderRadius:"50%",background:"rgba(0,213,255,0.12)",border:"1px solid rgba(0,213,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C}}>{sc.id}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+                          <span style={{fontSize:10,fontWeight:700,color:C,letterSpacing:"0.06em"}}>{sc.timeCode}</span>
+                          <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>{sc.duration}</span>
+                        </div>
+                        <div style={{fontSize:13,color:"#fff",fontWeight:600,marginBottom:4,lineHeight:1.4}}>"{sc.narration}"</div>
+                        <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",lineHeight:1.5}}>{sc.visualDirection}</div>
+                        {sc.pexelsQuery&&<div style={{fontSize:10,color:"rgba(0,213,255,0.5)",marginTop:4,fontStyle:"italic"}}>Pexels: {sc.pexelsQuery}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Full voiceover script */}
+              <div style={{background:"rgba(0,0,0,0.3)",borderRadius:10,padding:"14px 16px",marginBottom:20,border:"1px solid rgba(255,255,255,0.06)"}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Full Voiceover Script</div>
+                <p style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.75,margin:0,fontStyle:"italic"}}>{script.voiceoverScript}</p>
+              </div>
+
+              {/* End card */}
+              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                <div style={{flex:1,background:"rgba(0,0,0,0.4)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.06)"}}>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6}}>End Card</div>
+                  <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{script.endCard?.headline}</div>
+                  <div style={{fontSize:12,color:C,marginTop:4}}>{script.endCard?.cta}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:2}}>{script.endCard?.url}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Voiceover generator */}
+          {script&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>ElevenLabs Voiceover</div>
+
+              {/* Voice picker */}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                {VOICE_PRESETS.map(v=>(
+                  <button key={v.id} onClick={()=>setSelectedVoice(v.id)} style={{...btn,padding:"8px 14px",borderRadius:8,fontSize:12,border:`1px solid ${selectedVoice===v.id?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.08)"}`,background:selectedVoice===v.id?"rgba(0,213,255,0.1)":"rgba(255,255,255,0.02)",color:selectedVoice===v.id?C:"rgba(255,255,255,0.5)"}}>
+                    <div style={{fontWeight:700}}>{v.name}</div>
+                    <div style={{fontSize:10,color:selectedVoice===v.id?"rgba(0,213,255,0.6)":"rgba(255,255,255,0.25)",fontWeight:400}}>{v.desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              {voiceError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"10px 14px",color:"#ef4444",fontSize:12,marginBottom:12}}>{voiceError}</div>}
+
+              {audioUrl?(
+                <div style={{background:"rgba(0,213,255,0.06)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:10,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,color:C,fontWeight:700,marginBottom:10}}>✓ Voiceover Ready</div>
+                  <audio controls src={audioUrl} style={{width:"100%",marginBottom:10}}/>
+                  <a href={audioUrl} download="cybercraft360-voiceover.mp3" style={{display:"inline-block",padding:"8px 20px",borderRadius:8,background:"rgba(0,213,255,0.12)",color:C,fontSize:12,fontWeight:700,textDecoration:"none",border:"1px solid rgba(0,213,255,0.25)"}}>⬇ Download MP3</a>
+                </div>
+              ):(
+                <button onClick={generateVoiceover} disabled={generatingVO} style={{...btn,padding:"12px 26px",borderRadius:10,background:generatingVO?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.12)",color:C,fontSize:13,border:"1px solid rgba(0,213,255,0.25)",opacity:generatingVO?0.5:1}}>
+                  {generatingVO?"⏳ Generating Voiceover…":"🎙 Generate Voiceover"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Pexels B-roll suggestions */}
+          {clips.length>0&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6}}>Suggested B-Roll Clips</div>
+              <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:"0 0 14px",lineHeight:1.6}}>Premium stock footage matched to your commercial's visual direction. Click to preview on Pexels.</p>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
+                {clips.map((c:any,i:number)=>(
+                  <a key={i} href={`https://www.pexels.com/video/${c.id}/`} target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",borderRadius:10,overflow:"hidden",border:"1px solid rgba(255,255,255,0.08)",background:"#000",position:"relative"}}>
+                    <img src={c.thumbnail} alt="" style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block",opacity:0.85}}/>
+                    <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,background:"linear-gradient(to bottom,rgba(0,0,0,0) 40%,rgba(0,0,0,0.85) 100%)"}}/>
+                    <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"8px 10px"}}>
+                      <div style={{fontSize:10,color:"rgba(255,255,255,0.9)",fontWeight:700}}>{c.duration}s</div>
+                      <div style={{fontSize:9,color:"rgba(255,255,255,0.45)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.query}</div>
+                    </div>
+                    <div style={{position:"absolute",top:6,right:6,background:"rgba(0,213,255,0.15)",border:"1px solid rgba(0,213,255,0.3)",borderRadius:4,padding:"2px 6px",fontSize:9,color:C,fontWeight:700}}>HD</div>
+                  </a>
+                ))}
+              </div>
+              <div style={{marginTop:12,fontSize:11,color:"rgba(255,255,255,0.3)"}}>Combine these clips with your voiceover in CapCut, Premiere, or DaVinci Resolve → then upload the finished reel using "Upload & Post" above.</div>
+            </div>
+          )}
+
+          {/* Production guide */}
+          {script&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>Production Guide</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
+                {[
+                  {step:"01",title:"Download Voiceover",body:"Generate and download the MP3 above. This is your audio backbone."},
+                  {step:"02",title:"Download B-Roll",body:"Click clips above → Pexels free download. Pick 6–9 that match scene descriptions."},
+                  {step:"03",title:"Edit in CapCut / Premiere",body:"Import audio first. Trim clips to match narration timing. Use the scene breakdown as your edit guide."},
+                  {step:"04",title:"Color Grade",body:`Apply grade: ${script.colorGrade||"Reduced saturation, lifted blacks, warm highlights."}`},
+                  {step:"05",title:"Add Typography",body:"Use scene narration text as subtle lower-thirds (Satoshi Bold or Inter). End card: white logo on black, 3 seconds."},
+                  {step:"06",title:"Music",body:`${script.musicDirection||"Low ambient instrumental. Never louder than the voice."} Volume: -12dB under voiceover.`},
+                  {step:"07",title:"Export",body:"MP4 · H.264 · 1080×1920 (9:16) for Instagram/TikTok. 1920×1080 (16:9) for LinkedIn."},
+                  {step:"08",title:"Upload & Post",body:"Use the 'Upload & Post' tab above. Captions are pre-filled from the script."},
+                ].map(g=>(
+                  <div key={g.step} style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.05)"}}>
+                    <div style={{fontSize:10,fontWeight:800,color:C,letterSpacing:"0.1em",marginBottom:6}}>{g.step}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.8)",marginBottom:4}}>{g.title}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",lineHeight:1.6}}>{g.body}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════ UPLOAD & POST SECTION ══════════════════════════ */}
+      {section==="upload"&&(
+        <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6}}>Upload Finished Reel</div>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 18px",lineHeight:1.65}}>Upload your edited video file and post it to all platforms. Captions are pre-filled from the last generated script — edit as needed.</p>
+
+          {!uploadPreview?(
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,border:"2px dashed rgba(0,213,255,0.2)",borderRadius:12,padding:"44px 24px",cursor:"pointer",background:"rgba(0,213,255,0.02)",marginBottom:20}}
+              onDragOver={e=>e.preventDefault()}
+              onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleReelFile(f);}}>
+              <input type="file" accept="video/*,image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleReelFile(f);}}/>
+              <span style={{fontSize:36}}>🎬</span>
+              <span style={{fontSize:14,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>Drop your reel here or click to browse</span>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.25)"}}>MP4, MOV, or image · max 8MB</span>
+            </label>
+          ):(
+            <div style={{marginBottom:18}}>
+              <div style={{display:"flex",gap:14,alignItems:"flex-start",flexWrap:"wrap",marginBottom:12}}>
+                {uploadFile?.type.startsWith("video/")
+                  ?<video src={uploadPreview} controls style={{width:200,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)"}}/>
+                  :<img src={uploadPreview} alt="Preview" style={{width:200,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",objectFit:"cover"}}/>
+                }
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:10}}>{uploadFile?.name} · {uploadFile?Math.round(uploadFile.size/1024)+"KB":""}</div>
+                  {!uploadedUrl?(
+                    <button onClick={uploadReel} disabled={uploading} style={{...btn,padding:"10px 22px",borderRadius:10,background:uploading?"rgba(255,255,255,0.04)":GRAD,color:"#fff",fontSize:13,opacity:uploading?0.5:1,marginBottom:8}}>
+                      {uploading?"⏳ Uploading…":"☁️ Upload Reel"}
+                    </button>
+                  ):(
+                    <div style={{fontSize:12,color:"#22c55e",fontWeight:700,marginBottom:8}}>✓ Uploaded — ready to post</div>
+                  )}
+                  <button onClick={()=>{setUploadFile(null);setUploadPreview(null);setUploadedUrl(null);setPostResult(null);}} style={{...btn,fontSize:11,padding:"4px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.3)"}}>Remove</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {uploadPreview&&(
+            <>
+              {/* Caption tabs */}
+              <div style={{display:"flex",gap:6,marginBottom:12}}>
+                {(["linkedin","instagram","facebook"] as const).map(p=>(
+                  <button key={p} onClick={()=>setReelCapTab(p)} style={{...btn,padding:"7px 16px",borderRadius:8,fontSize:12,background:reelCapTab===p?"rgba(0,213,255,0.12)":"rgba(255,255,255,0.03)",color:reelCapTab===p?C:"rgba(255,255,255,0.4)",border:`1px solid ${reelCapTab===p?"rgba(0,213,255,0.3)":"rgba(255,255,255,0.07)"}`}}>
+                    {p==="linkedin"?"LinkedIn":p==="instagram"?"Instagram":"Facebook"}
+                  </button>
+                ))}
+              </div>
+              {reelCapTab==="linkedin"&&<EditableField label="LinkedIn Caption" value={reelLI} onChange={setReelLI} multiline limit={3000}/>}
+              {reelCapTab==="instagram"&&<EditableField label="Instagram Caption" value={reelIG} onChange={setReelIG} multiline limit={2200}/>}
+              {reelCapTab==="facebook"&&<EditableField label="Facebook Caption" value={reelFB} onChange={setReelFB} multiline limit={63206}/>}
+
+              {/* Platforms */}
+              <div style={{background:"rgba(0,0,0,0.2)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 16px",marginBottom:16}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Post To</div>
+                <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+                  {(["instagram","facebook","linkedin"] as const).map(p=>(
+                    <label key={p} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                      <div onClick={()=>setReelPlatforms(prev=>({...prev,[p]:!prev[p]}))} style={{width:18,height:18,borderRadius:5,border:`2px solid ${reelPlatforms[p]?C:"rgba(255,255,255,0.2)"}`,background:reelPlatforms[p]?"rgba(0,213,255,0.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+                        {reelPlatforms[p]&&<span style={{color:C,fontSize:11,fontWeight:900}}>✓</span>}
+                      </div>
+                      <span style={{fontSize:13,color:reelPlatforms[p]?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.3)",textTransform:"capitalize",fontWeight:600}}>{p}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {postError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"10px 14px",color:"#ef4444",fontSize:12,marginBottom:12}}>{postError}</div>}
+
+              {postResult&&(
+                <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:10,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:20}}>✅</span>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#22c55e",marginBottom:4}}>Reel posted successfully</div>
+                    <div style={{display:"flex",gap:10}}>
+                      {["instagram","facebook","linkedin"].map(p=>{const r=postResult.results?.[p];const ok=r&&!r.error&&r.ok!==false;const sk=!reelPlatforms[p as keyof typeof reelPlatforms];return<span key={p} style={{fontSize:11,fontWeight:700,color:sk?"rgba(255,255,255,0.2)":ok?"#22c55e":"#ef4444",letterSpacing:"0.08em",textTransform:"uppercase"}}>{sk?"–":ok?"✓":"✗"} {p}</span>;})}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={postReel} disabled={posting||!uploadedUrl} style={{...btn,padding:"14px 32px",borderRadius:12,background:posting||!uploadedUrl?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontSize:14,opacity:posting||!uploadedUrl?0.5:1}}>
+                {posting?"⏳ Posting…":!uploadedUrl?"Upload reel first →":"🚀 Post Reel Now"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
