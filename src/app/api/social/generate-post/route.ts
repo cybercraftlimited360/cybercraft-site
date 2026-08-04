@@ -81,7 +81,7 @@ Return ONLY valid JSON, no markdown fences:
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     console.error("[generate-post] Cerebras error", res.status, errText);
-    return null;
+    throw new Error(`Cerebras ${res.status}: ${errText.slice(0, 300)}`);
   }
 
   const data = await res.json();
@@ -132,10 +132,15 @@ export async function POST(req: NextRequest) {
 
   const theme = MARKETING_THEMES[idx];
 
-  const copy = await generateCopy(theme);
+  let copy;
+  try {
+    copy = await generateCopy(theme);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error: "Copy generation failed", detail: msg }, { status: 500 });
+  }
   if (!copy) {
-    const hasKey = !!process.env.CEREBRAS_API_KEY;
-    return NextResponse.json({ ok: false, error: "Copy generation failed", debug: { hasKey } }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Copy generation failed", detail: "null return (JSON parse failed)" }, { status: 500 });
   }
 
   const photoUrl = await fetchPexelsPhoto(copy.photoKeyword);
