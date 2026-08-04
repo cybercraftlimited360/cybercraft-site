@@ -2,79 +2,93 @@ import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { REEL_CAMPAIGNS } from "@/app/api/admin/reels/generate-script/route";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
+
+function makeAdminToken() {
+  return Buffer.from(`cc360:${process.env.ADMIN_SECRET ?? ""}:v2`).toString("base64");
+}
+
+function buildCaptions(script: any): Record<string, string> {
+  const vo = script?.voiceoverScript ?? "";
+  const hook = script?.hook ?? vo;
+  return {
+    instagram: `${hook}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #WorkflowAutomation #IntelligentSystems #CyberCraft360`,
+    facebook: `${vo}\n\nSchedule Your Discovery → CyberCraft360.com`,
+    linkedin: `${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360 #HoustonBusiness`,
+  };
+}
+
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-
   try {
-    // Pick next unused reel campaign index
+    // Pick next unused campaign
     const used = await redis.get<number[]>("reels:used_campaign_indexes") ?? [];
-    const unused = REEL_CAMPAIGNS.map((_, i) => i).filter(i => !used.includes(i));
-    let campaignIdx = unused.length > 0 ? unused[0] : 0;
+    const allIdxs = REEL_CAMPAIGNS.map((_, i) => i);
+    let unused = allIdxs.filter(i => !used.includes(i));
     if (unused.length === 0) {
       await redis.set("reels:used_campaign_indexes", []);
-      campaignIdx = 0;
+      unused = allIdxs;
     }
-
+    const campaignIdx = unused[0];
     const campaign = REEL_CAMPAIGNS[campaignIdx];
+    const token = makeAdminToken();
 
-    // Generate script via our own endpoint
-    const scriptRes = await fetch(`${siteUrl}/api/admin/reels/generate-script`, {
+    // 1. Generate script + B-roll clips
+    const scriptRes = await fetch(`${SITE_URL}/api/admin/reels/generate-script`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-token": makeToken(process.env.ADMIN_SECRET ?? "") },
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
       body: JSON.stringify({ campaignIndex: campaignIdx }),
     });
-    if (!scriptRes.ok) throw new Error("Script generation failed");
+    if (!scriptRes.ok) throw new Error(`Script generation failed: ${scriptRes.status}`);
     const { script, suggestedClips } = await scriptRes.json();
 
-    // Generate voiceover
-    const voiceRes = await fetch(`${siteUrl}/api/admin/reels/generate-voiceover`, {
+    // 2. Generate voiceover
+    const voiceRes = await fetch(`${SITE_URL}/api/admin/reels/generate-voiceover`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-token": makeToken(process.env.ADMIN_SECRET ?? "") },
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
       body: JSON.stringify({ script: script.voiceoverScript }),
     });
     const voiceData = voiceRes.ok ? await voiceRes.json() : null;
+    if (!voiceData?.audioUrl) throw new Error("Voiceover generation failed");
 
-    // Store as pending reel for admin review
-    const reelId = `reels:pending:${Date.now()}`;
-    const pending = {
-      id: reelId,
-      campaignIndex: campaignIdx,
-      campaign: campaign.campaign,
-      week: campaign.week,
-      day: campaign.day,
-      script,
-      suggestedClips,
-      audioUrl: voiceData?.audioUrl ?? null,
-      generatedAt: new Date().toISOString(),
-      status: "pending_review",
-    };
+    // 3. Submit to Shotstack for rendering + auto-posting via webhook
+    const renderRes = await fetch(`${SITE_URL}/api/admin/reels/render`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-token": token },
+      body: JSON.stringify({
+        script,
+        voiceoverUrl: voiceData.audioUrl,
+        clips: suggestedClips ?? [],
+        campaignIndex: campaignIdx,
+        platforms: ["instagram", "facebook", "linkedin"],
+        captions: buildCaptions(script),
+      }),
+    });
 
-    await redis.set(reelId, pending, { ex: 7 * 24 * 3600 }); // 7 days
+    const renderData = renderRes.ok ? await renderRes.json() : null;
 
-    // Add to pending list
-    const list = await redis.get<string[]>("reels:pending_list") ?? [];
-    list.unshift(reelId);
-    await redis.set("reels:pending_list", list.slice(0, 20));
-
-    // Mark campaign used
+    // Mark campaign as used regardless of render result
     const updatedUsed = await redis.get<number[]>("reels:used_campaign_indexes") ?? [];
     if (!updatedUsed.includes(campaignIdx)) {
       updatedUsed.push(campaignIdx);
       await redis.set("reels:used_campaign_indexes", updatedUsed);
     }
 
-    console.log(`[reel-cron] Week ${campaign.week} ${campaign.day} — ${campaign.campaign}`);
-    return NextResponse.json({ ok: true, campaign: campaign.campaign, week: campaign.week });
+    if (!renderData?.renderId) {
+      // Shotstack not configured — log and return
+      console.warn("[reel-cron] Render skipped (no SHOTSTACK_API_KEY or render failed)");
+      return NextResponse.json({ ok: true, campaign: campaign.campaign, week: campaign.week, renderSkipped: true });
+    }
+
+    console.log(`[reel-cron] Wk${campaign.week} ${campaign.day} — render submitted: ${renderData.renderId}`);
+    return NextResponse.json({ ok: true, campaign: campaign.campaign, week: campaign.week, renderId: renderData.renderId });
 
   } catch (err) {
     console.error("[reel-cron]", err);
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }
-
-function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
