@@ -20,12 +20,14 @@ export async function POST(req: NextRequest) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
+  const body = await req.json().catch(() => ({}));
+  const customPrompt = body.customPrompt || undefined;
 
   // Generate copy + photo (same as cron but without posting)
   const genRes = await fetch(`${siteUrl}/api/social/generate-post`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-    body: JSON.stringify({}),
+    body: JSON.stringify(customPrompt ? { customPrompt } : {}),
   });
 
   if (!genRes.ok) {

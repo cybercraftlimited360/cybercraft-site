@@ -2812,6 +2812,7 @@ function SocialTab({token}:{token:string}){
   const [platforms,setPlatforms]=useState({instagram:true,facebook:true,linkedin:true});
   const [nextCampaignIdx,setNextCampaignIdx]=useState<number>(0);
   const [regenMode,setRegenMode]=useState<"all"|"copy"|"photo">("all");
+  const [customPrompt,setCustomPrompt]=useState("");
 
   // Editable copy fields
   const [editHeadline,setEditHeadline]=useState("");
@@ -2842,7 +2843,7 @@ function SocialTab({token}:{token:string}){
   async function generatePreview(){
     setPreviewing(true);setError(null);setPreview(null);setPostResult(null);
     try{
-      const res=await fetch("/api/admin/social/preview",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token}});
+      const res=await fetch("/api/admin/social/preview",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(customPrompt.trim()?{customPrompt}:{})});
       const d=await res.json();
       if(!res.ok){setError(d.error||"Preview generation failed.");return;}
       setPreview(d);applyPreviewToEdits(d);
@@ -2988,7 +2989,24 @@ function SocialTab({token}:{token:string}){
       {!preview&&(
         <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:24,marginBottom:24}}>
           <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Generate Post</div>
-          <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 20px",lineHeight:1.65}}>AI follows the 12-week campaign brief — writes branded copy, selects a premium Pexels photo, and renders the image. Review and edit everything before it goes live.</p>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 16px",lineHeight:1.65}}>AI follows the 12-week campaign brief by default. Add custom instructions below to override — describe the topic, tone, industry, or visual style you want.</p>
+
+          {/* Custom prompt */}
+          <div style={{marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)"}}>Custom Instructions <span style={{color:"rgba(255,255,255,0.18)",fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional — leave blank for campaign auto-schedule)</span></span>
+              {customPrompt&&<button onClick={()=>setCustomPrompt("")} style={{...btnBase,fontSize:11,padding:"3px 10px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.3)"}}>Clear</button>}
+            </div>
+            <textarea
+              value={customPrompt}
+              onChange={e=>setCustomPrompt(e.target.value)}
+              rows={3}
+              placeholder={"e.g. \"Make a post about how HVAC companies miss calls during peak season and how AI voice agents solve it. Use a bold headline. Dark industrial photo.\"\ne.g. \"Create a Houston-focused post about real estate lead response speed. Luxury interior photo.\""}
+              style={{width:"100%",background:customPrompt?"rgba(167,139,250,0.06)":"rgba(0,0,0,0.3)",border:`1px solid ${customPrompt?"rgba(167,139,250,0.3)":"rgba(255,255,255,0.08)"}`,borderRadius:10,padding:"12px 14px",color:"#fff",fontSize:13,lineHeight:1.65,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.2s,background 0.2s"}}
+            />
+            {customPrompt&&<div style={{fontSize:11,color:accent,marginTop:6,fontWeight:600}}>✦ Custom mode — campaign schedule will be bypassed for this post</div>}
+          </div>
+
           <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
             {(["all","copy","photo"] as const).map(m=>(
               <button key={m} onClick={()=>setRegenMode(m)} style={{...btnBase,padding:"8px 16px",borderRadius:8,fontSize:12,border:`1px solid ${regenMode===m?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,background:regenMode===m?"rgba(167,139,250,0.12)":"transparent",color:regenMode===m?accent:"rgba(255,255,255,0.4)"}}>
@@ -3010,7 +3028,7 @@ function SocialTab({token}:{token:string}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:10}}>
             <div>
               <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:4}}>Review & Edit</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>Week {preview.week} · {preview.day} · <span style={{color:"rgba(255,255,255,0.7)"}}>{preview.campaign}</span></div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.5)"}}>{preview.campaignIndex===-1?<span style={{color:accent,fontWeight:700}}>Custom Post</span>:<>Week {preview.week} · {preview.day} · <span style={{color:"rgba(255,255,255,0.7)"}}>{preview.campaign}</span></>}</div>
             </div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setActiveEdit("image")} style={{...btnBase,padding:"7px 16px",borderRadius:8,fontSize:12,border:`1px solid ${activeEdit==="image"?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,background:activeEdit==="image"?"rgba(167,139,250,0.12)":"transparent",color:activeEdit==="image"?accent:"rgba(255,255,255,0.4)"}}>🖼 Image</button>

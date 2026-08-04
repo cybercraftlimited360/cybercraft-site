@@ -80,6 +80,89 @@ const INSTAGRAM_BASE_TAGS = "#AIEngineering #BusinessAutomation #AIAgency #Houst
 
 const LINKEDIN_BASE_TAGS = "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #BusinessInfrastructure #AIArchitecture #HoustonBusiness #CyberCraft360";
 
+async function generateCustomCopy(customPrompt: string, ctaIndex: number): Promise<{
+  imageHeadline: string;
+  imageSubline: string;
+  imageBody: string;
+  linkedinCaption: string;
+  instagramCaption: string;
+  facebookCaption: string;
+  photoKeyword: string;
+} | null> {
+  const apiKey = process.env.CEREBRAS_API_KEY;
+  if (!apiKey) return null;
+
+  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
+
+  const prompt = `You are the Creative Director and Brand Strategist for CyberCraft360 — an AI Engineering company based in Houston, TX that designs intelligent automation systems for small and mid-size businesses.
+
+BRAND POSITIONING:
+CyberCraft360 is NOT a software company, chatbot company, or automation tool.
+CyberCraft360 IS: an AI Engineering Company, Intelligent Systems Partner, Business Infrastructure Partner.
+
+BRAND PERSONALITY:
+Confident. Minimal. Sophisticated. Calm. Intelligent. Executive. Modern. Editorial.
+Never loud. Never salesy. Never desperate. Never exaggerated.
+Write like Apple. Not like marketers.
+
+RULES:
+- Never use: "leverage", "revolutionize", "game-changer", "seamlessly", "cutting-edge", "dive in", "in today's world", "unlock", "empower", "harness", "transform"
+- Never describe CyberCraft360 as software, tool, or chatbot company
+- Every sentence must earn its place
+- Avoid buzzwords, hype, emojis, excessive punctuation
+- Use confidence instead of excitement
+
+CUSTOM INSTRUCTIONS FROM OWNER:
+${customPrompt}
+
+imageHeadline: Maximum 8 words. Bold, direct, minimal. No question marks.
+imageSubline: 4-6 words. Calm, editorial. Category or context line.
+imageBody: ONE sentence only. 12-18 words max. Expand the headline with a calm, intelligent insight.
+linkedinCaption: Executive tone. 120-160 words. End with: "${cta}  CyberCraft360.com" then a blank line then exactly: "${LINKEDIN_BASE_TAGS}"
+instagramCaption: Strong opening line. 60-80 words. End with: "${cta}  CyberCraft360.com" then a blank line then exactly: "${INSTAGRAM_BASE_TAGS}"
+facebookCaption: Storytelling approach. 80-110 words. No hashtags. End with: "${cta}  CyberCraft360.com"
+photoKeyword: A premium, descriptive Pexels search phrase relevant to this post's visual direction.
+
+Return ONLY valid JSON, no markdown fences:
+{
+  "imageHeadline": "HEADLINE HERE",
+  "imageSubline": "Category · Context",
+  "imageBody": "One precise sentence.",
+  "linkedinCaption": "...",
+  "instagramCaption": "...",
+  "facebookCaption": "...",
+  "photoKeyword": "premium descriptive phrase"
+}`;
+
+  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "zai-glm-4.7",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 4096,
+      temperature: 0.8,
+      stream: false,
+    }),
+  });
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content ?? "";
+  const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
+  try {
+    return JSON.parse(clean);
+  } catch {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+    }
+    return null;
+  }
+}
+
 async function generateCopy(campaign: typeof CAMPAIGNS[0], ctaIndex: number): Promise<{
   imageHeadline: string;
   imageSubline: string;
@@ -208,41 +291,61 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
+  const customPrompt: string | undefined = body.customPrompt?.trim() || undefined;
 
-  // Determine campaign index — rotate through all 36 posts
+  let copy: Awaited<ReturnType<typeof generateCopy>>;
   let campaignIndex: number;
-  if (typeof body.campaignIndex === "number") {
-    campaignIndex = body.campaignIndex % CAMPAIGNS.length;
+  let campaignLabel: string;
+  let week: number | null;
+  let day: string | null;
+
+  if (customPrompt) {
+    // Custom prompt mode — skip campaign rotation, generate freely
+    campaignIndex = -1;
+    campaignLabel = "Custom";
+    week = null;
+    day = null;
+    copy = await generateCustomCopy(customPrompt, Math.floor(Math.random() * CTA_OPTIONS.length));
   } else {
-    const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
-    const unused = CAMPAIGNS.map((_, i) => i).filter(i => !used.includes(i));
-    if (unused.length === 0) {
-      // Full rotation complete — start over
-      await redis.set("social:used_campaign_indexes", []);
-      campaignIndex = 0;
+    // Campaign rotation mode
+    if (typeof body.campaignIndex === "number") {
+      campaignIndex = body.campaignIndex % CAMPAIGNS.length;
     } else {
-      campaignIndex = unused[0]; // Always take the next in sequence
+      const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
+      const unused = CAMPAIGNS.map((_, i) => i).filter(i => !used.includes(i));
+      if (unused.length === 0) {
+        await redis.set("social:used_campaign_indexes", []);
+        campaignIndex = 0;
+      } else {
+        campaignIndex = unused[0];
+      }
     }
+    const campaign = CAMPAIGNS[campaignIndex];
+    campaignLabel = campaign.campaign;
+    week = campaign.week;
+    day = campaign.day;
+    copy = await generateCopy(campaign, campaignIndex % CTA_OPTIONS.length);
   }
 
-  const campaign = CAMPAIGNS[campaignIndex];
-  const ctaIndex = campaignIndex % CTA_OPTIONS.length;
-
-  const copy = await generateCopy(campaign, ctaIndex);
   if (!copy) {
     return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
   }
 
-  // Use campaign's curated Pexels queries + the AI-generated keyword as fallback
-  const pexelsQueries = [...campaign.pexelsQueries, copy.photoKeyword];
+  // Use curated Pexels queries for campaign posts, AI keyword for custom
+  let pexelsQueries: string[];
+  if (campaignIndex >= 0) {
+    pexelsQueries = [...CAMPAIGNS[campaignIndex].pexelsQueries, copy.photoKeyword];
+  } else {
+    pexelsQueries = [copy.photoKeyword];
+  }
   const photoUrl = await fetchPexelsPhoto(pexelsQueries);
 
   return NextResponse.json({
     ok: true,
     campaignIndex,
-    campaign: campaign.campaign,
-    week: campaign.week,
-    day: campaign.day,
+    campaign: campaignLabel,
+    week,
+    day,
     copy,
     photoUrl,
   });
