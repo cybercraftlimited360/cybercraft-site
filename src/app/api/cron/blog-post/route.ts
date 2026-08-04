@@ -190,7 +190,7 @@ export async function GET(req: NextRequest) {
         fetch(`${siteUrl}/api/social/linkedin`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-          body: JSON.stringify({ text: shareMessage, link: blogLink }),
+          body: JSON.stringify({ text: shareMessage, link: blogLink, imageUrl: ogImageUrl }),
         }),
         fetch(`${siteUrl}/api/social/post`, {
           method: "POST",

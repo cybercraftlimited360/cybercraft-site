@@ -2,11 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 
 const FB_API = "https://graph.facebook.com/v20.0";
 
-async function postToFacebook(message: string, link?: string): Promise<{ id?: string; error?: string }> {
+async function postToFacebook(message: string, imageUrl?: string, link?: string): Promise<{ id?: string; error?: string }> {
   const pageId = process.env.FB_PAGE_ID;
   const token = process.env.FB_PAGE_TOKEN;
   if (!pageId || !token) return { error: "FB_PAGE_ID or FB_PAGE_TOKEN not set" };
 
+  if (imageUrl) {
+    // Post with image via /photos endpoint for rich visual post
+    const body: Record<string, string> = {
+      caption: link ? `${message}\n\n${link}` : message,
+      url: imageUrl,
+      access_token: token,
+    };
+    const res = await fetch(`${FB_API}/${pageId}/photos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error?.message ?? "Facebook photo post failed" };
+    return { id: data.id };
+  }
+
+  // Text-only post
   const body: Record<string, string> = { message, access_token: token };
   if (link) body.link = link;
 
@@ -25,7 +43,6 @@ async function postToInstagram(imageUrl: string, caption: string): Promise<{ id?
   const token = process.env.IG_ACCESS_TOKEN;
   if (!igUserId || !token) return { error: "IG_USER_ID or IG_ACCESS_TOKEN not set" };
 
-  // Step 1: Create media container
   const containerRes = await fetch(`${FB_API}/${igUserId}/media`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -36,7 +53,6 @@ async function postToInstagram(imageUrl: string, caption: string): Promise<{ id?
     return { error: container.error?.message ?? "Instagram container creation failed" };
   }
 
-  // Step 2: Publish
   const publishRes = await fetch(`${FB_API}/${igUserId}/media_publish`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -59,7 +75,7 @@ export async function POST(req: NextRequest) {
   const targets: string[] = platforms ?? ["facebook", "instagram"];
 
   if (targets.includes("facebook")) {
-    results.facebook = await postToFacebook(message, link);
+    results.facebook = await postToFacebook(message, imageUrl, link);
   }
 
   if (targets.includes("instagram") && imageUrl) {
