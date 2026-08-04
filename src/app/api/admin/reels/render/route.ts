@@ -26,6 +26,72 @@ const SHARED_CSS = `
 @keyframes glow{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7);}60%{opacity:0.18;}100%{opacity:0.06;transform:translate(-50%,-50%) scale(1.1);}}
 `;
 
+// ── FUTURISTIC HUD OVERLAY ────────────────────────────────────────────────────
+function futuristicHtml(w: number, h: number, duration: number): string {
+  const bSize = Math.round(w * 0.048); // bracket arm length
+  const gap = Math.round(w * 0.056);   // corner inset
+  const scanDur = Math.max(4, Math.round(duration * 0.7));
+  return `<html><head><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;position:relative;}
+
+/* ── Corner brackets ── */
+@keyframes growBracket{0%{width:0;height:0;opacity:0;}50%{opacity:0.7;}100%{width:${bSize}px;height:${bSize}px;opacity:0.55;}}
+.c{position:absolute;width:0;height:0;}
+.tl{top:${gap}px;left:${gap}px;border-top:1.5px solid #00D5FF;border-left:1.5px solid #00D5FF;animation:growBracket 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) forwards;}
+.tr{top:${gap}px;right:${gap}px;border-top:1.5px solid #00D5FF;border-right:1.5px solid #00D5FF;animation:growBracket 0.8s 0.45s cubic-bezier(0.16,1,0.3,1) forwards;}
+.bl{bottom:${gap}px;left:${gap}px;border-bottom:1.5px solid #00D5FF;border-left:1.5px solid #00D5FF;animation:growBracket 0.8s 0.6s cubic-bezier(0.16,1,0.3,1) forwards;}
+.br{bottom:${gap}px;right:${gap}px;border-bottom:1.5px solid #00D5FF;border-right:1.5px solid #00D5FF;animation:growBracket 0.8s 0.75s cubic-bezier(0.16,1,0.3,1) forwards;}
+
+/* ── Scan line ── */
+@keyframes scan{0%{top:-2px;opacity:0;}4%{opacity:0.55;}92%{opacity:0.12;}100%{top:${h}px;opacity:0;}}
+.scan{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,213,255,0.25) 15%,rgba(255,255,255,0.7) 50%,rgba(0,213,255,0.25) 85%,transparent 100%);filter:blur(0.5px);box-shadow:0 0 10px rgba(0,213,255,0.6),0 0 20px rgba(0,213,255,0.2);animation:scan ${scanDur}s 1s linear infinite;}
+
+/* ── HUD data labels ── */
+@keyframes hudPulse{0%,100%{opacity:0.15;}50%{opacity:0.4;}}
+.hud{position:absolute;font-family:'Courier New',monospace;font-size:${Math.round(w*0.013)}px;color:#00D5FF;letter-spacing:0.22em;text-transform:uppercase;opacity:0;animation:hudPulse 4s var(--hd,0s) ease-in-out infinite;}
+
+/* ── Floating particles ── */
+@keyframes p1{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.45;}85%{opacity:0.15;}100%{opacity:0;transform:translate(22px,-42px);}}
+@keyframes p2{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.35;}85%{opacity:0.12;}100%{opacity:0;transform:translate(-18px,35px);}}
+@keyframes p3{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.5;}85%{opacity:0.18;}100%{opacity:0;transform:translate(28px,-18px);}}
+@keyframes p4{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.3;}85%{opacity:0.1;}100%{opacity:0;transform:translate(-24px,-30px);}}
+@keyframes p5{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.4;}85%{opacity:0.14;}100%{opacity:0;transform:translate(15px,28px);}}
+@keyframes p6{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.38;}85%{opacity:0.12;}100%{opacity:0;transform:translate(-20px,20px);}}
+.p{position:absolute;width:${Math.round(w*0.003)}px;height:${Math.round(w*0.003)}px;border-radius:50%;background:#00D5FF;box-shadow:0 0 6px rgba(0,213,255,0.8);}
+.p1{left:14%;top:28%;animation:p1 7s 0.5s ease-in-out infinite;}
+.p2{left:78%;top:38%;animation:p2 9s 1.2s ease-in-out infinite;}
+.p3{left:22%;top:62%;animation:p3 8s 2.1s ease-in-out infinite;}
+.p4{left:68%;top:72%;animation:p4 11s 0.8s ease-in-out infinite;}
+.p5{left:42%;top:48%;animation:p5 6s 3.2s ease-in-out infinite;}
+.p6{left:58%;top:22%;animation:p6 10s 1.8s ease-in-out infinite;}
+
+/* ── Subtle center crosshair ── */
+.cx{position:absolute;left:50%;top:50%;width:${Math.round(w*0.03)}px;height:1px;background:#00D5FF;transform:translate(-50%,-50%);opacity:0.12;}
+.cy{position:absolute;left:50%;top:50%;width:1px;height:${Math.round(w*0.03)}px;background:#00D5FF;transform:translate(-50%,-50%);opacity:0.12;}
+.cr{position:absolute;left:50%;top:50%;width:${Math.round(w*0.018)}px;height:${Math.round(w*0.018)}px;border:1px solid rgba(0,213,255,0.15);border-radius:50%;transform:translate(-50%,-50%);}
+
+/* ── Thin horizontal rule lines (ambient depth) ── */
+@keyframes ruleAnim{0%{opacity:0;width:0;}100%{opacity:0.08;width:${Math.round(w*0.28)}px;}}
+.rule{position:absolute;height:1px;background:linear-gradient(90deg,transparent,#00D5FF,transparent);animation:ruleAnim 1.5s 1s ease forwards;}
+.rl{left:${gap}px;}
+.rr{right:${gap}px;}
+</style></head><body>
+  <div class="c tl"></div>
+  <div class="c tr"></div>
+  <div class="c bl"></div>
+  <div class="c br"></div>
+  <div class="scan"></div>
+  <div class="hud" style="top:${Math.round(gap*1.6)}px;left:${Math.round(gap*1.55)}px;--hd:0.2s;">CC360 · AI</div>
+  <div class="hud" style="bottom:${Math.round(gap*1.6)}px;right:${Math.round(gap*1.55)}px;--hd:1.5s;text-align:right;">SYS · LIVE</div>
+  <div class="p p1"></div><div class="p p2"></div><div class="p p3"></div>
+  <div class="p p4"></div><div class="p p5"></div><div class="p p6"></div>
+  <div class="cx"></div><div class="cy"></div><div class="cr"></div>
+  <div class="rule rl" style="top:${Math.round(h*0.5)}px;"></div>
+  <div class="rule rr" style="top:${Math.round(h*0.5)}px;transform:scaleX(-1);"></div>
+</body></html>`;
+}
+
 // ── LOGO OVERLAY (persistent across all scenes) ───────────────────────────────
 function logoHtml(w: number, h: number): string {
   const logoH = Math.round(h * 0.028); // ~2.8% of frame height
@@ -148,6 +214,13 @@ function buildEdit(opts: {
     start: 0, length: contentDuration,
   };
 
+  // Futuristic HUD overlay — one clip per scene so brackets re-animate each cut
+  const hudClips = timed.map((sc: any) => ({
+    asset: { type: "html", html: futuristicHtml(W, H, sc.dur), width: W, height: H, background: "transparent" },
+    start: sc.start,
+    length: sc.dur,
+  }));
+
   // Scene text clips — hook = centered big, rest = bottom narration
   const textClips = timed.map((sc: any, i: number) => ({
     asset: {
@@ -184,9 +257,10 @@ function buildEdit(opts: {
       tracks: [
         { clips: bgClips },         // 0: BG video (bottom)
         { clips: [vignetteClip] },  // 1: cinematic gradient overlay
-        { clips: textClips },       // 2: animated scene narrations
-        { clips: [logoClip] },      // 3: persistent logo watermark
-        { clips: [endClip] },       // 4: branded end card (top)
+        { clips: hudClips },        // 2: futuristic HUD (brackets, scan, particles)
+        { clips: textClips },       // 3: animated scene narrations
+        { clips: [logoClip] },      // 4: persistent logo watermark
+        { clips: [endClip] },       // 5: branded end card (top)
       ],
     },
     output: {
