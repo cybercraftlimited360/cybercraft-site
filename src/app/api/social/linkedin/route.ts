@@ -14,7 +14,7 @@ async function uploadImageToLinkedIn(imageUrl: string, token: string, personId: 
     body: JSON.stringify({
       registerUploadRequest: {
         recipes: ["urn:li:digitalmediaRecipe:feedshare-image"],
-        owner: `urn:li:person:${personId}`,
+        owner: `urn:li:organization:${orgId}`,
         serviceRelationships: [{ relationshipType: "OWNER", identifier: "urn:li:userGeneratedContent" }],
       },
     }),
@@ -48,9 +48,9 @@ export async function POST(req: NextRequest) {
   }
 
   const token = process.env.LI_ACCESS_TOKEN;
-  const personId = process.env.LI_PERSON_ID;
-  if (!token || !personId) {
-    return NextResponse.json({ error: "LI_ACCESS_TOKEN or LI_PERSON_ID not set" }, { status: 500 });
+  const orgId = process.env.LI_ORGANIZATION_ID;
+  if (!token || !orgId) {
+    return NextResponse.json({ error: "LI_ACCESS_TOKEN or LI_ORGANIZATION_ID not set" }, { status: 500 });
   }
 
   const { text, link, imageUrl } = await req.json();
@@ -59,12 +59,12 @@ export async function POST(req: NextRequest) {
   // Try to upload image if provided
   let asset: string | null = null;
   if (imageUrl) {
-    asset = await uploadImageToLinkedIn(imageUrl, token, personId);
+    asset = await uploadImageToLinkedIn(imageUrl, token, orgId);
   }
 
   const body = asset
     ? {
-        author: `urn:li:person:${personId}`,
+        author: `urn:li:organization:${orgId}`,
         lifecycleState: "PUBLISHED",
         specificContent: {
           "com.linkedin.ugc.ShareContent": {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
       }
     : {
-        author: `urn:li:person:${personId}`,
+        author: `urn:li:organization:${orgId}`,
         lifecycleState: "PUBLISHED",
         specificContent: {
           "com.linkedin.ugc.ShareContent": {
