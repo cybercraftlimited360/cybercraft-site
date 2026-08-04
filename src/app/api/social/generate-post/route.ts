@@ -79,14 +79,12 @@ Return ONLY valid JSON, no markdown fences:
   });
 
   if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    console.error("[generate-post] Cerebras error", res.status, errText);
-    throw new Error(`Cerebras ${res.status}: ${errText.slice(0, 300)}`);
+    console.error("[generate-post] Cerebras error", res.status);
+    return null;
   }
 
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
-  if (!raw) throw new Error(`Empty content. Full response: ${JSON.stringify(data).slice(0, 600)}`);
   const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 
   try {
@@ -137,15 +135,9 @@ export async function POST(req: NextRequest) {
 
   const theme = MARKETING_THEMES[idx];
 
-  let copy;
-  try {
-    copy = await generateCopy(theme);
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ ok: false, error: "Copy generation failed", detail: msg }, { status: 500 });
-  }
+  const copy = await generateCopy(theme);
   if (!copy) {
-    return NextResponse.json({ ok: false, error: "Copy generation failed", detail: "null return (JSON parse failed)" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
   }
 
   const photoUrl = await fetchPexelsPhoto(copy.photoKeyword);
