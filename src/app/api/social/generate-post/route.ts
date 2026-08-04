@@ -86,6 +86,7 @@ Return ONLY valid JSON, no markdown fences:
 
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
+  if (!raw) throw new Error(`Empty content. Full response: ${JSON.stringify(data).slice(0, 600)}`);
   const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 
   try {
