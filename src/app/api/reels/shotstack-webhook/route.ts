@@ -99,9 +99,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
   }
 
-  const { captions, platforms, campaignIndex } = job;
-  const platformList: string[] = platforms ?? ["instagram", "facebook"];
+  const { captions, platforms, campaignIndex, autoPost } = job;
 
+  // Preview-only mode — just store the video URL, don't post
+  if (autoPost === false) {
+    await redis.set(`reels:shotstack:${renderId}`, { ...job, status: "done", videoUrl, readyAt: new Date().toISOString() }, { ex: 48 * 3600 });
+    console.log("[shotstack-webhook] Preview-only render done:", renderId, videoUrl);
+    return NextResponse.json({ ok: true, preview: true, videoUrl });
+  }
+
+  const platformList: string[] = platforms ?? ["instagram", "facebook"];
   const results: Record<string, any> = {};
 
   // Post to each platform in parallel

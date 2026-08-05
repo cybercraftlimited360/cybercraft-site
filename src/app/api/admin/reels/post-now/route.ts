@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { customPrompt, platforms, voiceId } = body;
+  const { customPrompt, platforms, voiceId, autoPost = true } = body;
   const token = makeToken(process.env.ADMIN_SECRET ?? "");
 
   // Pick campaign
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
       campaignIndex: campaignIdx,
       platforms: platforms ?? ["instagram", "facebook", "linkedin"],
       captions: buildCaptions(script),
+      autoPost,
     }),
   });
   const renderData = renderRes.ok ? await renderRes.json() : null;

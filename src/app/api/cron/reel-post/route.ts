@@ -19,6 +19,9 @@ function buildCaptions(script: any): Record<string, string> {
 }
 
 export async function GET(req: NextRequest) {
+  // DISABLED — reel scheduling paused
+  return NextResponse.json({ ok: false, disabled: true, message: "Reel scheduling is currently disabled" });
+
   const auth = req.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

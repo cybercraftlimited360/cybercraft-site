@@ -3376,6 +3376,9 @@ function ReelsTab({token}:{token:string}){
   const [pipelineAudio,setPipelineAudio]=useState<string|null>(null);
   const [pipelineVideo,setPipelineVideo]=useState<string|null>(null);
   const [pipelineError,setPipelineError]=useState<string|null>(null);
+  const [pipelineAutoPost,setPipelineAutoPost]=useState(true);
+  const [postingVideo,setPostingVideo]=useState(false);
+  const [postVideoResult,setPostVideoResult]=useState<any>(null);
 
   // Upload & post (manual) state
   const [uploadFile,setUploadFile]=useState<File|null>(null);
@@ -3396,8 +3399,42 @@ function ReelsTab({token}:{token:string}){
   const [pendingLoading,setPendingLoading]=useState(false);
   const [expandedPending,setExpandedPending]=useState<string|null>(null);
 
+  // Clip library state
+  const [clipLibrary,setClipLibrary]=useState<any[]>([]);
+  const [clipLibraryTotal,setClipLibraryTotal]=useState(0);
+  const [clipLibraryAvailable,setClipLibraryAvailable]=useState(0);
+  const [clipLibraryLoading,setClipLibraryLoading]=useState(false);
+  const [generatingClips,setGeneratingClips]=useState(false);
+  const [clipGenResult,setClipGenResult]=useState<any>(null);
+
   // Active section
-  const [section,setSection]=useState<"postnow"|"upload"|"pending">("postnow");
+  const [section,setSection]=useState<"postnow"|"clips"|"upload"|"pending">("postnow");
+
+  async function loadClipLibrary(){
+    setClipLibraryLoading(true);
+    try{
+      const res=await fetch("/api/admin/reels/generate-clips",{headers:{"x-admin-token":token}});
+      const d=await res.json();
+      if(d.ok){setClipLibrary(d.clips||[]);setClipLibraryTotal(d.total||0);setClipLibraryAvailable(d.available||0);}
+    }catch{}
+    finally{setClipLibraryLoading(false);}
+  }
+
+  async function generateMoreClips(count:number){
+    setGeneratingClips(true);setClipGenResult(null);
+    try{
+      const res=await fetch("/api/admin/reels/generate-clips",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({count})});
+      const d=await res.json();
+      setClipGenResult(d);
+      if(d.ok)loadClipLibrary();
+    }catch(e:any){setClipGenResult({error:e.message});}
+    finally{setGeneratingClips(false);}
+  }
+
+  async function deleteClip(clipId:string){
+    await fetch("/api/admin/reels/generate-clips",{method:"DELETE",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({clipId})});
+    setClipLibrary(prev=>prev.filter((c:any)=>c.id!==clipId));
+  }
 
   async function loadPending(){
     setPendingLoading(true);
@@ -3446,12 +3483,25 @@ function ReelsTab({token}:{token:string}){
     finally{setPosting(false);}
   }
 
-  async function firePostNow(){
-    setPipelineActive(true);setPipelineStep(0);setPipelineError(null);
-    setPipelineRenderId(null);setPipelineScript(null);setPipelineAudio(null);setPipelineVideo(null);
+  async function postVideoNow(){
+    if(!pipelineRenderId)return;
+    setPostingVideo(true);setPostVideoResult(null);
     try{
       const platforms=Object.entries(postNowPlatforms).filter(([,v])=>v).map(([k])=>k);
-      const body:any={platforms,voiceId:postNowVoice};
+      const res=await fetch("/api/admin/reels/post-video",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({renderId:pipelineRenderId,platforms})});
+      const d=await res.json();
+      setPostVideoResult(d);
+    }catch(e:any){setPostVideoResult({error:e.message});}
+    finally{setPostingVideo(false);}
+  }
+
+  async function firePostNow(autoPost:boolean){
+    setPipelineAutoPost(autoPost);
+    setPipelineActive(true);setPipelineStep(0);setPipelineError(null);
+    setPipelineRenderId(null);setPipelineScript(null);setPipelineAudio(null);setPipelineVideo(null);setPostVideoResult(null);
+    try{
+      const platforms=Object.entries(postNowPlatforms).filter(([,v])=>v).map(([k])=>k);
+      const body:any={platforms,voiceId:postNowVoice,autoPost};
       if(postNowMode==="custom"&&postNowPrompt.trim())body.customPrompt=postNowPrompt;
 
       const res=await fetch("/api/admin/reels/post-now",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(body)});
@@ -3473,7 +3523,7 @@ function ReelsTab({token}:{token:string}){
             const sd=await sr.json();
             if(sd.status==="done"||sd.status==="posted"){
               setPipelineVideo(sd.videoUrl||null);
-              setPipelineStep(4);
+              setPipelineStep(autoPost?4:3);
               setPipelineActive(false);
               return;
             }
@@ -3509,8 +3559,13 @@ function ReelsTab({token}:{token:string}){
 
       {/* ── Section toggle ── */}
       <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
-        {([["postnow","🚀 Post Reel Now","One click · fully automated"],["pending","📋 Pending Reels",pendingReels.length>0?`${pendingReels.length} from cron`:"Cron-generated queue"],["upload","📤 Upload & Post","Post your own edited video"]] as const).map(([s,label,sub])=>(
-          <button key={s} onClick={()=>{setSection(s as any);if(s==="pending")loadPending();}} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left"}}>
+        {([
+          ["postnow","🚀 Generate Reel","One click · Apple-level quality"],
+          ["clips","🎞 Clip Library",clipLibrary.length>0?`${clipLibrary.length} AI clips ready`:"Runway AI video clips"],
+          ["pending","📋 Pending Reels",pendingReels.length>0?`${pendingReels.length} from cron`:"Cron-generated queue"],
+          ["upload","📤 Upload & Post","Post your own edited video"],
+        ] as const).map(([s,label,sub])=>(
+          <button key={s} onClick={()=>{setSection(s as any);if(s==="pending")loadPending();if(s==="clips")loadClipLibrary();}} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left"}}>
             <div style={{fontWeight:700}}>{label}{s==="pending"&&pendingReels.length>0&&<span style={{marginLeft:8,background:"rgba(0,213,255,0.2)",border:"1px solid rgba(0,213,255,0.35)",borderRadius:10,padding:"1px 7px",fontSize:10,color:C,fontWeight:800}}>{pendingReels.length}</span>}</div>
             <div style={{fontSize:11,fontWeight:400,color:section===s?"rgba(0,213,255,0.6)":"rgba(255,255,255,0.25)",marginTop:2}}>{sub}</div>
           </button>
@@ -3570,9 +3625,14 @@ function ReelsTab({token}:{token:string}){
               <strong>Requires:</strong> SHOTSTACK_API_KEY in Vercel env vars (free at shotstack.io/pricing). Video renders in ~2 min → auto-posts via webhook. CyberCraft360 logo + text overlays + ElevenLabs audio are composited automatically.
             </div>
 
-            <button onClick={firePostNow} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,padding:"16px 36px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.05)":GRAD,color:"#fff",fontSize:15,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.5:1}}>
-              {pipelineActive?"⏳ Pipeline Running…":"🚀 Post Reel Now"}
-            </button>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              <button onClick={()=>firePostNow(false)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,padding:"14px 28px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:"1px solid rgba(0,213,255,0.35)",color:C,fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.45:1}}>
+                {pipelineActive&&!pipelineAutoPost?"⏳ Generating…":"👁 Generate & Preview"}
+              </button>
+              <button onClick={()=>firePostNow(true)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,padding:"14px 28px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.05)":GRAD,color:"#fff",fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.45:1}}>
+                {pipelineActive&&pipelineAutoPost?"⏳ Pipeline Running…":"🚀 Generate & Post Now"}
+              </button>
+            </div>
           </div>
 
           {/* ── Live Pipeline Status ── */}
@@ -3583,9 +3643,9 @@ function ReelsTab({token}:{token:string}){
               {/* Steps */}
               <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
                 {PIPELINE_STEPS.map((label,i)=>{
-                  const done=pipelineStep>i||(pipelineStep===4&&i===3);
-                  const active=pipelineStep===i||((pipelineStep===2||pipelineStep===3)&&i===2);
-                  const waiting=pipelineStep<i&&pipelineStep!==4;
+                  const done=pipelineStep>i||(pipelineStep>=3&&i===3&&pipelineAutoPost)||(pipelineStep===4&&i===3);
+                  const active=(pipelineStep===i)||(pipelineStep===2&&i===2)||(pipelineStep===3&&i===3&&pipelineAutoPost);
+                  const waiting=!done&&!active;
                   const icon=done?"✓":active?"●":"○";
                   return(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:12}}>
@@ -3620,12 +3680,21 @@ function ReelsTab({token}:{token:string}){
               )}
 
               {/* Done — show video */}
-              {pipelineStep===4&&pipelineVideo&&(
-                <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:10,padding:"14px 16px"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#22c55e",marginBottom:10}}>✓ Reel rendered and posted</div>
-                  <video src={pipelineVideo} controls style={{width:"100%",maxWidth:280,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)"}}/>
-                  <div style={{marginTop:10}}>
-                    <a href={pipelineVideo} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"8px 20px",borderRadius:8,background:"rgba(34,197,94,0.12)",color:"#22c55e",fontSize:12,fontWeight:700,textDecoration:"none",border:"1px solid rgba(34,197,94,0.3)"}}>⬇ Download Video</a>
+              {(pipelineStep===4||pipelineStep===3)&&pipelineVideo&&(
+                <div style={{background:pipelineAutoPost?"rgba(34,197,94,0.08)":"rgba(0,213,255,0.06)",border:`1px solid ${pipelineAutoPost?"rgba(34,197,94,0.25)":"rgba(0,213,255,0.25)"}`,borderRadius:10,padding:"14px 16px"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:pipelineAutoPost?"#22c55e":C,marginBottom:10}}>
+                    {pipelineAutoPost?"✓ Reel rendered and posted":"👁 Preview — ready to post"}
+                  </div>
+                  <video src={pipelineVideo} controls playsInline style={{width:"100%",maxWidth:280,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",marginBottom:12}}/>
+                  <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+                    <a href={pipelineVideo} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"8px 18px",borderRadius:8,background:"rgba(255,255,255,0.06)",color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,textDecoration:"none",border:"1px solid rgba(255,255,255,0.12)"}}>⬇ Download</a>
+                    {!pipelineAutoPost&&!postVideoResult&&(
+                      <button onClick={postVideoNow} disabled={postingVideo} style={{...btn,padding:"8px 20px",borderRadius:8,background:postingVideo?"rgba(255,255,255,0.04)":GRAD,color:"#fff",fontSize:12,opacity:postingVideo?0.5:1}}>
+                        {postingVideo?"⏳ Posting…":"🚀 Post to Platforms"}
+                      </button>
+                    )}
+                    {postVideoResult&&!postVideoResult.error&&<span style={{fontSize:12,color:"#22c55e",fontWeight:700}}>✓ Posted!</span>}
+                    {postVideoResult?.error&&<span style={{fontSize:12,color:"#ef4444"}}>{postVideoResult.error}</span>}
                   </div>
                 </div>
               )}
@@ -3656,6 +3725,70 @@ function ReelsTab({token}:{token:string}){
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════ CLIP LIBRARY SECTION ══════════════════════════ */}
+      {section==="clips"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:20}}>
+
+          {/* Stats + controls */}
+          <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16,marginBottom:20}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Runway AI Clip Library</div>
+                <div style={{display:"flex",gap:24}}>
+                  <div><div style={{fontSize:28,fontWeight:900,color:C}}>{clipLibraryTotal}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>clips ready</div></div>
+                  <div><div style={{fontSize:28,fontWeight:900,color:"rgba(255,255,255,0.4)"}}>{clipLibraryAvailable-clipLibraryTotal}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>prompts unused</div></div>
+                  <div><div style={{fontSize:28,fontWeight:900,color:"rgba(255,255,255,0.4)"}}>{clipLibraryAvailable}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>total prompts</div></div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={loadClipLibrary} disabled={clipLibraryLoading} style={{...btn,padding:"10px 18px",borderRadius:10,fontSize:12,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",opacity:clipLibraryLoading?0.5:1}}>{clipLibraryLoading?"⏳ Loading…":"↻ Refresh"}</button>
+                <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.3)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Generating… (~3 min each)":"✦ Generate 5 Clips"}</button>
+                <button onClick={()=>generateMoreClips(10)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.15)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.4)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Running…":"✦✦ Generate 10 Clips"}</button>
+              </div>
+            </div>
+
+            {/* Generation notice */}
+            <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.15)",borderRadius:10,padding:"10px 14px",fontSize:11,color:"rgba(255,193,7,0.7)",lineHeight:1.6}}>
+              <strong>Note:</strong> Each clip takes ~3 min to generate via Runway Gen-4. Generating 10 clips takes ~30 min total. Leave this tab open — results save automatically to the library.
+            </div>
+
+            {clipGenResult&&(
+              <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:clipGenResult.error?"rgba(239,68,68,0.08)":"rgba(34,197,94,0.08)",border:`1px solid ${clipGenResult.error?"rgba(239,68,68,0.25)":"rgba(34,197,94,0.25)"}`,fontSize:12,color:clipGenResult.error?"#ef4444":"#22c55e"}}>
+                {clipGenResult.error?`Error: ${clipGenResult.error}`:`✓ Generated ${clipGenResult.generated} clips. ${clipGenResult.errors?.length>0?`${clipGenResult.errors.length} failed.`:""} Library now has ${clipGenResult.total} clips.`}
+              </div>
+            )}
+          </div>
+
+          {/* Empty state */}
+          {!clipLibraryLoading&&clipLibrary.length===0&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px dashed rgba(255,255,255,0.08)",borderRadius:14,padding:"44px 24px",textAlign:"center"}}>
+              <div style={{fontSize:32,marginBottom:12}}>🎞</div>
+              <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No AI clips yet</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Apple/McLaren-style clips above. They'll be used automatically in every reel.</div>
+              <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"12px 28px",borderRadius:10,fontSize:13,background:GRAD,color:"#fff",opacity:generatingClips?0.5:1}}>{generatingClips?"⏳ Generating…":"✦ Generate First 5 Clips"}</button>
+            </div>
+          )}
+
+          {/* Clip grid */}
+          {clipLibrary.length>0&&(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+              {clipLibrary.map((clip:any)=>(
+                <div key={clip.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,overflow:"hidden"}}>
+                  <video src={clip.url} muted loop autoPlay playsInline style={{width:"100%",aspectRatio:"9/16",objectFit:"cover",display:"block",maxHeight:260}}/>
+                  <div style={{padding:"10px 12px"}}>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:10,color:"rgba(0,213,255,0.6)",fontWeight:700}}>{clip.model??clip.source??""} · {clip.duration??5}s</span>
+                      <button onClick={()=>deleteClip(clip.id)} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"rgba(239,68,68,0.6)"}}>✕ Remove</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

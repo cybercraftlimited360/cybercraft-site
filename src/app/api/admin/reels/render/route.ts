@@ -13,146 +13,131 @@ function verifyAdmin(req: NextRequest) {
 function parseDuration(d: string | number): number {
   if (typeof d === "number") return d;
   const m = String(d).match(/(\d+\.?\d*)/);
-  return m ? parseFloat(m[1]) : 4;
+  return m ? parseFloat(m[1]) : 5;
 }
 
-// ── CSS shared across all HTML assets ────────────────────────────────────────
-const SHARED_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;}
-@keyframes slideUp{0%{transform:translateY(48px);opacity:0;}100%{transform:translateY(0);opacity:1;}}
-@keyframes fadeIn{0%{opacity:0;}100%{opacity:1;}}
-@keyframes lineExpand{0%{width:0;opacity:0;}100%{width:64px;opacity:1;}}
-@keyframes glow{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7);}60%{opacity:0.18;}100%{opacity:0.06;transform:translate(-50%,-50%) scale(1.1);}}
-`;
+// ── CINEMATIC VIGNETTE + COLOR GRADE ─────────────────────────────────────────
+// Lifted blacks, dark edges, cold desaturated grade — Apple/McLaren feel
+function gradeHtml(w: number, h: number): string {
+  return `<html><head><style>*{margin:0;padding:0;}</style></head>
+<body style="width:${w}px;height:${h}px;overflow:hidden;position:relative;background:transparent;">
+  <!-- Edge vignette -->
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(0,0,0,0.55) 75%,rgba(0,0,0,0.85) 100%);"></div>
+  <!-- Top & bottom bars — cinematic letterbox feel -->
+  <div style="position:absolute;top:0;left:0;right:0;height:${Math.round(h*0.06)}px;background:linear-gradient(to bottom,rgba(0,0,0,0.72),transparent);"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:${Math.round(h*0.22)}px;background:linear-gradient(to top,rgba(0,0,0,0.9),rgba(0,0,0,0.2) 60%,transparent);"></div>
+  <!-- Cold blue cast overlay for tech feel -->
+  <div style="position:absolute;inset:0;background:rgba(8,18,40,0.18);mix-blend-mode:multiply;"></div>
+</body></html>`;
+}
 
-// ── FUTURISTIC HUD OVERLAY ────────────────────────────────────────────────────
-function futuristicHtml(w: number, h: number, duration: number): string {
-  const bSize = Math.round(w * 0.048); // bracket arm length
-  const gap = Math.round(w * 0.056);   // corner inset
-  const scanDur = Math.max(4, Math.round(duration * 0.7));
+// ── LOGO — small, top-center, elegant ────────────────────────────────────────
+function logoHtml(w: number, h: number): string {
+  const logoH = Math.round(h * 0.022);
+  return `<html><head><style>
+*{margin:0;padding:0;}
+@keyframes f{0%{opacity:0;}100%{opacity:1;}}
+body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;}
+.w{position:absolute;top:${Math.round(h*0.032)}px;left:50%;transform:translateX(-50%);animation:f 1.8s ease forwards;opacity:0;}
+img{height:${logoH}px;width:auto;display:block;filter:brightness(0) invert(1);opacity:0.82;}
+</style></head><body>
+<div class="w"><img src="${LOGO_URL}" crossorigin="anonymous"/></div>
+</body></html>`;
+}
+
+// ── HERO TEXT — one large phrase, Apple-style centered reveal ─────────────────
+function heroHtml(text: string, w: number, h: number): string {
+  const fs = Math.round(w * 0.092);
+  const words = text.trim().split(/\s+/);
+  // Split into max 3 lines of 2-3 words each for dramatic effect
+  const lines: string[] = [];
+  for (let i = 0; i < words.length; i += 3) lines.push(words.slice(i, i + 3).join(" "));
+
+  const lineHtml = lines.map((l, i) =>
+    `<div class="l" style="animation-delay:${(i * 0.18 + 0.1).toFixed(2)}s">${l.replace(/</g, "&lt;")}</div>`
+  ).join("");
+
   return `<html><head><style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;position:relative;}
-
-/* ── Corner brackets ── */
-@keyframes growBracket{0%{width:0;height:0;opacity:0;}50%{opacity:0.7;}100%{width:${bSize}px;height:${bSize}px;opacity:0.55;}}
-.c{position:absolute;width:0;height:0;}
-.tl{top:${gap}px;left:${gap}px;border-top:1.5px solid #00D5FF;border-left:1.5px solid #00D5FF;animation:growBracket 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) forwards;}
-.tr{top:${gap}px;right:${gap}px;border-top:1.5px solid #00D5FF;border-right:1.5px solid #00D5FF;animation:growBracket 0.8s 0.45s cubic-bezier(0.16,1,0.3,1) forwards;}
-.bl{bottom:${gap}px;left:${gap}px;border-bottom:1.5px solid #00D5FF;border-left:1.5px solid #00D5FF;animation:growBracket 0.8s 0.6s cubic-bezier(0.16,1,0.3,1) forwards;}
-.br{bottom:${gap}px;right:${gap}px;border-bottom:1.5px solid #00D5FF;border-right:1.5px solid #00D5FF;animation:growBracket 0.8s 0.75s cubic-bezier(0.16,1,0.3,1) forwards;}
-
-/* ── Scan line ── */
-@keyframes scan{0%{top:-2px;opacity:0;}4%{opacity:0.55;}92%{opacity:0.12;}100%{top:${h}px;opacity:0;}}
-.scan{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,213,255,0.25) 15%,rgba(255,255,255,0.7) 50%,rgba(0,213,255,0.25) 85%,transparent 100%);filter:blur(0.5px);box-shadow:0 0 10px rgba(0,213,255,0.6),0 0 20px rgba(0,213,255,0.2);animation:scan ${scanDur}s 1s linear infinite;}
-
-/* ── HUD data labels ── */
-@keyframes hudPulse{0%,100%{opacity:0.15;}50%{opacity:0.4;}}
-.hud{position:absolute;font-family:'Courier New',monospace;font-size:${Math.round(w*0.013)}px;color:#00D5FF;letter-spacing:0.22em;text-transform:uppercase;opacity:0;animation:hudPulse 4s var(--hd,0s) ease-in-out infinite;}
-
-/* ── Floating particles ── */
-@keyframes p1{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.45;}85%{opacity:0.15;}100%{opacity:0;transform:translate(22px,-42px);}}
-@keyframes p2{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.35;}85%{opacity:0.12;}100%{opacity:0;transform:translate(-18px,35px);}}
-@keyframes p3{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.5;}85%{opacity:0.18;}100%{opacity:0;transform:translate(28px,-18px);}}
-@keyframes p4{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.3;}85%{opacity:0.1;}100%{opacity:0;transform:translate(-24px,-30px);}}
-@keyframes p5{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.4;}85%{opacity:0.14;}100%{opacity:0;transform:translate(15px,28px);}}
-@keyframes p6{0%{opacity:0;transform:translate(0,0);}15%{opacity:0.38;}85%{opacity:0.12;}100%{opacity:0;transform:translate(-20px,20px);}}
-.p{position:absolute;width:${Math.round(w*0.003)}px;height:${Math.round(w*0.003)}px;border-radius:50%;background:#00D5FF;box-shadow:0 0 6px rgba(0,213,255,0.8);}
-.p1{left:14%;top:28%;animation:p1 7s 0.5s ease-in-out infinite;}
-.p2{left:78%;top:38%;animation:p2 9s 1.2s ease-in-out infinite;}
-.p3{left:22%;top:62%;animation:p3 8s 2.1s ease-in-out infinite;}
-.p4{left:68%;top:72%;animation:p4 11s 0.8s ease-in-out infinite;}
-.p5{left:42%;top:48%;animation:p5 6s 3.2s ease-in-out infinite;}
-.p6{left:58%;top:22%;animation:p6 10s 1.8s ease-in-out infinite;}
-
-/* ── Subtle center crosshair ── */
-.cx{position:absolute;left:50%;top:50%;width:${Math.round(w*0.03)}px;height:1px;background:#00D5FF;transform:translate(-50%,-50%);opacity:0.12;}
-.cy{position:absolute;left:50%;top:50%;width:1px;height:${Math.round(w*0.03)}px;background:#00D5FF;transform:translate(-50%,-50%);opacity:0.12;}
-.cr{position:absolute;left:50%;top:50%;width:${Math.round(w*0.018)}px;height:${Math.round(w*0.018)}px;border:1px solid rgba(0,213,255,0.15);border-radius:50%;transform:translate(-50%,-50%);}
-
-/* ── Thin horizontal rule lines (ambient depth) ── */
-@keyframes ruleAnim{0%{opacity:0;width:0;}100%{opacity:0.08;width:${Math.round(w*0.28)}px;}}
-.rule{position:absolute;height:1px;background:linear-gradient(90deg,transparent,#00D5FF,transparent);animation:ruleAnim 1.5s 1s ease forwards;}
-.rl{left:${gap}px;}
-.rr{right:${gap}px;}
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+@keyframes reveal{0%{opacity:0;transform:translateY(32px);}100%{opacity:1;transform:translateY(0);}}
+body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;
+  font-family:'Montserrat',Helvetica,Arial,sans-serif;
+  display:flex;align-items:center;justify-content:center;
+  padding:${Math.round(w*0.07)}px;text-align:center;}
+.wrap{display:flex;flex-direction:column;gap:${Math.round(w*0.008)}px;}
+.l{font-size:${fs}px;font-weight:900;color:#fff;line-height:1.0;
+   letter-spacing:-2.5px;text-shadow:0 4px 80px rgba(0,0,0,0.9);
+   opacity:0;animation:reveal 0.9s cubic-bezier(0.16,1,0.3,1) forwards;}
 </style></head><body>
-  <div class="c tl"></div>
-  <div class="c tr"></div>
-  <div class="c bl"></div>
-  <div class="c br"></div>
-  <div class="scan"></div>
-  <div class="hud" style="top:${Math.round(gap*1.6)}px;left:${Math.round(gap*1.55)}px;--hd:0.2s;">CC360 · AI</div>
-  <div class="hud" style="bottom:${Math.round(gap*1.6)}px;right:${Math.round(gap*1.55)}px;--hd:1.5s;text-align:right;">SYS · LIVE</div>
-  <div class="p p1"></div><div class="p p2"></div><div class="p p3"></div>
-  <div class="p p4"></div><div class="p p5"></div><div class="p p6"></div>
-  <div class="cx"></div><div class="cy"></div><div class="cr"></div>
-  <div class="rule rl" style="top:${Math.round(h*0.5)}px;"></div>
-  <div class="rule rr" style="top:${Math.round(h*0.5)}px;transform:scaleX(-1);"></div>
+<div class="wrap">${lineHtml}</div>
 </body></html>`;
 }
 
-// ── LOGO OVERLAY (persistent across all scenes) ───────────────────────────────
-function logoHtml(w: number, h: number): string {
-  const logoH = Math.round(h * 0.028); // ~2.8% of frame height
-  return `<html><head><style>${SHARED_CSS}
-body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;font-family:'Montserrat',sans-serif;}
-.logo-wrap{position:absolute;top:${Math.round(h*0.038)}px;left:50%;transform:translateX(-50%);animation:fadeIn 1.2s ease forwards;}
-img{height:${logoH}px;width:auto;display:block;filter:brightness(0) invert(1) drop-shadow(0 2px 12px rgba(0,0,0,0.8));}
-</style></head><body>
-<div class="logo-wrap"><img src="${LOGO_URL}" crossorigin="anonymous"/></div>
-</body></html>`;
-}
-
-// ── DARK CINEMATIC OVERLAY ────────────────────────────────────────────────────
-function vignetteHtml(w: number, h: number): string {
-  return `<html><head><style>*{margin:0;padding:0;}</style></head>
-<body style="width:${w}px;height:${h}px;background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.1) 20%,rgba(0,0,0,0.05) 50%,rgba(0,0,0,0.45) 75%,rgba(0,0,0,0.88) 100%);overflow:hidden;"></body></html>`;
-}
-
-// ── HOOK SCENE: full-frame centered impact statement ─────────────────────────
-function hookHtml(text: string, w: number, h: number): string {
-  const fs = Math.round(w * 0.088);
-  return `<html><head><style>${SHARED_CSS}
-body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;font-family:'Montserrat',sans-serif;display:flex;align-items:center;justify-content:center;padding:${Math.round(w*0.08)}px;text-align:center;}
-.t{font-size:${fs}px;font-weight:900;color:#fff;line-height:1.0;letter-spacing:-3px;text-shadow:0 4px 60px rgba(0,0,0,0.98),0 0 120px rgba(0,0,0,0.6);animation:slideUp 1s 0.15s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
-</style></head><body><p class="t">${text.replace(/</g,"&lt;")}</p></body></html>`;
-}
-
-// ── NARRATION SCENE: bottom-anchored with animated accent line ────────────────
-function narrationHtml(text: string, w: number, h: number, delay: number = 0): string {
-  const fs = Math.round(w * 0.054);
-  const pad = Math.round(w * 0.075);
+// ── SCENE TEXT — minimal lower-third, one phrase at a time ───────────────────
+function sceneTextHtml(text: string, w: number, h: number, delay: number = 0): string {
+  const fs = Math.round(w * 0.042);
+  const pad = Math.round(w * 0.08);
   const d = (delay * 1000).toFixed(0);
-  return `<html><head><style>${SHARED_CSS}
-body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;font-family:'Montserrat',sans-serif;display:flex;flex-direction:column;justify-content:flex-end;padding:${pad}px;}
-.line{height:2px;background:#00D5FF;margin-bottom:20px;animation:lineExpand 0.6s ${d}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;border-radius:1px;}
-.t{font-size:${fs}px;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-1px;text-shadow:0 2px 40px rgba(0,0,0,0.98);animation:slideUp 0.9s ${Number(d)+150}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;max-width:90%;}
+  return `<html><head><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&display=swap');
+@keyframes up{0%{opacity:0;transform:translateY(20px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes rule{0%{width:0;opacity:0;}100%{width:36px;opacity:1;}}
+body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;
+  font-family:'Montserrat',Helvetica,Arial,sans-serif;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:${pad}px ${pad}px ${Math.round(pad*1.4)}px;}
+.r{height:1.5px;background:#00D5FF;margin-bottom:${Math.round(w*0.022)}px;border-radius:1px;
+   animation:rule 0.5s ${d}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;width:0;}
+.t{font-size:${fs}px;font-weight:700;color:#fff;line-height:1.25;
+   letter-spacing:-0.5px;text-shadow:0 2px 40px rgba(0,0,0,0.95);
+   animation:up 0.7s ${Number(d)+120}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;max-width:88%;}
 </style></head><body>
-<div class="line"></div>
-<p class="t">${text.replace(/</g,"&lt;")}</p>
+<div class="r"></div>
+<p class="t">${text.replace(/</g, "&lt;")}</p>
 </body></html>`;
 }
 
-// ── END CARD: branded premium close ──────────────────────────────────────────
-function endCardHtml(headline: string, cta: string, url: string, w: number, h: number): string {
-  const logoH = Math.round(h * 0.052);
-  const hfs = Math.round(w * 0.055);
-  const cfs = Math.round(w * 0.033);
-  const ufs = Math.round(w * 0.023);
-  return `<html><head><style>${SHARED_CSS}
-body{width:${w}px;height:${h}px;background:#0F1117;overflow:hidden;font-family:'Montserrat',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.round(w*0.045)}px;position:relative;}
-.glow{position:absolute;width:${Math.round(w*0.8)}px;height:${Math.round(w*0.8)}px;border-radius:50%;background:radial-gradient(circle,rgba(0,213,255,0.35) 0%,transparent 65%);left:50%;top:50%;transform:translate(-50%,-50%);animation:glow 3s 0.5s ease forwards;opacity:0;pointer-events:none;}
-img{height:${logoH}px;width:auto;display:block;filter:brightness(0) invert(1);animation:slideUp 0.9s 0.2s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
-.headline{font-size:${hfs}px;font-weight:900;color:#fff;text-align:center;letter-spacing:-1.5px;line-height:1.05;animation:slideUp 0.9s 0.35s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;max-width:90%;}
-.cta{font-size:${cfs}px;font-weight:700;color:#00D5FF;text-align:center;letter-spacing:0.08em;text-transform:uppercase;animation:slideUp 0.9s 0.5s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
-.url{font-size:${ufs}px;font-weight:400;color:rgba(255,255,255,0.38);text-align:center;letter-spacing:0.05em;animation:fadeIn 0.8s 0.8s ease forwards;opacity:0;}
+// ── END CARD — pure black, centered, surgical ─────────────────────────────────
+function endCardHtml(headline: string, cta: string, w: number, h: number): string {
+  const logoH = Math.round(h * 0.045);
+  const hfs = Math.round(w * 0.06);
+  const cfs = Math.round(w * 0.028);
+  return `<html><head><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap');
+@keyframes f{0%{opacity:0;}100%{opacity:1;}}
+@keyframes up{0%{opacity:0;transform:translateY(24px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes glow{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}100%{opacity:0.12;transform:translate(-50%,-50%) scale(1);}}
+body{width:${w}px;height:${h}px;background:#080A10;overflow:hidden;
+  font-family:'Montserrat',Helvetica,Arial,sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:${Math.round(w*0.05)}px;position:relative;}
+.glow{position:absolute;width:${Math.round(w*1.2)}px;height:${Math.round(w*1.2)}px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,213,255,1) 0%,transparent 60%);
+  left:50%;top:50%;pointer-events:none;
+  animation:glow 2s 0.3s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
+img{height:${logoH}px;width:auto;filter:brightness(0) invert(1);
+  animation:up 1s 0.15s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
+.rule{width:${Math.round(w*0.08)}px;height:1px;background:rgba(0,213,255,0.5);
+  animation:f 0.6s 0.4s ease forwards;opacity:0;}
+.h{font-size:${hfs}px;font-weight:900;color:#fff;text-align:center;
+  letter-spacing:-1.5px;line-height:1.05;max-width:88%;
+  animation:up 0.9s 0.3s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
+.cta{font-size:${cfs}px;font-weight:300;color:rgba(255,255,255,0.5);text-align:center;
+  letter-spacing:0.18em;text-transform:uppercase;
+  animation:f 0.8s 0.6s ease forwards;opacity:0;}
+.url{font-size:${Math.round(cfs*0.85)}px;font-weight:400;color:#00D5FF;text-align:center;
+  letter-spacing:0.06em;
+  animation:f 0.8s 0.85s ease forwards;opacity:0;}
 </style></head><body>
 <div class="glow"></div>
 <img src="${LOGO_URL}" crossorigin="anonymous"/>
-<div class="headline">${headline.replace(/</g,"&lt;")}</div>
-<div class="cta">${cta.replace(/</g,"&lt;")}</div>
-<div class="url">${url.replace(/</g,"&lt;")}</div>
+<div class="rule"></div>
+<div class="h">${headline.replace(/</g, "&lt;")}</div>
+<div class="cta">${cta.replace(/</g, "&lt;")}</div>
+<div class="url">CyberCraft360.com</div>
 </body></html>`;
 }
 
@@ -161,11 +146,9 @@ function buildEdit(opts: {
   voiceoverUrl: string;
   clips: any[];
   hook: string;
-  endCard: { headline: string; cta: string; url: string };
+  endCard: { headline: string; cta: string };
 }) {
   const { scenes, voiceoverUrl, clips, hook, endCard } = opts;
-
-  // 1080p portrait canvas
   const W = 1080, H = 1920;
 
   // Compute scene timing
@@ -177,73 +160,65 @@ function buildEdit(opts: {
     return { ...sc, start, dur };
   });
   const contentDuration = t;
-  const endCardDur = 7;
+  const endCardDur = 8;
   const totalDuration = contentDuration + endCardDur;
 
-  // Background video clips — prefer portrait, cycle through available
+  // Background clips — cycle AI clips, slow ken-burns motion
   const goodClips = clips.filter((c: any) => c.url && c.duration >= 3);
   const bgClips: any[] = [];
-  let cursor = 0;
-  let ci = 0;
+  let cursor = 0, ci = 0;
+  const effects = ["zoomIn", "zoomOut", "slideLeft", "slideRight"];
   while (cursor < contentDuration) {
     if (goodClips.length === 0) break;
     const c = goodClips[ci % goodClips.length];
-    const len = Math.min(c.duration, contentDuration - cursor, 9);
+    const len = Math.min(c.duration, contentDuration - cursor, 8);
     if (len < 0.5) break;
     bgClips.push({
       asset: { type: "video", src: c.url, trim: 0, volume: 0 },
       start: cursor,
-      length: len + 0.4,
-      effect: ci % 2 === 0 ? "zoomIn" : "zoomOut",
+      length: len + 0.5,
+      effect: effects[ci % effects.length],
       transition: { in: "fade", out: "fade" },
     });
     cursor += len;
     ci++;
   }
-  // Black fill for remainder (or if no clips)
-  if (cursor < contentDuration) {
+  if (cursor < contentDuration || bgClips.length === 0) {
     bgClips.push({
-      asset: { type: "html", html: `<html><body style="width:${W}px;height:${H}px;background:#000;"></body></html>`, width: W, height: H, background: "transparent" },
-      start: cursor, length: contentDuration - cursor,
+      asset: { type: "html", html: `<html><body style="width:${W}px;height:${H}px;background:#080A10;"></body></html>`, width: W, height: H, background: "transparent" },
+      start: cursor, length: Math.max(contentDuration - cursor, contentDuration),
     });
   }
 
-  // Vignette overlay (full content duration)
-  const vignetteClip = {
-    asset: { type: "html", html: vignetteHtml(W, H), width: W, height: H, background: "transparent" },
+  // Cinematic grade (vignette + color overlay)
+  const gradeClip = {
+    asset: { type: "html", html: gradeHtml(W, H), width: W, height: H, background: "transparent" },
     start: 0, length: contentDuration,
   };
 
-  // Futuristic HUD overlay — one clip per scene so brackets re-animate each cut
-  const hudClips = timed.map((sc: any) => ({
-    asset: { type: "html", html: futuristicHtml(W, H, sc.dur), width: W, height: H, background: "transparent" },
-    start: sc.start,
-    length: sc.dur,
-  }));
-
-  // Scene text clips — hook = centered big, rest = bottom narration
+  // Scene text — hook scene = full-frame hero, rest = lower-third
   const textClips = timed.map((sc: any, i: number) => ({
     asset: {
       type: "html",
-      html: i === 0 ? hookHtml(hook, W, H) : narrationHtml(sc.narration, W, H, 0.1),
+      html: i === 0 ? heroHtml(hook, W, H) : sceneTextHtml(sc.narration, W, H, 0.15),
       width: W, height: H, background: "transparent",
     },
-    start: sc.start + 0.3,
-    length: sc.dur - 0.3,
+    start: sc.start + 0.25,
+    length: sc.dur - 0.25,
   }));
 
-  // Logo — persistent watermark throughout content
+  // Logo — subtle, persistent
   const logoClip = {
     asset: { type: "html", html: logoHtml(W, H), width: W, height: H, background: "transparent" },
     start: 0, length: contentDuration,
   };
 
-  // End card (black bg + logo + text, all animated via CSS)
+  // End card — pure black background, centered everything
   const endClip = {
     asset: {
       type: "html",
-      html: endCardHtml(endCard.headline, endCard.cta, endCard.url, W, H),
-      width: W, height: H, background: "transparent",
+      html: endCardHtml(endCard.headline, endCard.cta, W, H),
+      width: W, height: H, background: "#080A10",
     },
     start: contentDuration,
     length: endCardDur,
@@ -253,14 +228,13 @@ function buildEdit(opts: {
   return {
     timeline: {
       soundtrack: { src: voiceoverUrl, effect: "fadeOut", volume: 1 },
-      background: "#0F1117",
+      background: "#080A10",
       tracks: [
-        { clips: bgClips },         // 0: BG video (bottom)
-        { clips: [vignetteClip] },  // 1: cinematic gradient overlay
-        { clips: hudClips },        // 2: futuristic HUD (brackets, scan, particles)
-        { clips: textClips },       // 3: animated scene narrations
-        { clips: [logoClip] },      // 4: persistent logo watermark
-        { clips: [endClip] },       // 5: branded end card (top)
+        { clips: bgClips },        // 0: AI video clips (bottom)
+        { clips: [gradeClip] },    // 1: cinematic grade + vignette
+        { clips: textClips },      // 2: scene text overlays
+        { clips: [logoClip] },     // 3: logo watermark
+        { clips: [endClip] },      // 4: end card (top)
       ],
     },
     output: {
@@ -280,7 +254,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.SHOTSTACK_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "SHOTSTACK_API_KEY not set" }, { status: 500 });
 
-  const { script, voiceoverUrl, clips, campaignIndex, platforms, captions } = await req.json().catch(() => ({}));
+  const { script, voiceoverUrl, clips, campaignIndex, platforms, captions, autoPost = true } = await req.json().catch(() => ({}));
   if (!script?.scenes || !voiceoverUrl) return NextResponse.json({ error: "script and voiceoverUrl required" }, { status: 400 });
 
   const edit = buildEdit({
@@ -288,7 +262,7 @@ export async function POST(req: NextRequest) {
     voiceoverUrl,
     clips: clips ?? [],
     hook: script.hook ?? script.scenes[0]?.narration ?? "",
-    endCard: script.endCard ?? { headline: "Built For You", cta: "Schedule Your Discovery", url: "CyberCraft360.com" },
+    endCard: script.endCard ?? { headline: "Intelligence That Works For You", cta: "Schedule Your Discovery" },
   });
 
   const ssBase = process.env.SHOTSTACK_ENV === "production"
@@ -316,6 +290,7 @@ export async function POST(req: NextRequest) {
     platforms: platforms ?? ["instagram", "facebook"],
     captions: captions ?? {},
     script,
+    autoPost,
     status: "rendering",
     submittedAt: new Date().toISOString(),
   }, { ex: 48 * 3600 });
