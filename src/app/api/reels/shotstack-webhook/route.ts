@@ -99,6 +99,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
   }
 
+  // Idempotency guard — if already posted or processing, skip to prevent duplicates
+  if (job.status === "posted" || job.status === "processing") {
+    console.log("[shotstack-webhook] Already processed, skipping:", renderId, job.status);
+    return NextResponse.json({ ok: true, skipped: true, status: job.status });
+  }
+
+  // Mark as processing immediately before any async work to prevent race condition duplicates
+  await redis.set(`reels:shotstack:${renderId}`, { ...job, status: "processing" }, { ex: 48 * 3600 });
+
   const { captions, platforms, campaignIndex, autoPost } = job;
 
   // Preview-only mode — just store the video URL, don't post

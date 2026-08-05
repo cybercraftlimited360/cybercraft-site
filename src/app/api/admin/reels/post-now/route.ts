@@ -55,6 +55,11 @@ export async function POST(req: NextRequest) {
   const voiceData = await voiceRes.json();
   if (!voiceData?.audioUrl) return NextResponse.json({ error: "Voiceover generation failed" }, { status: 500 });
 
+  // Estimate voiceover duration from word count so the video timeline matches the audio.
+  // ElevenLabs speaks at ~135 words/min on average with these voice settings.
+  const wordCount = (script.voiceoverScript ?? "").trim().split(/\s+/).filter(Boolean).length;
+  const estimatedAudioDuration = Math.max(10, Math.round((wordCount / 135) * 60));
+
   // 3. Submit Shotstack render
   const renderRes = await fetch(`${SITE_URL}/api/admin/reels/render`, {
     method: "POST",
@@ -62,6 +67,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       script,
       voiceoverUrl: voiceData.audioUrl,
+      estimatedAudioDuration,
       clips: suggestedClips ?? [],
       campaignIndex: campaignIdx,
       platforms: platforms ?? ["instagram", "facebook", "linkedin"],

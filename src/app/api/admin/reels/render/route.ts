@@ -147,19 +147,30 @@ function buildEdit(opts: {
   clips: any[];
   hook: string;
   endCard: { headline: string; cta: string };
+  estimatedAudioDuration?: number;
 }) {
-  const { scenes, voiceoverUrl, clips, hook, endCard } = opts;
+  const { scenes, voiceoverUrl, clips, hook, endCard, estimatedAudioDuration } = opts;
   const W = 1080, H = 1920;
 
-  // Compute scene timing
+  // Compute raw scene durations from script
+  const rawDurs = scenes.map((sc: any) => parseDuration(sc.duration ?? 5));
+  const rawTotal = rawDurs.reduce((a, b) => a + b, 0);
+
+  // Scale scene durations so they sum to estimatedAudioDuration, keeping proportions.
+  // This ensures the video and voiceover stay in sync regardless of AI script estimates.
+  const targetDuration = estimatedAudioDuration && estimatedAudioDuration > 5
+    ? estimatedAudioDuration
+    : rawTotal;
+  const scale = targetDuration / rawTotal;
+
   let t = 0;
-  const timed = scenes.map((sc: any) => {
-    const dur = parseDuration(sc.duration ?? 5);
+  const timed = scenes.map((sc: any, i: number) => {
+    const dur = Math.round(rawDurs[i] * scale * 10) / 10;
     const start = t;
     t += dur;
     return { ...sc, start, dur };
   });
-  const contentDuration = t;
+  const contentDuration = Math.round(t * 10) / 10;
   const endCardDur = 8;
   const totalDuration = contentDuration + endCardDur;
 
@@ -254,7 +265,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.SHOTSTACK_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "SHOTSTACK_API_KEY not set" }, { status: 500 });
 
-  const { script, voiceoverUrl, clips, campaignIndex, platforms, captions, autoPost = true } = await req.json().catch(() => ({}));
+  const { script, voiceoverUrl, clips, campaignIndex, platforms, captions, autoPost = true, estimatedAudioDuration } = await req.json().catch(() => ({}));
   if (!script?.scenes || !voiceoverUrl) return NextResponse.json({ error: "script and voiceoverUrl required" }, { status: 400 });
 
   const edit = buildEdit({
@@ -263,6 +274,7 @@ export async function POST(req: NextRequest) {
     clips: clips ?? [],
     hook: script.hook ?? script.scenes[0]?.narration ?? "",
     endCard: script.endCard ?? { headline: "Intelligence That Works For You", cta: "Schedule Your Discovery" },
+    estimatedAudioDuration,
   });
 
   const ssBase = process.env.SHOTSTACK_ENV === "production"
