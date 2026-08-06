@@ -94,7 +94,7 @@ async function generateAndStoreClip(prompt: string, apiKey: string, idx: number)
 
   // Upload to Vercel Blob
   const blob = await put(`reels/clips/veo_${idx}_${Date.now()}.mp4`, videoBuffer, {
-    access: "public",
+    access: "private",
     contentType: "video/mp4",
   });
 
