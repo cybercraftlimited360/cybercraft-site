@@ -3765,7 +3765,14 @@ function ReelsTab({token}:{token:string}){
 
             {clipGenResult&&(
               <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:clipGenResult.error?"rgba(239,68,68,0.08)":"rgba(34,197,94,0.08)",border:`1px solid ${clipGenResult.error?"rgba(239,68,68,0.25)":"rgba(34,197,94,0.25)"}`,fontSize:12,color:clipGenResult.error?"#ef4444":"#22c55e"}}>
-                {clipGenResult.error?`Error: ${clipGenResult.error}`:`✓ Generated ${clipGenResult.generated} clips. ${clipGenResult.errors?.length>0?`${clipGenResult.errors.length} failed.`:""} Library now has ${clipGenResult.total} clips.`}
+                {clipGenResult.error?`Error: ${clipGenResult.error}`:`✓ Generated ${clipGenResult.generated} clips. Library now has ${clipGenResult.total} clips.`}
+                {clipGenResult.errors?.length>0&&(
+                  <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
+                    {clipGenResult.errors.map((e:any,i:number)=>(
+                      <div key={i} style={{color:"#ef4444",fontSize:11}}>❌ Prompt {e.idx}: {e.error}</div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
