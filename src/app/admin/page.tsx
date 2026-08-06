@@ -3753,14 +3753,14 @@ function ReelsTab({token}:{token:string}){
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <button onClick={loadClipLibrary} disabled={clipLibraryLoading} style={{...btn,padding:"10px 18px",borderRadius:10,fontSize:12,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",opacity:clipLibraryLoading?0.5:1}}>{clipLibraryLoading?"⏳ Loading…":"↻ Refresh"}</button>
-                <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.3)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Generating… (~3 min each)":"✦ Generate 5 Clips"}</button>
+                <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.3)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Generating via Veo… (~5 min each)":"✦ Generate 5 Clips"}</button>
                 <button onClick={()=>generateMoreClips(10)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.15)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.4)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Running…":"✦✦ Generate 10 Clips"}</button>
               </div>
             </div>
 
             {/* Generation notice */}
             <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.15)",borderRadius:10,padding:"10px 14px",fontSize:11,color:"rgba(255,193,7,0.7)",lineHeight:1.6}}>
-              <strong>Note:</strong> Each clip takes ~2–6 min to generate via Google Veo 3.1. Generating 10 clips takes ~30 min total. Leave this tab open — results save automatically to the library.
+              <strong>Google Veo 3.1</strong> · 8-second 1080p 9:16 clips · ~2–6 min per clip · stored permanently in Vercel Blob. Generating 5 clips takes ~15–30 min. Leave this tab open — results save automatically.
             </div>
 
             {clipGenResult&&(
@@ -3774,8 +3774,8 @@ function ReelsTab({token}:{token:string}){
           {!clipLibraryLoading&&clipLibrary.length===0&&(
             <div style={{background:"rgba(255,255,255,0.02)",border:"1px dashed rgba(255,255,255,0.08)",borderRadius:14,padding:"44px 24px",textAlign:"center"}}>
               <div style={{fontSize:32,marginBottom:12}}>🎞</div>
-              <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No AI clips yet</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Apple/McLaren-style clips above. They'll be used automatically in every reel.</div>
+              <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No Veo clips yet</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Google Veo 3.1 clips — 8s · 1080p · 9:16. Used automatically in every reel.</div>
               <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"12px 28px",borderRadius:10,fontSize:13,background:GRAD,color:"#fff",opacity:generatingClips?0.5:1}}>{generatingClips?"⏳ Generating…":"✦ Generate First 5 Clips"}</button>
             </div>
           )}

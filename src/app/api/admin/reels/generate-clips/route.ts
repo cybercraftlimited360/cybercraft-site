@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
+import { put } from "@vercel/blob";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
 function verifyAdmin(req: NextRequest) {
@@ -8,7 +9,6 @@ function verifyAdmin(req: NextRequest) {
 }
 
 // CyberCraft360-specific cinematic prompts — AI automation agency, Houston TX
-// Visual world: business transformation, AI answering calls, leads converting, time saved, 24/7 operation
 const PREMIUM_PROMPTS = [
   "Aerial hyperlapse of Houston Texas downtown skyline at golden hour, drone pulling back slowly revealing the city scale, warm cinematic grade, anamorphic lens flare, premium commercial",
   "Extreme close-up of a smartphone screen showing an incoming business call being answered instantly, dark premium desk surface, single dramatic key light, shallow depth of field, slow motion, tech commercial",
@@ -33,57 +33,71 @@ const PREMIUM_PROMPTS = [
 ];
 
 export const CLIP_LIBRARY_KEY = "reels:clip_library";
-
 const VEO_MODEL = "veo-3.1-generate-preview";
+const GEN_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-async function generateVeoClip(prompt: string, apiKey: string): Promise<string> {
-  const base = "https://generativelanguage.googleapis.com/v1beta";
-
-  // Submit generation
-  const submitRes = await fetch(`${base}/models/${VEO_MODEL}:predictLongRunning?key=${apiKey}`, {
+async function generateAndStoreClip(prompt: string, apiKey: string, idx: number): Promise<string> {
+  // 1. Submit to Veo
+  const submitRes = await fetch(`${GEN_BASE}/models/${VEO_MODEL}:predictLongRunning?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       instances: [{ prompt }],
-      parameters: {
-        aspectRatio: "9:16",
-        durationSeconds: "8",
-        resolution: "1080p",
-      },
+      parameters: { aspectRatio: "9:16", durationSeconds: "8", resolution: "1080p" },
     }),
   });
 
   if (!submitRes.ok) {
     const err = await submitRes.text();
-    throw new Error(`Veo submit failed: ${submitRes.status} — ${err.slice(0, 300)}`);
+    throw new Error(`Veo submit failed ${submitRes.status}: ${err.slice(0, 300)}`);
   }
 
   const operation = await submitRes.json();
   const opName = operation.name;
   if (!opName) throw new Error("No operation name returned from Veo");
 
-  // Poll until done (max 6 min)
+  // 2. Poll until done (max 6 min, every 10s)
+  let videoUrl: string | null = null;
+  let videoBytes: string | null = null;
+
   for (let i = 0; i < 36; i++) {
     await new Promise(r => setTimeout(r, 10000));
-    const pollRes = await fetch(`${base}/${opName}?key=${apiKey}`);
+    const pollRes = await fetch(`${GEN_BASE}/${opName}?key=${apiKey}`);
     if (!pollRes.ok) continue;
     const op = await pollRes.json();
+    if (op.error) throw new Error(`Veo failed: ${op.error.message}`);
     if (op.done) {
-      const videoData = op.response?.generatedVideos?.[0]?.video;
-      if (!videoData) throw new Error("No video in Veo response");
-      // Veo returns either a uri or base64 bytes
-      if (videoData.uri) return videoData.uri;
-      if (videoData.videoBytes) {
-        // Store base64 video in Redis and serve via audio route pattern
-        // For now return a data URI — caller stores it
-        return `data:video/mp4;base64,${videoData.videoBytes}`;
-      }
-      throw new Error("Veo response has no uri or videoBytes");
+      const video = op.response?.generatedVideos?.[0]?.video;
+      if (!video) throw new Error("No video in Veo response");
+      videoUrl = video.uri ?? null;
+      videoBytes = video.videoBytes ?? null;
+      break;
     }
-    if (op.error) throw new Error(`Veo generation failed: ${op.error.message}`);
   }
 
-  throw new Error("Veo timed out after 6 minutes");
+  if (!videoUrl && !videoBytes) throw new Error("Veo timed out after 6 minutes");
+
+  // 3. Download video and store permanently in Vercel Blob
+  // (Veo URIs expire after 2 days — Blob gives permanent storage)
+  let videoBuffer: Buffer;
+
+  if (videoBytes) {
+    videoBuffer = Buffer.from(videoBytes, "base64");
+  } else {
+    // Download from Veo URI (may need API key appended)
+    const dlUrl = videoUrl!.includes("?") ? `${videoUrl}&key=${apiKey}` : `${videoUrl}?key=${apiKey}`;
+    const dlRes = await fetch(dlUrl);
+    if (!dlRes.ok) throw new Error(`Failed to download Veo video: ${dlRes.status}`);
+    videoBuffer = Buffer.from(await dlRes.arrayBuffer());
+  }
+
+  // Upload to Vercel Blob
+  const blob = await put(`reels/clips/veo_${idx}_${Date.now()}.mp4`, videoBuffer, {
+    access: "public",
+    contentType: "video/mp4",
+  });
+
+  return blob.url;
 }
 
 export async function POST(req: NextRequest) {
@@ -111,7 +125,7 @@ export async function POST(req: NextRequest) {
     if (!promptText) continue;
 
     try {
-      const url = await generateVeoClip(promptText, apiKey);
+      const url = await generateAndStoreClip(promptText, apiKey, idx);
       results.push({
         id: `veo_${idx}_${Date.now()}`,
         promptIndex: idx,
@@ -120,6 +134,7 @@ export async function POST(req: NextRequest) {
         generatedAt: new Date().toISOString(),
         model: VEO_MODEL,
         duration: 8,
+        source: "veo",
       });
     } catch (e: any) {
       errors.push({ idx, error: e.message });
