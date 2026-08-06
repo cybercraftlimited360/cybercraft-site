@@ -3793,7 +3793,7 @@ function ReelsTab({token}:{token:string}){
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
               {clipLibrary.map((clip:any)=>(
                 <div key={clip.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,overflow:"hidden"}}>
-                  <video src={clip.url} muted loop autoPlay playsInline style={{width:"100%",aspectRatio:"9/16",objectFit:"cover",display:"block",maxHeight:260}}/>
+                  <video src={`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`} muted loop autoPlay playsInline style={{width:"100%",aspectRatio:"9/16",objectFit:"cover",display:"block",maxHeight:260}}/>
                   <div style={{padding:"10px 12px"}}>
                     <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
