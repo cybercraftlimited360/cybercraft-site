@@ -68,11 +68,10 @@ async function generateAndStoreClip(prompt: string, apiKey: string, idx: number)
     if (op.error) throw new Error(`Veo failed: ${op.error.message}`);
     if (op.done) {
       console.log("[veo] response:", JSON.stringify(op.response ?? {}).slice(0, 800));
-      const genVideos = op.response?.generatedVideos ?? op.response?.videos ?? op.response?.candidates;
-      const videoObj = genVideos?.[0]?.video ?? genVideos?.[0];
+      const videoObj = op.response?.generateVideoResponse?.generatedSamples?.[0]?.video;
       if (!videoObj) throw new Error(`Unexpected Veo response: ${JSON.stringify(op.response ?? {}).slice(0, 300)}`);
-      videoUrl = videoObj.uri ?? videoObj.url ?? null;
-      videoBytes = videoObj.videoBytes ?? videoObj.bytes ?? null;
+      videoUrl = videoObj.uri ?? null;
+      videoBytes = videoObj.videoBytes ?? null;
       break;
     }
   }
