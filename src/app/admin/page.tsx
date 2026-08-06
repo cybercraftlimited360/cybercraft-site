@@ -3351,6 +3351,7 @@ const REEL_CAMPAIGN_SCHEDULE=Array.from({length:36},(_,i)=>{
 });
 
 const VOICE_PRESETS=[
+  {id:"",name:"Amy",desc:"Your AI voice agent · Consistent brand voice"},
   {id:"pNInz6obpgDQGcFmaJgB",name:"Adam",desc:"Deep · Authoritative · Narration"},
   {id:"ErXwobaYiN019PkySvjV",name:"Antoni",desc:"Confident · Well-rounded · Executive"},
   {id:"VR6AewLTigWG4xSOukaG",name:"Arnold",desc:"Crisp · Commanding · Professional"},
@@ -3625,13 +3626,21 @@ function ReelsTab({token}:{token:string}){
               <strong>Requires:</strong> SHOTSTACK_API_KEY in Vercel env vars (free at shotstack.io/pricing). Video renders in ~2 min → auto-posts via webhook. CyberCraft360 logo + text overlays + ElevenLabs audio are composited automatically.
             </div>
 
-            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-              <button onClick={()=>firePostNow(false)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,padding:"14px 28px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:"1px solid rgba(0,213,255,0.35)",color:C,fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.45:1}}>
-                {pipelineActive&&!pipelineAutoPost?"⏳ Generating…":"👁 Generate & Preview"}
-              </button>
-              <button onClick={()=>firePostNow(true)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,padding:"14px 28px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.05)":GRAD,color:"#fff",fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.45:1}}>
-                {pipelineActive&&pipelineAutoPost?"⏳ Pipeline Running…":"🚀 Generate & Post Now"}
-              </button>
+            {/* Two clear action buttons — always visible */}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)"}}>Choose Action</div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <button onClick={()=>firePostNow(false)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,flex:1,minWidth:180,padding:"16px 20px",borderRadius:12,background:"rgba(0,213,255,0.08)",border:`2px solid ${C}`,color:C,fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.4:1,textAlign:"center"}}>
+                  <div style={{fontSize:18,marginBottom:4}}>👁</div>
+                  <div style={{fontWeight:800}}>{pipelineActive&&!pipelineAutoPost?"Generating…":"Generate & Preview"}</div>
+                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Watch before posting</div>
+                </button>
+                <button onClick={()=>firePostNow(true)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,flex:1,minWidth:180,padding:"16px 20px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.04)":GRAD,border:"2px solid transparent",color:"#fff",fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.4:1,textAlign:"center"}}>
+                  <div style={{fontSize:18,marginBottom:4}}>🚀</div>
+                  <div style={{fontWeight:800}}>{pipelineActive&&pipelineAutoPost?"Pipeline Running…":"Generate & Post Now"}</div>
+                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Renders and auto-posts</div>
+                </button>
+              </div>
             </div>
           </div>
 
