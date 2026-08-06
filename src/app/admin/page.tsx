@@ -3784,7 +3784,7 @@ function ReelsTab({token}:{token:string}){
               <div style={{fontSize:32,marginBottom:12}}>🎞</div>
               <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No Veo clips yet</div>
               <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Google Veo 3.1 clips — 8s · 1080p · 9:16. Used automatically in every reel.</div>
-              <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"12px 28px",borderRadius:10,fontSize:13,background:GRAD,color:"#fff",opacity:generatingClips?0.5:1}}>{generatingClips?"⏳ Generating…":"✦ Generate First 5 Clips"}</button>
+              <button onClick={()=>generateMoreClips(1)} disabled={generatingClips} style={{...btn,padding:"12px 28px",borderRadius:10,fontSize:13,background:GRAD,color:"#fff",opacity:generatingClips?0.5:1}}>{generatingClips?"⏳ Generating…":"✦ Generate First Clip"}</button>
             </div>
           )}
 
