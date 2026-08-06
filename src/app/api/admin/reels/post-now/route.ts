@@ -51,9 +51,8 @@ export async function POST(req: NextRequest) {
     headers: { "Content-Type": "application/json", "x-admin-token": token },
     body: JSON.stringify({ script: script.voiceoverScript, voiceId }),
   });
-  if (!voiceRes.ok) return NextResponse.json({ error: "Voiceover generation failed" }, { status: 500 });
-  const voiceData = await voiceRes.json();
-  if (!voiceData?.audioUrl) return NextResponse.json({ error: "Voiceover generation failed" }, { status: 500 });
+  const voiceData = await voiceRes.json().catch(() => ({}));
+  if (!voiceRes.ok || !voiceData?.audioUrl) return NextResponse.json({ error: voiceData?.error ?? "Voiceover generation failed" }, { status: 500 });
 
   // Estimate voiceover duration from word count so the video timeline matches the audio.
   // ElevenLabs speaks at ~135 words/min on average with these voice settings.
