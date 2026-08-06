@@ -3351,11 +3351,11 @@ const REEL_CAMPAIGN_SCHEDULE=Array.from({length:36},(_,i)=>{
 });
 
 const VOICE_PRESETS=[
+  {id:"EXAVITQu4vr4xnSDxMaL",name:"Bella",desc:"Warm · Elegant · Female"},
   {id:"pNInz6obpgDQGcFmaJgB",name:"Adam",desc:"Deep · Authoritative · Narration"},
   {id:"ErXwobaYiN019PkySvjV",name:"Antoni",desc:"Confident · Well-rounded · Executive"},
   {id:"VR6AewLTigWG4xSOukaG",name:"Arnold",desc:"Crisp · Commanding · Professional"},
   {id:"21m00Tcm4TlvDq8ikWAM",name:"Rachel",desc:"Calm · Professional · Female"},
-  {id:"EXAVITQu4vr4xnSDxMaL",name:"Bella",desc:"Warm · Elegant · Female"},
 ];
 
 const PIPELINE_STEPS=["Writing Script","Generating Voiceover","Rendering Video","Auto-Posting"];
