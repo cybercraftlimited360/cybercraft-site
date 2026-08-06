@@ -57,7 +57,9 @@ export async function POST(req: NextRequest) {
   // Estimate voiceover duration from word count so the video timeline matches the audio.
   // ElevenLabs speaks at ~135 words/min on average with these voice settings.
   const wordCount = (script.voiceoverScript ?? "").trim().split(/\s+/).filter(Boolean).length;
-  const estimatedAudioDuration = Math.max(10, Math.round((wordCount / 135) * 60));
+  // Target 30s reels — clamp between 28–32s to stay on brief
+  const rawEstimate = Math.round((wordCount / 135) * 60);
+  const estimatedAudioDuration = Math.min(32, Math.max(28, rawEstimate));
 
   // 3. Submit Shotstack render
   const renderRes = await fetch(`${SITE_URL}/api/admin/reels/render`, {
