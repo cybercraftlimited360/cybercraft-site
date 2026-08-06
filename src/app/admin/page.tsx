@@ -3774,7 +3774,7 @@ function ReelsTab({token}:{token:string}){
 
             {/* Generation notice */}
             <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.15)",borderRadius:10,padding:"10px 14px",fontSize:11,color:"rgba(255,193,7,0.7)",lineHeight:1.6}}>
-              <strong>Google Veo 3.1</strong> · 5-second 720p 9:16 clips · ~$0.35/clip · stored permanently in Vercel Blob. Leave this tab open — results save automatically.
+              <strong>Google Veo 3.1</strong> · 8s · 720p · 9:16 · ~$0.35/clip · clips expire after 48h. Leave this tab open — results save automatically.
             </div>
 
             {clipGenResult&&(

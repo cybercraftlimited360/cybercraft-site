@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
-import { CLIP_LIBRARY_KEY } from "@/app/api/admin/reels/generate-clips/route";
+
+const CLIP_LIBRARY_KEY = "reels:clip_library";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
 function verifyAdmin(req: NextRequest) {
