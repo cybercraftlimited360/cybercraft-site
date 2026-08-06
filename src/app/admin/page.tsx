@@ -3351,7 +3351,6 @@ const REEL_CAMPAIGN_SCHEDULE=Array.from({length:36},(_,i)=>{
 });
 
 const VOICE_PRESETS=[
-  {id:"",name:"Amy",desc:"Your AI voice agent · Consistent brand voice"},
   {id:"pNInz6obpgDQGcFmaJgB",name:"Adam",desc:"Deep · Authoritative · Narration"},
   {id:"ErXwobaYiN019PkySvjV",name:"Antoni",desc:"Confident · Well-rounded · Executive"},
   {id:"VR6AewLTigWG4xSOukaG",name:"Arnold",desc:"Crisp · Commanding · Professional"},
