@@ -126,7 +126,7 @@ OUTPUT FORMAT — return exactly this JSON (no markdown):
 }`;
 
 async function generateScript(campaign: typeof REEL_CAMPAIGNS[0], customPrompt?: string): Promise<any> {
-  const apiKey = process.env.CEREBRAS_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
   const industryLine = campaign.industry
@@ -139,11 +139,11 @@ async function generateScript(campaign: typeof REEL_CAMPAIGNS[0], customPrompt?:
 
   const prompt = `${BRAND_VOICE}\n\n${assignment}\n\n${REEL_STRUCTURE}`;
 
-  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "zai-glm-4.7",
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 4096,
       temperature: 0.78,
