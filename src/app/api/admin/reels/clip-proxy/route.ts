@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { head } from "@vercel/blob";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
 function verifyAdmin(req: NextRequest) {
@@ -13,16 +14,22 @@ export async function GET(req: NextRequest) {
   const blobUrl = req.nextUrl.searchParams.get("url");
   if (!blobUrl) return new NextResponse("Missing url", { status: 400 });
 
-  const res = await fetch(blobUrl, {
-    headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-  });
+  try {
+    // Use SDK head() to get metadata and a valid download URL
+    const info = await head(blobUrl);
+    const dlUrl = info.downloadUrl;
 
-  if (!res.ok) return new NextResponse("Failed to fetch blob", { status: 502 });
+    // Fetch the actual video bytes
+    const res = await fetch(dlUrl);
+    if (!res.ok) return new NextResponse("Failed to fetch blob", { status: 502 });
 
-  return new NextResponse(res.body, {
-    headers: {
-      "Content-Type": res.headers.get("Content-Type") ?? "video/mp4",
-      "Cache-Control": "private, max-age=3600",
-    },
-  });
+    return new NextResponse(res.body, {
+      headers: {
+        "Content-Type": "video/mp4",
+        "Cache-Control": "private, max-age=3600",
+      },
+    });
+  } catch (e: any) {
+    return new NextResponse(`Blob error: ${e.message}`, { status: 500 });
+  }
 }
