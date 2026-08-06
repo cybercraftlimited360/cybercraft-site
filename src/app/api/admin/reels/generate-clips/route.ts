@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import RunwayML from "@runwayml/sdk";
 import { redis } from "@/lib/redis";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
@@ -35,17 +34,66 @@ const PREMIUM_PROMPTS = [
 
 export const CLIP_LIBRARY_KEY = "reels:clip_library";
 
+const VEO_MODEL = "veo-3.1-generate-preview";
+
+async function generateVeoClip(prompt: string, apiKey: string): Promise<string> {
+  const base = "https://generativelanguage.googleapis.com/v1beta";
+
+  // Submit generation
+  const submitRes = await fetch(`${base}/models/${VEO_MODEL}:predictLongRunning?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: {
+        aspectRatio: "9:16",
+        durationSeconds: "8",
+        resolution: "1080p",
+      },
+    }),
+  });
+
+  if (!submitRes.ok) {
+    const err = await submitRes.text();
+    throw new Error(`Veo submit failed: ${submitRes.status} — ${err.slice(0, 300)}`);
+  }
+
+  const operation = await submitRes.json();
+  const opName = operation.name;
+  if (!opName) throw new Error("No operation name returned from Veo");
+
+  // Poll until done (max 6 min)
+  for (let i = 0; i < 36; i++) {
+    await new Promise(r => setTimeout(r, 10000));
+    const pollRes = await fetch(`${base}/${opName}?key=${apiKey}`);
+    if (!pollRes.ok) continue;
+    const op = await pollRes.json();
+    if (op.done) {
+      const videoData = op.response?.generatedVideos?.[0]?.video;
+      if (!videoData) throw new Error("No video in Veo response");
+      // Veo returns either a uri or base64 bytes
+      if (videoData.uri) return videoData.uri;
+      if (videoData.videoBytes) {
+        // Store base64 video in Redis and serve via audio route pattern
+        // For now return a data URI — caller stores it
+        return `data:video/mp4;base64,${videoData.videoBytes}`;
+      }
+      throw new Error("Veo response has no uri or videoBytes");
+    }
+    if (op.error) throw new Error(`Veo generation failed: ${op.error.message}`);
+  }
+
+  throw new Error("Veo timed out after 6 minutes");
+}
+
 export async function POST(req: NextRequest) {
   if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const apiKey = process.env.RUNWAY_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "RUNWAY_API_KEY not set in Vercel env vars" }, { status: 500 });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY not set in Vercel env vars" }, { status: 500 });
 
   const { count = 5, promptIndexes }: { count?: number; promptIndexes?: number[] } = await req.json().catch(() => ({}));
 
-  const client = new RunwayML({ apiKey });
-
-  // Pick which prompts to use
   const existing = await redis.get<any[]>(CLIP_LIBRARY_KEY) ?? [];
   const usedPrompts = new Set(existing.map((c: any) => c.promptIndex));
   const available = PREMIUM_PROMPTS.map((_, i) => i).filter(i => !usedPrompts.has(i));
@@ -63,47 +111,21 @@ export async function POST(req: NextRequest) {
     if (!promptText) continue;
 
     try {
-      // Submit generation task
-      const task = await client.textToVideo.create({
-        model: "gen4_turbo",
-        promptText,
-        duration: 5,
-        ratio: "9:16",
-      } as any);
-
-      // Poll until complete (max 3 min per clip)
-      let completed = false;
-      for (let i = 0; i < 36; i++) {
-        await new Promise(r => setTimeout(r, 5000));
-        const status = await client.tasks.retrieve(task.id);
-        if (status.status === "SUCCEEDED" && status.output?.[0]) {
-          const clip = {
-            id: task.id,
-            promptIndex: idx,
-            prompt: promptText,
-            url: status.output[0],
-            generatedAt: new Date().toISOString(),
-            model: "gen4_turbo",
-            duration: 5,
-          };
-          results.push(clip);
-          completed = true;
-          break;
-        }
-        if (status.status === "FAILED") {
-          errors.push({ idx, error: status.failure ?? "Generation failed" });
-          break;
-        }
-      }
-      if (!completed && !errors.find(e => e.idx === idx)) {
-        errors.push({ idx, error: "Timed out after 3 minutes" });
-      }
+      const url = await generateVeoClip(promptText, apiKey);
+      results.push({
+        id: `veo_${idx}_${Date.now()}`,
+        promptIndex: idx,
+        prompt: promptText,
+        url,
+        generatedAt: new Date().toISOString(),
+        model: VEO_MODEL,
+        duration: 8,
+      });
     } catch (e: any) {
       errors.push({ idx, error: e.message });
     }
   }
 
-  // Merge into library
   const updated = [...existing, ...results];
   await redis.set(CLIP_LIBRARY_KEY, updated);
 

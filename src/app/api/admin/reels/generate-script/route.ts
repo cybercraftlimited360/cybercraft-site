@@ -177,7 +177,7 @@ async function fetchClips(): Promise<any[]> {
       url: c.url,
       duration: c.duration ?? 5,
       prompt: c.prompt,
-      source: "runway",
+      source: "veo",
     }));
   }
 

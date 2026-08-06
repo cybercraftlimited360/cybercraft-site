@@ -3561,7 +3561,7 @@ function ReelsTab({token}:{token:string}){
       <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
         {([
           ["postnow","🚀 Generate Reel","One click · Apple-level quality"],
-          ["clips","🎞 Clip Library",clipLibrary.length>0?`${clipLibrary.length} AI clips ready`:"Runway AI video clips"],
+          ["clips","🎞 Clip Library",clipLibrary.length>0?`${clipLibrary.length} AI clips ready`:"Google Veo AI video clips"],
           ["pending","📋 Pending Reels",pendingReels.length>0?`${pendingReels.length} from cron`:"Cron-generated queue"],
           ["upload","📤 Upload & Post","Post your own edited video"],
         ] as const).map(([s,label,sub])=>(
@@ -3744,7 +3744,7 @@ function ReelsTab({token}:{token:string}){
           <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16,marginBottom:20}}>
               <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Runway AI Clip Library</div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Google Veo Clip Library</div>
                 <div style={{display:"flex",gap:24}}>
                   <div><div style={{fontSize:28,fontWeight:900,color:C}}>{clipLibraryTotal}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>clips ready</div></div>
                   <div><div style={{fontSize:28,fontWeight:900,color:"rgba(255,255,255,0.4)"}}>{clipLibraryAvailable-clipLibraryTotal}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>prompts unused</div></div>
@@ -3760,7 +3760,7 @@ function ReelsTab({token}:{token:string}){
 
             {/* Generation notice */}
             <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.15)",borderRadius:10,padding:"10px 14px",fontSize:11,color:"rgba(255,193,7,0.7)",lineHeight:1.6}}>
-              <strong>Note:</strong> Each clip takes ~3 min to generate via Runway Gen-4. Generating 10 clips takes ~30 min total. Leave this tab open — results save automatically to the library.
+              <strong>Note:</strong> Each clip takes ~2–6 min to generate via Google Veo 3.1. Generating 10 clips takes ~30 min total. Leave this tab open — results save automatically to the library.
             </div>
 
             {clipGenResult&&(
