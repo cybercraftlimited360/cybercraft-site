@@ -3421,7 +3421,17 @@ function ReelsTab({token}:{token:string}){
   const [playingClipId,setPlayingClipId]=useState<string|null>(null);
 
   // Active section
-  const [section,setSection]=useState<"postnow"|"clips"|"upload"|"pending">("postnow");
+  const [section,setSection]=useState<"postnow"|"clips"|"upload"|"pending"|"commercials">("postnow");
+
+  // Commercials state
+  const [commIndustry,setCommIndustry]=useState("General");
+  const [commTheme,setCommTheme]=useState("");
+  const [commGenerating,setCommGenerating]=useState(false);
+  const [commResult,setCommResult]=useState<any>(null);
+  const [commError,setCommError]=useState<string|null>(null);
+  const [commStatus,setCommStatus]=useState<string|null>(null);
+  const [commVideoUrl,setCommVideoUrl]=useState<string|null>(null);
+  const [commScreenplay,setCommScreenplay]=useState<any>(null);
 
   async function loadClipLibrary(){
     setClipLibraryLoading(true);
@@ -3573,6 +3583,7 @@ function ReelsTab({token}:{token:string}){
       {/* ── Section toggle ── */}
       <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
         {([
+          ["commercials","🎬 Commercial Studio","7-scene · Apple-level · auto-assembled"],
           ["postnow","🚀 Generate Reel","One click · Apple-level quality"],
           ["clips","🎞 Clip Library",clipLibrary.length>0?`${clipLibrary.length} AI clips ready`:"Google Veo AI video clips"],
           ["pending","📋 Pending Reels",pendingReels.length>0?`${pendingReels.length} from cron`:"Cron-generated queue"],
@@ -3584,6 +3595,117 @@ function ReelsTab({token}:{token:string}){
           </button>
         ))}
       </div>
+
+      {/* ══════════════════════════ COMMERCIAL STUDIO ══════════════════════════ */}
+      {section==="commercials"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:20}}>
+
+          {/* Header */}
+          <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+            <div style={{fontSize:14,fontWeight:800,color:"#fff",marginBottom:4}}>🎬 Commercial Studio</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",lineHeight:1.6,marginBottom:16}}>
+              Creative Director LLM writes a 7-scene screenplay → ElevenLabs voiceover → Shotstack assembles with per-scene text overlays, logo watermark, and cinematic end card. Apple-level output. Every time.
+            </div>
+
+            {/* Industry */}
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:8}}>Industry</label>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {["General","HVAC","Healthcare","Construction","Real Estate","Manufacturing","Legal","Restaurant","Finance","Logistics","Hospitality"].map(ind=>(
+                  <button key={ind} onClick={()=>setCommIndustry(ind)} style={{...btn,padding:"7px 14px",borderRadius:8,fontSize:12,border:`1px solid ${commIndustry===ind?"rgba(0,213,255,0.4)":"rgba(255,255,255,0.08)"}`,background:commIndustry===ind?"rgba(0,213,255,0.1)":"rgba(255,255,255,0.02)",color:commIndustry===ind?C:"rgba(255,255,255,0.4)",fontWeight:commIndustry===ind?700:400}}>{ind}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Campaign theme */}
+            <div style={{marginBottom:18}}>
+              <label style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.1em",textTransform:"uppercase",display:"block",marginBottom:8}}>Campaign Theme <span style={{fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional — leave blank for AI to decide)</span></label>
+              <textarea value={commTheme} onChange={e=>setCommTheme(e.target.value)} rows={2}
+                placeholder="e.g. 'We don't add tools. We build systems.' or 'The businesses that win don't work harder. They work smarter.'"
+                style={{width:"100%",padding:"12px 14px",borderRadius:10,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,resize:"vertical",fontFamily:"inherit",lineHeight:1.5,outline:"none"}}/>
+            </div>
+
+            {/* Generate button */}
+            <button onClick={async()=>{
+              setCommGenerating(true);setCommError(null);setCommResult(null);setCommStatus(null);setCommVideoUrl(null);setCommScreenplay(null);
+              try{
+                const res=await fetch("/api/admin/commercials/generate",{
+                  method:"POST",
+                  headers:{"Content-Type":"application/json","x-admin-token":token},
+                  body:JSON.stringify({industry:commIndustry,campaignTheme:commTheme}),
+                });
+                const d=await res.json();
+                if(!res.ok||!d.ok){setCommError(d.error??d.detail?.response?.message??"Generation failed");setCommGenerating(false);return;}
+                setCommResult(d);
+                setCommScreenplay(d.screenplay);
+                setCommStatus("rendering");
+                // Poll for render completion
+                const poll=async()=>{
+                  for(let i=0;i<60;i++){
+                    await new Promise(r=>setTimeout(r,8000));
+                    const sr=await fetch(`/api/admin/commercials/status?id=${d.renderId}`,{headers:{"x-admin-token":token}});
+                    const sd=await sr.json();
+                    setCommStatus(sd.status);
+                    if(sd.status==="done"&&sd.url){setCommVideoUrl(sd.url);setCommGenerating(false);return;}
+                    if(sd.status==="failed"){setCommError("Render failed — check Shotstack");setCommGenerating(false);return;}
+                  }
+                  setCommError("Render timed out (8 min). Check Shotstack dashboard.");
+                  setCommGenerating(false);
+                };
+                poll();
+              }catch(e:any){setCommError(e.message);setCommGenerating(false);}
+            }} disabled={commGenerating} style={{...btn,width:"100%",padding:"16px",borderRadius:12,fontSize:14,fontWeight:700,background:commGenerating?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#00d4ff,#7c3aed)",color:"#fff",border:"none",opacity:commGenerating?0.6:1}}>
+              {commGenerating?`⏳ ${commStatus==="rendering"?"Rendering commercial…":"Generating screenplay…"}`:"🎬 Generate Commercial"}
+            </button>
+
+            {commError&&<div style={{marginTop:12,padding:"12px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",fontSize:12,color:"rgba(239,68,68,0.8)"}}>{commError}</div>}
+          </div>
+
+          {/* Screenplay preview */}
+          {commScreenplay&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4}}>{commScreenplay.title}</div>
+              <div style={{fontSize:11,color:C,marginBottom:14,fontWeight:700,letterSpacing:"0.06em"}}>HOOK: {commScreenplay.hook}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",lineHeight:1.7,marginBottom:16,fontStyle:"italic",borderLeft:"2px solid rgba(0,213,255,0.2)",paddingLeft:12}}>
+                {commScreenplay.voiceoverScript}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {(commScreenplay.scenes??[]).map((sc:any,i:number)=>(
+                  <div key={i} style={{background:"rgba(255,255,255,0.02)",borderRadius:8,padding:"10px 12px",display:"flex",gap:12,alignItems:"flex-start"}}>
+                    <div style={{minWidth:28,height:28,borderRadius:"50%",background:"rgba(0,213,255,0.1)",border:"1px solid rgba(0,213,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C}}>{i+1}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.6)",marginBottom:2,textTransform:"uppercase",letterSpacing:"0.08em"}}>{sc.purpose} · {sc.duration}s</div>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginBottom:4,lineHeight:1.4}}>{sc.veoPrompt?.slice(0,80)}…</div>
+                      <div style={{fontSize:11,fontWeight:700,color:C,letterSpacing:"0.06em"}}>TEXT: {sc.textOverlay}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Rendered commercial */}
+          {commVideoUrl&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:14,padding:20}}>
+              <div style={{fontSize:13,fontWeight:700,color:C,marginBottom:14}}>✓ Commercial Ready</div>
+              <video src={commVideoUrl} controls playsInline style={{width:"100%",maxWidth:360,borderRadius:12,display:"block",margin:"0 auto 16px"}}/>
+              <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+                <a href={commVideoUrl} download="cybercraft360_commercial.mp4" style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:700,background:"rgba(0,213,255,0.1)",border:"1px solid rgba(0,213,255,0.3)",color:C,textDecoration:"none"}}>⬇ Download MP4</a>
+                <button onClick={()=>{setCommResult(null);setCommVideoUrl(null);setCommScreenplay(null);setCommStatus(null);setCommError(null);}} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:13,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.4)"}}>↺ Generate Another</button>
+              </div>
+            </div>
+          )}
+
+          {/* Status banner while rendering */}
+          {commGenerating&&commStatus==="rendering"&&!commVideoUrl&&(
+            <div style={{background:"rgba(0,213,255,0.04)",border:"1px solid rgba(0,213,255,0.15)",borderRadius:12,padding:"14px 18px",fontSize:13,color:"rgba(255,255,255,0.5)",textAlign:"center",lineHeight:1.6}}>
+              ⏳ Shotstack is rendering your commercial… usually 2–4 minutes.<br/>
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>Stay on this page — the video will appear automatically when done.</span>
+            </div>
+          )}
+
+        </div>
+      )}
 
       {/* ══════════════════════════ POST NOW SECTION ══════════════════════════ */}
       {section==="postnow"&&(
