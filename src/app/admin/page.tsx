@@ -3807,7 +3807,14 @@ function ReelsTab({token}:{token:string}){
                     <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{fontSize:10,color:"rgba(0,213,255,0.6)",fontWeight:700}}>{clip.model??clip.source??""} · {clip.duration??5}s</span>
-                      <button onClick={()=>deleteClip(clip.id)} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"rgba(239,68,68,0.6)"}}>✕ Remove</button>
+                      <div style={{display:"flex",gap:6}}>
+                        <button onClick={async()=>{
+                          const r=await fetch(`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`);
+                          const d=await r.json();
+                          if(d.downloadUrl){const a=document.createElement("a");a.href=d.downloadUrl;a.download=`clip_${clip.id}.mp4`;a.click();}
+                        }} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",color:"rgba(0,213,255,0.7)"}}>⬇ Save</button>
+                        <button onClick={()=>deleteClip(clip.id)} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"rgba(239,68,68,0.6)"}}>✕ Remove</button>
+                      </div>
                     </div>
                   </div>
                 </div>
