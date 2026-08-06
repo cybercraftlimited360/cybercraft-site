@@ -15,20 +15,9 @@ export async function GET(req: NextRequest) {
   if (!blobUrl) return new NextResponse("Missing url", { status: 400 });
 
   try {
-    // Use SDK head() to get metadata and a valid download URL
     const info = await head(blobUrl);
-    const dlUrl = info.downloadUrl;
-
-    // Fetch the actual video bytes
-    const res = await fetch(dlUrl);
-    if (!res.ok) return new NextResponse("Failed to fetch blob", { status: 502 });
-
-    return new NextResponse(res.body, {
-      headers: {
-        "Content-Type": "video/mp4",
-        "Cache-Control": "private, max-age=3600",
-      },
-    });
+    // Redirect to the pre-signed download URL — no streaming needed
+    return NextResponse.redirect(info.downloadUrl);
   } catch (e: any) {
     return new NextResponse(`Blob error: ${e.message}`, { status: 500 });
   }
