@@ -207,16 +207,30 @@ function buildEdit(opts: {
     start: 0, length: contentDuration,
   };
 
-  // Scene text — hook scene = full-frame hero, rest = lower-third
-  const textClips = timed.map((sc: any, i: number) => ({
-    asset: {
-      type: "html",
-      html: i === 0 ? heroHtml(hook, W, H) : sceneTextHtml(sc.narration, W, H, 0.15),
-      width: W, height: H, background: "transparent",
-    },
-    start: sc.start + 0.25,
-    length: sc.dur - 0.25,
-  }));
+  // Apple/McLaren text approach: only the hook (scene 0) and closing line (last scene) show text.
+  // Voiceover carries all narration — subtitles on B-roll cause sync problems and look cheap.
+  const lastIdx = timed.length - 1;
+  const textClips = timed
+    .map((sc: any, i: number) => {
+      if (i === 0) {
+        // Full-frame hero hook
+        return {
+          asset: { type: "html", html: heroHtml(hook, W, H), width: W, height: H, background: "transparent" },
+          start: sc.start + 0.2,
+          length: sc.dur - 0.2,
+        };
+      }
+      if (i === lastIdx && sc.narration) {
+        // Single closing statement — minimal lower-third
+        return {
+          asset: { type: "html", html: sceneTextHtml(sc.narration, W, H, 0.15), width: W, height: H, background: "transparent" },
+          start: sc.start + 0.3,
+          length: sc.dur - 0.3,
+        };
+      }
+      return null; // All middle scenes: pure B-roll, voiceover tells the story
+    })
+    .filter(Boolean);
 
   // Logo — subtle, persistent
   const logoClip = {

@@ -8,28 +8,29 @@ function verifyAdmin(req: NextRequest) {
   return !!(t && s && t === makeToken(s));
 }
 
-// Apple/McLaren-level cinematic prompts for a premium AI automation brand
+// CyberCraft360-specific cinematic prompts — AI automation agency, Houston TX
+// Visual world: business transformation, AI answering calls, leads converting, time saved, 24/7 operation
 const PREMIUM_PROMPTS = [
-  "Extreme macro of circuit board copper traces, golden specular caustics, ultra-shallow depth of field, dark studio background, slow rack focus, 8K cinematic",
-  "Abstract neural network nodes pulsing with electric blue light, dark void background, slow drift, bioluminescent synaptic connections, photorealistic, Apple commercial aesthetic",
-  "Sleek black server rack corridor, dramatic perspective vanishing point, cold blue LED edge lighting, wisps of dry ice fog, ultra-wide lens, slow dolly forward",
-  "Data streams rendered as luminous white particles flowing in slow motion through deep black space, cinematic grade, minimal, 4K",
-  "Macro shot of a finger touching a dark glass surface, ripple of light emanating outward, clean dark background, ultra slow motion, premium product commercial",
-  "Abstract AI brain morphing from particles to solid form, electric blue and white, dark background, fluid slow motion, Apple-style render",
-  "City skyline at 3am reflected in rain-slicked black road surface, long exposure streaks of white light, cinematic anamorphic lens flare, slow motion",
-  "Close-up of a human eye with data code reflected in the iris, dramatic rim lighting, shallow depth of field, dark studio, sci-fi commercial grade",
-  "Futuristic holographic interface dissolving into light particles, hands reaching through it, dark room, cold blue ambient, slow motion",
-  "Polished obsidian surface with glowing geometric patterns emerging beneath, abstract, ultra-slow reveal, premium tech aesthetic",
-  "Aerial night city shot pulling back from a single lit window, drone, long exposure, cold color grade, cinematic, isolation and scale",
-  "Macro of liquid mercury droplets forming a sphere, dark background, dramatic side lighting, ultra slow motion, photorealistic",
-  "Carbon fibre texture under dramatic raking light, extreme macro, dark studio, specular highlights, shallow depth of field, McLaren aesthetic",
-  "Abstract rotating helix of light filaments in deep black space, electric blue, slow motion, Apple WWDC aesthetic",
-  "Clean white light beam cutting through darkness, particles floating in the air, studio atmosphere, slow motion, minimalist",
-  "Robotic arm precision movement in slow motion, dark background, single rim light, industrial premium, McLaren tech aesthetic",
-  "Flowing black silk fabric in slow motion against pure dark background, rim lit, ultra high speed, fashion commercial grade",
-  "Abstract topology of a human brain rendered as glowing wireframe, slowly rotating in dark void, electric blue, cinematic",
-  "Time-lapse of clouds accelerating over a dark glass skyscraper, reflected sunset, cinematic anamorphic, upward tilt",
-  "Microchip die shot under electron microscope aesthetic, extreme detail, dark background, gold and blue tones, slow zoom",
+  "Aerial hyperlapse of Houston Texas downtown skyline at golden hour, drone pulling back slowly revealing the city scale, warm cinematic grade, anamorphic lens flare, premium commercial",
+  "Extreme close-up of a smartphone screen showing an incoming business call being answered instantly, dark premium desk surface, single dramatic key light, shallow depth of field, slow motion, tech commercial",
+  "Business owner at a sleek dark executive desk, dramatic side lighting, multiple screens glowing with analytics showing leads converting in real time, slow cinematic push in, premium grade",
+  "Abstract AI voice waveform visualization on pure black background, electric cyan frequencies pulsing rhythmically, slow motion, minimal, premium tech commercial aesthetic",
+  "Close-up of hands typing on a dark keyboard, single rim light from the side, blurred monitor glow in background, shallow depth of field, slow motion, premium business commercial",
+  "Houston downtown skyline at night through floor-to-ceiling office windows, city lights bokeh, a professional silhouetted at the window, dramatic ambient, cinematic wide",
+  "Macro close-up of a phone screen showing chat messages with instant AI responses appearing in real time, dark background, cold blue screen glow, shallow depth of field, slow rack focus",
+  "Abstract automated workflow — glowing nodes connecting in precise sequence across dark background, electric blue and white connections pulsing systematically, slow motion, premium tech",
+  "Time-lapse of a busy office transforming to empty as automated systems take over, screens glowing with AI activity, dramatic overhead shot, cold cinematic grade",
+  "Business dashboard on a large monitor showing lead pipeline filling up, green conversion metrics rising, dramatic side lighting, shallow depth of field, slow zoom in, commercial grade",
+  "Aerial drone shot of Houston Texas highway at rush hour, thousands of cars moving in orchestrated flow, golden hour, slow motion, scale and precision, premium cinematic",
+  "Close-up of a professional shaking hands across a conference table, warm window light, shallow depth of field, slow motion, trust and partnership, premium business commercial",
+  "Clock face in extreme macro, second hand in crisp slow motion against dark background, dramatic rim lighting, 24/7 concept, minimal premium aesthetic",
+  "AI chat interface on a sleek dark monitor, automated responses generating instantly with no human present, office at night, city lights through window, cinematic ambient",
+  "Extreme close-up of a business card being placed on a dark surface, single overhead spot light, shallow depth of field, slow motion, premium brand identity aesthetic",
+  "Confident business professional walking through a modern dark-toned office corridor, dramatic side lighting, slow motion, purposeful stride, premium corporate commercial",
+  "Abstract data visualization — thousands of small light points organizing into a precise structure over dark background, slow motion, electric blue, systematic intelligence aesthetic",
+  "Phone ringing on a dark executive desk, immediately answered by an invisible force, screen lights up showing AI agent active, dramatic lighting, slow motion, cinematic",
+  "Houston skyline reflection in a rain-covered glass surface, long exposure streaks of light, cold blue color grade, slow motion, premium cinematic atmosphere",
+  "Split screen: left side chaos of missed calls and sticky notes, right side clean AI dashboard handling everything automatically — dramatic reveal, premium commercial grade",
 ];
 
 export const CLIP_LIBRARY_KEY = "reels:clip_library";
