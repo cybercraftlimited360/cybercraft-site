@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
-import { put } from "@vercel/blob";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
 function verifyAdmin(req: NextRequest) {
@@ -8,7 +7,6 @@ function verifyAdmin(req: NextRequest) {
   return !!(t && s && t === makeToken(s));
 }
 
-// CyberCraft360-specific cinematic prompts — AI automation agency, Houston TX
 const PREMIUM_PROMPTS = [
   "Aerial hyperlapse of downtown Houston Texas skyline at golden hour, drone camera pulling back slowly revealing the city scale, warm cinematic grade, anamorphic lens flare, no people, premium commercial",
   "Extreme close-up of a smartphone screen on a dark premium desk, incoming call notification glowing on screen, single dramatic key light, shallow depth of field, slow motion, no people, tech commercial",
@@ -36,8 +34,8 @@ export const CLIP_LIBRARY_KEY = "reels:clip_library";
 const VEO_MODEL = "veo-3.1-generate-preview";
 const GEN_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-async function generateAndStoreClip(prompt: string, apiKey: string, idx: number): Promise<string> {
-  // 1. Submit to Veo
+// Returns the Veo URI directly — no Blob storage needed
+async function generateClip(prompt: string, apiKey: string, idx: number): Promise<string> {
   const submitRes = await fetch(`${GEN_BASE}/models/${VEO_MODEL}:predictLongRunning?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -56,10 +54,7 @@ async function generateAndStoreClip(prompt: string, apiKey: string, idx: number)
   const opName = operation.name;
   if (!opName) throw new Error("No operation name returned from Veo");
 
-  // 2. Poll until done (max 6 min, every 10s)
-  let videoUrl: string | null = null;
-  let videoBytes: string | null = null;
-
+  // Poll until done (max 6 min, every 10s)
   for (let i = 0; i < 36; i++) {
     await new Promise(r => setTimeout(r, 10000));
     const pollRes = await fetch(`${GEN_BASE}/${opName}?key=${apiKey}`);
@@ -67,47 +62,24 @@ async function generateAndStoreClip(prompt: string, apiKey: string, idx: number)
     const op = await pollRes.json();
     if (op.error) throw new Error(`Veo failed: ${op.error.message}`);
     if (op.done) {
-      console.log("[veo] response:", JSON.stringify(op.response ?? {}).slice(0, 800));
       const videoObj = op.response?.generateVideoResponse?.generatedSamples?.[0]?.video;
-      if (!videoObj) throw new Error(`Unexpected Veo response: ${JSON.stringify(op.response ?? {}).slice(0, 300)}`);
-      videoUrl = videoObj.uri ?? null;
-      videoBytes = videoObj.videoBytes ?? null;
-      break;
+      if (!videoObj) throw new Error(`Unexpected Veo response: ${JSON.stringify(op.response ?? {}).slice(0, 200)}`);
+      const uri = videoObj.uri ?? null;
+      if (!uri) throw new Error("Veo returned no video URI");
+      return uri;
     }
   }
 
-  if (!videoUrl && !videoBytes) throw new Error("Veo timed out after 6 minutes");
-
-  // 3. Download video and store permanently in Vercel Blob
-  // (Veo URIs expire after 2 days — Blob gives permanent storage)
-  let videoBuffer: Buffer;
-
-  if (videoBytes) {
-    videoBuffer = Buffer.from(videoBytes, "base64");
-  } else {
-    // Download from Veo URI (may need API key appended)
-    const dlUrl = videoUrl!.includes("?") ? `${videoUrl}&key=${apiKey}` : `${videoUrl}?key=${apiKey}`;
-    const dlRes = await fetch(dlUrl);
-    if (!dlRes.ok) throw new Error(`Failed to download Veo video: ${dlRes.status}`);
-    videoBuffer = Buffer.from(await dlRes.arrayBuffer());
-  }
-
-  // Upload to Vercel Blob
-  const blob = await put(`reels/clips/veo_${idx}_${Date.now()}.mp4`, videoBuffer, {
-    access: "private",
-    contentType: "video/mp4",
-  });
-
-  return blob.url;
+  throw new Error("Veo timed out after 6 minutes");
 }
 
 export async function POST(req: NextRequest) {
   if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY not set in Vercel env vars" }, { status: 500 });
+  if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY not set" }, { status: 500 });
 
-  const { count = 5, promptIndexes }: { count?: number; promptIndexes?: number[] } = await req.json().catch(() => ({}));
+  const { count = 1, promptIndexes }: { count?: number; promptIndexes?: number[] } = await req.json().catch(() => ({}));
 
   const existing = await redis.get<any[]>(CLIP_LIBRARY_KEY) ?? [];
   const usedPrompts = new Set(existing.map((c: any) => c.promptIndex));
@@ -124,18 +96,17 @@ export async function POST(req: NextRequest) {
   for (const idx of toGenerate) {
     const promptText = PREMIUM_PROMPTS[idx];
     if (!promptText) continue;
-
     try {
-      const url = await generateAndStoreClip(promptText, apiKey, idx);
+      const veoUri = await generateClip(promptText, apiKey, idx);
       results.push({
         id: `veo_${idx}_${Date.now()}`,
         promptIndex: idx,
         prompt: promptText,
-        url,
+        veoUri,                          // raw Veo URI — proxy fetches with API key
         generatedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
         model: VEO_MODEL,
         duration: 8,
-        source: "veo",
       });
     } catch (e: any) {
       errors.push({ idx, error: e.message });
@@ -145,13 +116,17 @@ export async function POST(req: NextRequest) {
   const updated = [...existing, ...results];
   await redis.set(CLIP_LIBRARY_KEY, updated);
 
-  return NextResponse.json({ ok: true, generated: results.length, errors, total: updated.length });
+  return NextResponse.json({ ok: true, generated: results.length, errors, total: updated.length, clips: results });
 }
 
 export async function GET(req: NextRequest) {
   if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const clips = await redis.get<any[]>(CLIP_LIBRARY_KEY) ?? [];
-  return NextResponse.json({ ok: true, clips, total: clips.length, available: PREMIUM_PROMPTS.length });
+  // Filter out expired clips (Veo URIs last 48h)
+  const now = Date.now();
+  const fresh = clips.filter((c: any) => !c.expiresAt || new Date(c.expiresAt).getTime() > now);
+  if (fresh.length !== clips.length) await redis.set(CLIP_LIBRARY_KEY, fresh);
+  return NextResponse.json({ ok: true, clips: fresh, total: fresh.length, available: PREMIUM_PROMPTS.length });
 }
 
 export async function DELETE(req: NextRequest) {

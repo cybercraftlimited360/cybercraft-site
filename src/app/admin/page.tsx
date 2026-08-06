@@ -1961,13 +1961,16 @@ function Sub({children,style}:{children:React.ReactNode;style?:React.CSSProperti
 function EmptyState({children}:{children:React.ReactNode}){return <p style={{padding:"28px 20px",textAlign:"center",fontSize:13,color:"rgba(255,255,255,0.25)",margin:0,lineHeight:1.6}}>{children}</p>;}
 function Btn({children,onClick,style}:{children:React.ReactNode;onClick?:()=>void;style?:React.CSSProperties}){return <button onClick={onClick} style={{padding:"7px 12px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.5)",fontSize:12,cursor:"pointer",...style}}>{children}</button>;}
 function InvoiceStatusBadge({status}:{status:string}){const map:Record<string,{color:string;label:string}>={sent:{color:"#f59e0b",label:"Sent"},paid:{color:"#22c55e",label:"Paid"},overdue:{color:"#ef4444",label:"Overdue"},cancelled:{color:"#64748b",label:"Cancelled"}};const s=map[status]??{color:"#64748b",label:status};return <span style={{fontSize:10,fontWeight:700,color:s.color,textTransform:"uppercase",letterSpacing:"0.08em"}}>{s.label}</span>;}
-function BlobVideo({proxyUrl,style}:{proxyUrl:string,style?:React.CSSProperties}){
-  const [src,setSrc]=useState<string|null>(null);
-  useEffect(()=>{
-    fetch(proxyUrl).then(r=>r.json()).then(d=>{if(d.url)setSrc(d.url);}).catch(()=>{});
-  },[proxyUrl]);
-  if(!src) return <div style={{...style,background:"rgba(255,255,255,0.03)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Loading…</div></div>;
-  return <video src={src} muted loop autoPlay playsInline style={style}/>;
+function ClipModal({clipId,token,onClose}:{clipId:string,token:string,onClose:()=>void}){
+  const src=`/api/admin/reels/clip-proxy?id=${clipId}&token=${token}`;
+  return(
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{position:"relative",maxWidth:360,width:"90%"}}>
+        <video src={src} controls autoPlay playsInline style={{width:"100%",borderRadius:16,background:"#000"}}/>
+        <button onClick={onClose} style={{position:"absolute",top:-14,right:-14,width:32,height:32,borderRadius:"50%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+      </div>
+    </div>
+  );
 }
 
 function Spinner({inline}:{inline?:boolean}){return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:inline?undefined:"100dvh",background:inline?undefined:"#080a10"}}><div style={{width:32,height:32,borderRadius:"50%",border:"2px solid rgba(0,212,255,0.3)",borderTopColor:"#00d4ff",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>);}
@@ -3415,6 +3418,7 @@ function ReelsTab({token}:{token:string}){
   const [clipLibraryLoading,setClipLibraryLoading]=useState(false);
   const [generatingClips,setGeneratingClips]=useState(false);
   const [clipGenResult,setClipGenResult]=useState<any>(null);
+  const [playingClipId,setPlayingClipId]=useState<string|null>(null);
 
   // Active section
   const [section,setSection]=useState<"postnow"|"clips"|"upload"|"pending">("postnow");
@@ -3798,33 +3802,24 @@ function ReelsTab({token}:{token:string}){
           )}
 
           {/* Clip grid */}
+          {playingClipId&&<ClipModal clipId={playingClipId} token={token} onClose={()=>setPlayingClipId(null)}/>}
           {clipLibrary.length>0&&(
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
               {clipLibrary.map((clip:any)=>(
                 <div key={clip.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,overflow:"hidden"}}>
-                  <BlobVideo proxyUrl={`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`} style={{width:"100%",aspectRatio:"9/16",objectFit:"cover",display:"block",maxHeight:260}}/>
+                  {/* Thumbnail placeholder with play button */}
+                  <div onClick={()=>setPlayingClipId(clip.id)} style={{width:"100%",aspectRatio:"9/16",maxHeight:260,background:"linear-gradient(135deg,rgba(0,213,255,0.05),rgba(124,58,237,0.05))",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative"}}>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(0,213,255,0.15)",border:"2px solid rgba(0,213,255,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>▶</div>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:10}}>Tap to play</div>
+                    <div style={{position:"absolute",top:8,right:8,fontSize:9,color:"rgba(255,255,255,0.25)",background:"rgba(0,0,0,0.4)",padding:"2px 6px",borderRadius:4}}>{clip.duration??8}s</div>
+                  </div>
                   <div style={{padding:"10px 12px"}}>
-                    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <span style={{fontSize:10,color:"rgba(0,213,255,0.6)",fontWeight:700}}>{clip.model??clip.source??""} · {clip.duration??5}s</span>
-                      <div style={{display:"flex",gap:6}}>
-                        <button onClick={async()=>{
-                          try{
-                            const r=await fetch(`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`);
-                            const d=await r.json();
-                            if(!d.url) return alert("Could not get download URL");
-                            // Fetch blob then create object URL so download attribute works cross-origin
-                            const blob=await fetch(d.url).then(x=>x.blob());
-                            const a=document.createElement("a");
-                            a.href=URL.createObjectURL(blob);
-                            a.download=`clip_${clip.id}.mp4`;
-                            a.click();
-                            setTimeout(()=>URL.revokeObjectURL(a.href),60000);
-                          }catch(e){alert("Download failed");}
-                        }} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",color:"rgba(0,213,255,0.7)"}}>⬇ Save</button>
-                        <button onClick={()=>deleteClip(clip.id)} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"rgba(239,68,68,0.6)"}}>✕ Remove</button>
-                      </div>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:10,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      <button onClick={()=>setPlayingClipId(clip.id)} style={{...btn,flex:1,padding:"6px 8px",borderRadius:8,fontSize:11,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",color:"rgba(0,213,255,0.8)"}}>▶ Play</button>
+                      <a href={`/api/admin/reels/clip-proxy?id=${clip.id}&token=${token}&disposition=attachment`} download="cybercraft360_clip.mp4" style={{...btn,flex:1,padding:"6px 8px",borderRadius:8,fontSize:11,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",textDecoration:"none",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>⬇ Save</a>
                     </div>
+                    <button onClick={()=>deleteClip(clip.id)} style={{...btn,width:"100%",marginTop:6,padding:"5px 8px",borderRadius:8,fontSize:10,background:"rgba(239,68,68,0.05)",border:"1px solid rgba(239,68,68,0.15)",color:"rgba(239,68,68,0.5)"}}>✕ Remove</button>
                   </div>
                 </div>
               ))}
