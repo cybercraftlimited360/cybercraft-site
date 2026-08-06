@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("[voiceover]", err);
-    return NextResponse.json({ error: "ElevenLabs TTS failed" }, { status: 502 });
+    console.error("[voiceover]", res.status, err);
+    return NextResponse.json({ error: `ElevenLabs TTS failed: ${res.status} — ${err.slice(0, 300)}` }, { status: 502 });
   }
 
   const audio = await res.arrayBuffer();
