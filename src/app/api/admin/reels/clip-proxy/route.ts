@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const info = await head(blobUrl);
-    // Redirect to the pre-signed download URL — no streaming needed
-    return NextResponse.redirect(info.downloadUrl);
+    // Return the pre-signed download URL as JSON — the frontend sets video src directly
+    return NextResponse.json({ downloadUrl: info.downloadUrl });
   } catch (e: any) {
     return new NextResponse(`Blob error: ${e.message}`, { status: 500 });
   }

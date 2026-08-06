@@ -1961,6 +1961,15 @@ function Sub({children,style}:{children:React.ReactNode;style?:React.CSSProperti
 function EmptyState({children}:{children:React.ReactNode}){return <p style={{padding:"28px 20px",textAlign:"center",fontSize:13,color:"rgba(255,255,255,0.25)",margin:0,lineHeight:1.6}}>{children}</p>;}
 function Btn({children,onClick,style}:{children:React.ReactNode;onClick?:()=>void;style?:React.CSSProperties}){return <button onClick={onClick} style={{padding:"7px 12px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.5)",fontSize:12,cursor:"pointer",...style}}>{children}</button>;}
 function InvoiceStatusBadge({status}:{status:string}){const map:Record<string,{color:string;label:string}>={sent:{color:"#f59e0b",label:"Sent"},paid:{color:"#22c55e",label:"Paid"},overdue:{color:"#ef4444",label:"Overdue"},cancelled:{color:"#64748b",label:"Cancelled"}};const s=map[status]??{color:"#64748b",label:status};return <span style={{fontSize:10,fontWeight:700,color:s.color,textTransform:"uppercase",letterSpacing:"0.08em"}}>{s.label}</span>;}
+function BlobVideo({proxyUrl,style}:{proxyUrl:string,style?:React.CSSProperties}){
+  const [src,setSrc]=useState<string|null>(null);
+  useEffect(()=>{
+    fetch(proxyUrl).then(r=>r.json()).then(d=>{if(d.downloadUrl)setSrc(d.downloadUrl);}).catch(()=>{});
+  },[proxyUrl]);
+  if(!src) return <div style={{...style,background:"rgba(255,255,255,0.03)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Loading…</div></div>;
+  return <video src={src} muted loop autoPlay playsInline style={style}/>;
+}
+
 function Spinner({inline}:{inline?:boolean}){return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:inline?undefined:"100dvh",background:inline?undefined:"#080a10"}}><div style={{width:32,height:32,borderRadius:"50%",border:"2px solid rgba(0,212,255,0.3)",borderTopColor:"#00d4ff",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>);}
 
 function activityIcon(type:string){return({lead:"🎯",booking:"📅",invoice:"📄",call:"📞",cancellation:"❌",payment:"💵"} as any)[type]??"🔔";}
@@ -3793,7 +3802,7 @@ function ReelsTab({token}:{token:string}){
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
               {clipLibrary.map((clip:any)=>(
                 <div key={clip.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,overflow:"hidden"}}>
-                  <video src={`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`} muted loop autoPlay playsInline style={{width:"100%",aspectRatio:"9/16",objectFit:"cover",display:"block",maxHeight:260}}/>
+                  <BlobVideo proxyUrl={`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`} style={{width:"100%",aspectRatio:"9/16",objectFit:"cover",display:"block",maxHeight:260}}/>
                   <div style={{padding:"10px 12px"}}>
                     <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
