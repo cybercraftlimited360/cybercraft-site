@@ -1962,12 +1962,7 @@ function EmptyState({children}:{children:React.ReactNode}){return <p style={{pad
 function Btn({children,onClick,style}:{children:React.ReactNode;onClick?:()=>void;style?:React.CSSProperties}){return <button onClick={onClick} style={{padding:"7px 12px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.5)",fontSize:12,cursor:"pointer",...style}}>{children}</button>;}
 function InvoiceStatusBadge({status}:{status:string}){const map:Record<string,{color:string;label:string}>={sent:{color:"#f59e0b",label:"Sent"},paid:{color:"#22c55e",label:"Paid"},overdue:{color:"#ef4444",label:"Overdue"},cancelled:{color:"#64748b",label:"Cancelled"}};const s=map[status]??{color:"#64748b",label:status};return <span style={{fontSize:10,fontWeight:700,color:s.color,textTransform:"uppercase",letterSpacing:"0.08em"}}>{s.label}</span>;}
 function BlobVideo({proxyUrl,style}:{proxyUrl:string,style?:React.CSSProperties}){
-  const [src,setSrc]=useState<string|null>(null);
-  useEffect(()=>{
-    fetch(proxyUrl).then(r=>r.json()).then(d=>{if(d.downloadUrl)setSrc(d.downloadUrl);}).catch(()=>{});
-  },[proxyUrl]);
-  if(!src) return <div style={{...style,background:"rgba(255,255,255,0.03)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Loading…</div></div>;
-  return <video src={src} muted loop autoPlay playsInline style={style}/>;
+  return <video src={proxyUrl} muted loop autoPlay playsInline style={style}/>;
 }
 
 function Spinner({inline}:{inline?:boolean}){return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:inline?undefined:"100dvh",background:inline?undefined:"#080a10"}}><div style={{width:32,height:32,borderRadius:"50%",border:"2px solid rgba(0,212,255,0.3)",borderTopColor:"#00d4ff",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>);}
@@ -3808,11 +3803,7 @@ function ReelsTab({token}:{token:string}){
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{fontSize:10,color:"rgba(0,213,255,0.6)",fontWeight:700}}>{clip.model??clip.source??""} · {clip.duration??5}s</span>
                       <div style={{display:"flex",gap:6}}>
-                        <button onClick={async()=>{
-                          const r=await fetch(`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}`);
-                          const d=await r.json();
-                          if(d.downloadUrl){const a=document.createElement("a");a.href=d.downloadUrl;a.download=`clip_${clip.id}.mp4`;a.click();}
-                        }} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",color:"rgba(0,213,255,0.7)"}}>⬇ Save</button>
+                        <a href={`/api/admin/reels/clip-proxy?url=${encodeURIComponent(clip.url)}&token=${token}&disposition=attachment`} download={`clip_${clip.id}.mp4`} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",color:"rgba(0,213,255,0.7)",textDecoration:"none",display:"inline-flex",alignItems:"center"}}>⬇ Save</a>
                         <button onClick={()=>deleteClip(clip.id)} style={{...btn,padding:"4px 10px",borderRadius:6,fontSize:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"rgba(239,68,68,0.6)"}}>✕ Remove</button>
                       </div>
                     </div>
