@@ -166,43 +166,34 @@ async function generateScript(campaign: typeof REEL_CAMPAIGNS[0], customPrompt?:
 }
 
 async function fetchClips(): Promise<any[]> {
-  // Pull from AI clip library first
   const { redis } = await import("@/lib/redis");
   const library = await redis.get<any[]>("reels:clip_library") ?? [];
-  if (library.length > 0) {
-    // Shuffle so each reel gets a different mix
-    const shuffled = [...library].sort(() => Math.random() - 0.5);
+
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
+  const adminToken = process.env.ADMIN_SECRET
+    ? Buffer.from(`cc360:${process.env.ADMIN_SECRET}:v2`).toString("base64")
+    : "";
+
+  const now = Date.now();
+  const fresh = library.filter((c: any) =>
+    (c.veoUri || c.url) && (!c.expiresAt || new Date(c.expiresAt).getTime() > now)
+  );
+
+  if (fresh.length > 0) {
+    const shuffled = [...fresh].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 10).map((c: any) => ({
       id: c.id,
-      url: c.url,
-      duration: c.duration ?? 5,
+      // Use proxy URL for veoUri clips; fall back to direct url for legacy blob clips
+      url: c.veoUri
+        ? `${SITE_URL}/api/admin/reels/clip-proxy?id=${c.id}&token=${adminToken}`
+        : c.url,
+      duration: c.duration ?? 8,
       prompt: c.prompt,
       source: "veo",
     }));
   }
 
-  // Fallback to Pexels if library is empty
-  const apiKey = process.env.PEXELS_API_KEY;
-  if (!apiKey) return [];
-  const results: any[] = [];
-  for (const q of ["cinematic dark technology abstract", "luxury minimal dark studio", "futuristic light particles"]) {
-    const res = await fetch(
-      `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=6&orientation=portrait`,
-      { headers: { Authorization: apiKey } }
-    );
-    if (!res.ok) continue;
-    const d = await res.json();
-    const clips = (d.videos ?? []).map((v: any) => {
-      const files: any[] = v.video_files ?? [];
-      const portraitHD = files.find((f: any) => f.quality === "hd" && f.height > f.width);
-      const anyHD = files.find((f: any) => f.quality === "hd");
-      const chosen = portraitHD ?? anyHD ?? files[0];
-      return { id: v.id, duration: v.duration, url: chosen?.link, source: "pexels" };
-    }).filter((v: any) => v.url && v.duration >= 3);
-    results.push(...clips);
-    if (results.length >= 10) break;
-  }
-  return results.slice(0, 10);
+  return []; // No fallback to Pexels — use Veo clip library
 }
 
 export async function POST(req: NextRequest) {
