@@ -43,7 +43,7 @@ async function generateAndStoreClip(prompt: string, apiKey: string, idx: number)
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       instances: [{ prompt }],
-      parameters: { aspectRatio: "9:16", durationSeconds: 5, resolution: "720p" },
+      parameters: { aspectRatio: "9:16", durationSeconds: 8, resolution: "720p" },
     }),
   });
 
