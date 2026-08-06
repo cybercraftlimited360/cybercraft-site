@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { head } from "@vercel/blob";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
 function verifyAdmin(req: NextRequest) {
@@ -18,20 +17,27 @@ export async function GET(req: NextRequest) {
 
   const disposition = req.nextUrl.searchParams.get("disposition") ?? "inline";
 
-  try {
-    // head() uses BLOB_READ_WRITE_TOKEN server-side to get a pre-signed downloadUrl
-    const info = await head(blobUrl, { token: process.env.BLOB_READ_WRITE_TOKEN });
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!blobToken) return new NextResponse("BLOB_READ_WRITE_TOKEN not set", { status: 500 });
 
-    // downloadUrl is a pre-signed URL — fetch it server-side and pipe the bytes
-    const res = await fetch(info.downloadUrl);
-    if (!res.ok) return new NextResponse(`Upstream error: ${res.status}`, { status: res.status });
+  try {
+    // Private Vercel Blob access: append token as query param
+    const separator = blobUrl.includes("?") ? "&" : "?";
+    const fetchUrl = `${blobUrl}${separator}token=${encodeURIComponent(blobToken)}`;
+
+    const res = await fetch(fetchUrl);
+    if (!res.ok) {
+      const body = await res.text();
+      return new NextResponse(`Blob error ${res.status}: ${body.slice(0, 200)}`, { status: res.status });
+    }
 
     const headers = new Headers({
-      "Content-Type": info.contentType ?? "video/mp4",
+      "Content-Type": res.headers.get("Content-Type") ?? "video/mp4",
       "Cache-Control": "private, max-age=600",
       "Content-Disposition": `${disposition}; filename="clip.mp4"`,
     });
-    if (info.size) headers.set("Content-Length", String(info.size));
+    const cl = res.headers.get("Content-Length");
+    if (cl) headers.set("Content-Length", cl);
 
     return new NextResponse(res.body, { status: 200, headers });
   } catch (e: any) {
