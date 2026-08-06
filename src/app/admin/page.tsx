@@ -3761,7 +3761,7 @@ function ReelsTab({token}:{token:string}){
 
             {/* Generation notice */}
             <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.15)",borderRadius:10,padding:"10px 14px",fontSize:11,color:"rgba(255,193,7,0.7)",lineHeight:1.6}}>
-              <strong>Google Veo 3.1</strong> · 8-second 1080p 9:16 clips · ~2–6 min per clip · stored permanently in Vercel Blob. Generating 5 clips takes ~15–30 min. Leave this tab open — results save automatically.
+              <strong>Google Veo 3.1</strong> · 5-second 720p 9:16 clips · ~$0.35/clip · stored permanently in Vercel Blob. Leave this tab open — results save automatically.
             </div>
 
             {clipGenResult&&(
@@ -3783,7 +3783,7 @@ function ReelsTab({token}:{token:string}){
             <div style={{background:"rgba(255,255,255,0.02)",border:"1px dashed rgba(255,255,255,0.08)",borderRadius:14,padding:"44px 24px",textAlign:"center"}}>
               <div style={{fontSize:32,marginBottom:12}}>🎞</div>
               <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No Veo clips yet</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Google Veo 3.1 clips — 8s · 1080p · 9:16. Used automatically in every reel.</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Google Veo 3.1 clips — 5s · 720p · 9:16. Used automatically in every reel.</div>
               <button onClick={()=>generateMoreClips(1)} disabled={generatingClips} style={{...btn,padding:"12px 28px",borderRadius:10,fontSize:13,background:GRAD,color:"#fff",opacity:generatingClips?0.5:1}}>{generatingClips?"⏳ Generating…":"✦ Generate First Clip"}</button>
             </div>
           )}
