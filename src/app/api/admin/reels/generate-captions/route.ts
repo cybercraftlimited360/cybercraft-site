@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 
 function makeToken(s: string) { return Buffer.from(`cc360:${s}:v2`).toString("base64"); }
 function verifyAdmin(req: NextRequest) {
@@ -20,19 +19,24 @@ export async function POST(req: NextRequest) {
   if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { context } = await req.json().catch(() => ({}));
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: "GROQ_API_KEY not set" }, { status: 500 });
 
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      {
-        role: "system",
-        content: `You are a social media expert for CyberCraft360, an AI automation agency in Houston, Texas. They build AI phone agents, automated workflows, lead qualification systems, and intelligent business systems for small-to-mid-size businesses. Your captions are direct, punchy, and conversion-focused. Always include a CTA pointing to CyberCraft360.com.`,
-      },
-      {
-        role: "user",
-        content: `Write platform-optimized captions for a social media reel from CyberCraft360.
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.75,
+      max_tokens: 900,
+      messages: [
+        {
+          role: "system",
+          content: "You are a social media expert for CyberCraft360, an AI automation agency in Houston, Texas. They build AI phone agents, automated workflows, lead qualification systems, and intelligent business systems for small-to-mid-size businesses. Your captions are direct, punchy, and conversion-focused. Always include a CTA pointing to CyberCraft360.com.",
+        },
+        {
+          role: "user",
+          content: `Write platform-optimized captions for a social media reel from CyberCraft360.
 ${context?.trim() ? `Reel topic: ${context.trim()}` : "General AI automation / business growth reel."}
 
 Return ONLY valid JSON (no markdown, no explanation):
@@ -43,22 +47,21 @@ Return ONLY valid JSON (no markdown, no explanation):
   "hashtags": ["#AIAutomation","#BusinessAutomation","#HoustonBusiness","#AIAgency","#WorkflowAutomation","#LeadGeneration","#AIPhoneAgent","#ScaleYourBusiness","#DigitalTransformation","#HoustonTech","#AIForBusiness","#NeverMissALead","#SalesAutomation","#CyberCraft360","#24_7Business"]
 }
 
-Keep Instagram under 300 chars before hashtags. Facebook under 500 chars. LinkedIn under 700 chars. Make each caption feel native to that platform's voice.`,
-      },
-    ],
-    temperature: 0.75,
-    max_tokens: 900,
+Keep Instagram under 300 chars before hashtags. Facebook under 500 chars. LinkedIn under 700 chars.`,
+        },
+      ],
+    }),
   });
 
-  const raw = completion.choices[0].message.content ?? "{}";
+  if (!res.ok) return NextResponse.json({ error: "Groq request failed" }, { status: 500 });
+  const data = await res.json();
+  const raw: string = data.choices?.[0]?.message?.content ?? "{}";
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return NextResponse.json({ error: "Failed to parse captions" }, { status: 500 });
 
   try {
     const parsed = JSON.parse(match[0]);
-    const hashtags: string[] = parsed.hashtags?.length
-      ? parsed.hashtags
-      : TRENDING_HASHTAGS.slice(0, 15);
+    const hashtags: string[] = parsed.hashtags?.length ? parsed.hashtags : TRENDING_HASHTAGS.slice(0, 15);
     return NextResponse.json({ ok: true, instagram: parsed.instagram ?? "", facebook: parsed.facebook ?? "", linkedin: parsed.linkedin ?? "", hashtags });
   } catch {
     return NextResponse.json({ error: "Invalid JSON from LLM" }, { status: 500 });
