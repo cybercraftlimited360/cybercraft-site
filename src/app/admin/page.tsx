@@ -3936,14 +3936,15 @@ function ReelsTab({token}:{token:string}){
               <div style={{marginBottom:20}}>
                 <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Schedule Dates</div>
                 <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                  <input type="date" value={schedDateInput} onChange={e=>setSchedDateInput(e.target.value)}
+                  <input type="date" value={schedDateInput}
+                    onChange={e=>{
+                      const v=e.target.value;
+                      setSchedDateInput(v);
+                      if(v) setSchedDays(prev=>new Set([...prev,v]));
+                    }}
                     min={new Date().toISOString().slice(0,10)}
                     style={{background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"9px 14px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark",flex:1,minWidth:160}}/>
-                  <button onClick={()=>{if(schedDateInput){setSchedDays(prev=>new Set([...prev,schedDateInput]));setSchedDateInput("");}}}
-                    disabled={!schedDateInput||schedDays.has(schedDateInput)}
-                    style={{...btn,padding:"9px 18px",borderRadius:8,fontSize:13,fontWeight:700,background:"rgba(0,213,255,0.1)",border:`1px solid ${C}`,color:C,opacity:!schedDateInput||schedDays.has(schedDateInput)?0.4:1}}>
-                    + Add Date
-                  </button>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",padding:"0 4px"}}>Pick a date to add it →</div>
                 </div>
                 {schedDays.size>0&&(
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
