@@ -3399,7 +3399,8 @@ function ReelsTab({token}:{token:string}){
   const [captionCtx,setCaptionCtx]=useState("");
   const [generatingCaptions,setGeneratingCaptions]=useState(false);
   const [generatedHashtags,setGeneratedHashtags]=useState<string[]>([]);
-  const [schedDays,setSchedDays]=useState<Set<string>>(new Set(["Tuesday","Thursday","Saturday"]));
+  const [schedDays,setSchedDays]=useState<Set<string>>(new Set<string>());
+  const [schedDateInput,setSchedDateInput]=useState("");
   const [schedTime,setSchedTime]=useState("11:00");
   const [scheduling,setScheduling]=useState(false);
   const [scheduleResult,setScheduleResult]=useState<{ok:boolean;msg:string}|null>(null);
@@ -3423,7 +3424,12 @@ function ReelsTab({token}:{token:string}){
       const res=await fetch("/api/admin/reels/schedule",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({videoUrl:uploadedUrl,platforms,captions:{instagram:reelIG,facebook:reelFB,linkedin:reelLI},days:Array.from(schedDays),time:schedTime})});
       const text=await res.text();
       let d:any={};try{d=JSON.parse(text);}catch{d={error:`Server error ${res.status}`};}
-      if(d.ok){setScheduleResult({ok:true,msg:`Scheduled for ${Array.from(schedDays).join(", ")} at ${schedTime}`});setScheduledPosts(prev=>[...prev,d.post]);}
+      if(d.ok){
+        const dateLabels=Array.from(schedDays).sort().map(d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})).join(", ");
+        setScheduleResult({ok:true,msg:`Queued for ${dateLabels} at ${schedTime} CST`});
+        setScheduledPosts(prev=>[...prev,d.post]);
+        setSchedDays(new Set());
+      }
       else setScheduleResult({ok:false,msg:d.error||`Error ${res.status}`});
     }catch(e:any){setScheduleResult({ok:false,msg:e.message});}
     finally{setScheduling(false);}
@@ -3928,18 +3934,31 @@ function ReelsTab({token}:{token:string}){
 
               {/* Schedule picker */}
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Schedule Days</div>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-                  {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(day=>{
-                    const sel=schedDays.has(day);
-                    return(
-                      <button key={day} onClick={()=>setSchedDays(prev=>{const n=new Set(prev);sel?n.delete(day):n.add(day);return n;})}
-                        style={{...btn,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:700,background:sel?"rgba(0,213,255,0.12)":"rgba(255,255,255,0.03)",border:`1.5px solid ${sel?C:"rgba(255,255,255,0.08)"}`,color:sel?C:"rgba(255,255,255,0.35)"}}>
-                        {day.slice(0,3)}
-                      </button>
-                    );
-                  })}
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Schedule Dates</div>
+                <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                  <input type="date" value={schedDateInput} onChange={e=>setSchedDateInput(e.target.value)}
+                    min={new Date().toISOString().slice(0,10)}
+                    style={{background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"9px 14px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark",flex:1,minWidth:160}}/>
+                  <button onClick={()=>{if(schedDateInput){setSchedDays(prev=>new Set([...prev,schedDateInput]));setSchedDateInput("");}}}
+                    disabled={!schedDateInput||schedDays.has(schedDateInput)}
+                    style={{...btn,padding:"9px 18px",borderRadius:8,fontSize:13,fontWeight:700,background:"rgba(0,213,255,0.1)",border:`1px solid ${C}`,color:C,opacity:!schedDateInput||schedDays.has(schedDateInput)?0.4:1}}>
+                    + Add Date
+                  </button>
                 </div>
+                {schedDays.size>0&&(
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+                    {Array.from(schedDays).sort().map(d=>{
+                      const label=new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+                      return(
+                        <div key={d} style={{display:"flex",alignItems:"center",gap:5,background:"rgba(0,213,255,0.08)",border:`1px solid rgba(0,213,255,0.25)`,borderRadius:20,padding:"5px 12px 5px 10px",fontSize:12,color:C}}>
+                          <span>📅 {label}</span>
+                          <button onClick={()=>setSchedDays(prev=>{const n=new Set(prev);n.delete(d);return n;})}
+                            style={{...btn,width:16,height:16,borderRadius:"50%",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",fontSize:10,padding:0,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>✕</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6}}>Post Time (CST)</div>
@@ -3948,7 +3967,7 @@ function ReelsTab({token}:{token:string}){
                   </div>
                   {schedDays.size>0&&(
                     <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:18}}>
-                      Posts every <strong style={{color:"rgba(255,255,255,0.6)"}}>{Array.from(schedDays).join(", ")}</strong> at <strong style={{color:"rgba(255,255,255,0.6)"}}>{schedTime} CST</strong>
+                      Will post on <strong style={{color:"rgba(255,255,255,0.6)"}}>{schedDays.size} date{schedDays.size>1?"s":""}</strong> at <strong style={{color:"rgba(255,255,255,0.6)"}}>{schedTime} CST</strong>
                     </div>
                   )}
                 </div>
@@ -3976,8 +3995,8 @@ function ReelsTab({token}:{token:string}){
                 </button>
                 <button onClick={schedulePost} disabled={scheduling||!uploadedUrl||schedDays.size===0} style={{...btn,flex:1,minWidth:160,padding:"14px 20px",borderRadius:12,background:scheduling||!uploadedUrl||schedDays.size===0?"rgba(255,255,255,0.04)":`rgba(0,213,255,0.1)`,border:`2px solid ${scheduling||!uploadedUrl||schedDays.size===0?"rgba(255,255,255,0.06)":C}`,color:scheduling||!uploadedUrl||schedDays.size===0?"rgba(255,255,255,0.25)":C,fontSize:14,fontWeight:800,opacity:1,textAlign:"center"}}>
                   <div style={{fontSize:16,marginBottom:2}}>📅</div>
-                  <div>{scheduling?"Scheduling…":schedDays.size===0?"Pick days first":"Add to Schedule"}</div>
-                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Auto-posts on selected days</div>
+                  <div>{scheduling?"Scheduling…":schedDays.size===0?"Pick dates first":"Add to Schedule"}</div>
+                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>One-time post on selected dates</div>
                 </button>
               </div>
             </div>
@@ -3992,7 +4011,7 @@ function ReelsTab({token}:{token:string}){
                   <div key={post.id} style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,border:"1px solid rgba(255,255,255,0.06)"}}>
                     <div style={{width:40,height:40,borderRadius:8,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>📅</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{(post.days||[]).join(", ")} at {post.time} CST</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{(post.days||[]).map((d:string)=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})).join(", ")} at {post.time} CST</div>
                       <div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>{(post.platforms||[]).join(" · ")} · added {new Date(post.createdAt).toLocaleDateString()}</div>
                     </div>
                     <button onClick={()=>deleteScheduled(post.id)} style={{...btn,padding:"5px 12px",borderRadius:7,fontSize:11,background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.18)",color:"rgba(239,68,68,0.6)"}}>Remove</button>
