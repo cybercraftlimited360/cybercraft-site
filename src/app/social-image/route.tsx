@@ -174,48 +174,48 @@ function Layout2({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
 }
 
 // ── Layout 3: Top Photo ───────────────────────────────────────────────────────
-// Photo fills top 42%, generous white content panel below for long-form body.
+// Photo fills top 58%, tight white content strip below — no dead space.
 function Layout3({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
   const isSquare = W === H;
-  const photoH = Math.floor(H * (isSquare ? 0.40 : 0.44));
-  const contentH = H - photoH;
-  const headSize = headline.length > 30 ? (isSquare ? 42 : 36) : headline.length > 20 ? (isSquare ? 50 : 42) : (isSquare ? 58 : 48);
-  const bodySize = isSquare ? 17 : 15;
+  const photoH = Math.floor(H * (isSquare ? 0.58 : 0.56));
+  const headSize = headline.length > 35 ? (isSquare ? 46 : 38) : headline.length > 22 ? (isSquare ? 56 : 46) : (isSquare ? 66 : 54);
+  const bodySize = isSquare ? 18 : 16;
 
   return (
     <div style={{ width: W, height: H, display: "flex", flexDirection: "column", background: "#fff" }}>
-      {/* Photo */}
-      <div style={{ width: W, height: photoH, display: "flex", position: "relative" }}>
+      {/* Photo — taller, fills more of the card */}
+      <div style={{ width: W, height: photoH, display: "flex", position: "relative", flexShrink: 0 }}>
         {photoUrl && (
-          <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%" }} />
+          <img src={photoUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }} />
         )}
+        {/* Gradient fade into white at bottom */}
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: "90px", display: "flex",
+          position: "absolute", bottom: 0, left: 0, right: 0, height: "110px", display: "flex",
           background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)",
         }} />
         <div style={{ position: "absolute", top: 24, right: 32, display: "flex" }}>
           <LogoMark size={58} />
         </div>
       </div>
-      {/* Content panel */}
-      <div style={{ width: W, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: isSquare ? "14px 52px 40px" : "12px 52px 32px", background: "#fff" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {/* Content panel — fills remaining space, no dead air */}
+      <div style={{ width: W, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: isSquare ? "4px 52px 36px" : "2px 52px 28px", background: "#fff" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {subline && (
-            <span style={{ color: ACCENT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" }}>
+            <span style={{ color: ACCENT, fontSize: "12px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>
               {subline}
             </span>
           )}
-          <span style={{ color: DARK, fontSize: headSize, fontWeight: 900, lineHeight: 1.02, letterSpacing: "-0.025em", whiteSpace: "pre-wrap" }}>
+          <span style={{ color: DARK, fontSize: headSize, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.025em", whiteSpace: "pre-wrap" }}>
             {headline}
           </span>
           {body && (
-            <span style={{ color: "#444", fontSize: bodySize, lineHeight: 1.65, marginTop: "6px" }}>
+            <span style={{ color: "#4a4a4a", fontSize: bodySize, lineHeight: 1.6, marginTop: "2px" }}>
               {body}
             </span>
           )}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: "#c0bbb4", fontSize: "12px", letterSpacing: "0.05em" }}>{DOMAIN}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px" }}>
+          <span style={{ color: "#c0bbb4", fontSize: "13px", letterSpacing: "0.05em" }}>{DOMAIN}</span>
           <CTAButton dark />
         </div>
       </div>
