@@ -26,15 +26,15 @@ The goals were clear:
 
 ## How We Built It
 
-Amy runs on a stack of three components working together:
+Amy runs on four layers working together, each chosen specifically for phone-call performance.
 
-**Voice (ElevenLabs)** — Amy's voice is generated in real time using ElevenLabs, one of the most realistic AI voice platforms available. The settings are tuned specifically for phone calls — fast, clear, no unnatural pauses between sentences. Most callers genuinely can't tell they're not talking to a person.
+**Voice layer** — Amy's voice is synthesized in real time using a best-in-class AI voice platform tuned for telephony. The output is optimized for speed and clarity — no unnatural pauses, no robotic cadence. Most callers genuinely can't tell they're not talking to a person.
 
-**Brain (Cerebras AI)** — The language model that powers Amy's responses runs on Cerebras, which is fast enough to generate a reply in under a second. This is critical for voice — any noticeable lag kills the conversation. We use two models in sequence, with automatic fallback if one is unavailable.
+**Intelligence layer** — The language model powering Amy's responses was selected for one specific reason: sub-second latency. Any noticeable lag on a phone call kills the conversation. We use a primary model with automatic fallback to a secondary so Amy stays responsive even during infrastructure hiccups.
 
-**Memory (Redis)** — Amy remembers everything said during a call. If a caller gives their email in the third minute, Amy recalls it in the seventh minute without asking again. State is tracked per call so nothing gets lost.
+**Memory layer** — Amy maintains full context for the duration of every call. If a caller gives their email in minute three, Amy recalls it in minute seven without asking again. State is stored per call so nothing gets lost between turns.
 
-**Phone (Twilio)** — Twilio handles the actual call infrastructure — routing, speech-to-text for what the caller says, and serving Amy's audio responses.
+**Telephony layer** — The underlying call infrastructure handles routing, real-time speech recognition, and audio delivery. It's the same kind of enterprise-grade phone infrastructure that large call centers use — we've just connected it to AI instead of human agents.
 
 ## What Amy Actually Does on a Call
 
