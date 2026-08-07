@@ -3421,9 +3421,10 @@ function ReelsTab({token}:{token:string}){
     try{
       const platforms=Object.entries(reelPlatforms).filter(([,v])=>v).map(([k])=>k);
       const res=await fetch("/api/admin/reels/schedule",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({videoUrl:uploadedUrl,platforms,captions:{instagram:reelIG,facebook:reelFB,linkedin:reelLI},days:Array.from(schedDays),time:schedTime})});
-      const d=await res.json();
+      const text=await res.text();
+      let d:any={};try{d=JSON.parse(text);}catch{d={error:`Server error ${res.status}`};}
       if(d.ok){setScheduleResult({ok:true,msg:`Scheduled for ${Array.from(schedDays).join(", ")} at ${schedTime}`});setScheduledPosts(prev=>[...prev,d.post]);}
-      else setScheduleResult({ok:false,msg:d.error||"Schedule failed"});
+      else setScheduleResult({ok:false,msg:d.error||`Error ${res.status}`});
     }catch(e:any){setScheduleResult({ok:false,msg:e.message});}
     finally{setScheduling(false);}
   }
@@ -3564,8 +3565,9 @@ function ReelsTab({token}:{token:string}){
     setPosting(true);setPostError(null);
     try{
       const res=await fetch("/api/admin/social/trigger",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({previewData:{copy:{imageHeadline:"Reel",instagramCaption:reelIG,facebookCaption:reelFB,linkedinCaption:reelLI},squareImageUrl:uploadedUrl,landscapeImageUrl:uploadedUrl,campaignIndex:-1}})});
-      const d=await res.json();
-      if(!res.ok){setPostError(d.error||"Post failed");return;}
+      const text=await res.text();
+      let d:any={};try{d=JSON.parse(text);}catch{d={error:`Server error ${res.status}`};}
+      if(!res.ok){setPostError(d.error||`Post failed (${res.status})`);return;}
       setPostResult(d);
     }catch(e:any){setPostError(e.message);}
     finally{setPosting(false);}
@@ -3780,29 +3782,69 @@ function ReelsTab({token}:{token:string}){
 
           {/* ── Upload Zone ── */}
           <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
-            <div style={{fontSize:14,fontWeight:800,color:"#fff",marginBottom:4}}>📤 Upload Reel</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:18,lineHeight:1.65}}>Upload your finished reel from Higgsfield. Preview it, generate captions, then post now or schedule.</div>
-            {!uploadPreview?(
-              <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,border:"2px dashed rgba(0,213,255,0.2)",borderRadius:12,padding:"44px 24px",cursor:"pointer",background:"rgba(0,213,255,0.02)"}}
-                onDragOver={e=>e.preventDefault()}
-                onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleReelFile(f);}}>
-                <input type="file" accept="video/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleReelFile(f);}}/>
-                <span style={{fontSize:40}}>🎬</span>
-                <span style={{fontSize:14,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>Drop your reel here or click to browse</span>
-                <span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>MP4 · MOV · any video format</span>
-              </label>
+            <div style={{fontSize:14,fontWeight:800,color:"#fff",marginBottom:4}}>📤 Load Reel</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:18,lineHeight:1.65}}>Paste your Higgsfield CDN URL or pick a local file for preview. The URL is what gets posted to social media.</div>
+            {!uploadPreview&&!uploadedUrl?(
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {/* URL input */}
+                <div style={{display:"flex",gap:8}}>
+                  <input
+                    type="url"
+                    placeholder="Paste Higgsfield video URL (https://...)"
+                    style={{flex:1,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:10,padding:"11px 14px",color:"#fff",fontSize:13,outline:"none",fontFamily:"inherit"}}
+                    onKeyDown={e=>{
+                      if(e.key==="Enter"){
+                        const v=(e.target as HTMLInputElement).value.trim();
+                        if(v.startsWith("http")){setUploadedUrl(v);setUploadPreview(v);}
+                      }
+                    }}
+                    onBlur={e=>{
+                      const v=e.target.value.trim();
+                      if(v.startsWith("http")){setUploadedUrl(v);setUploadPreview(v);}
+                    }}
+                  />
+                  <button
+                    onClick={e=>{
+                      const inp=(e.currentTarget.previousSibling as HTMLInputElement);
+                      const v=inp?.value?.trim()||"";
+                      if(v.startsWith("http")){setUploadedUrl(v);setUploadPreview(v);}
+                    }}
+                    style={{...btn,padding:"11px 18px",borderRadius:10,background:"rgba(0,213,255,0.1)",border:`1px solid ${C}`,color:C,fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>
+                    Use URL
+                  </button>
+                </div>
+                <div style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,0.2)"}}>— or preview a local file —</div>
+                <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,border:"2px dashed rgba(255,255,255,0.08)",borderRadius:12,padding:"24px",cursor:"pointer",background:"rgba(255,255,255,0.01)"}}
+                  onDragOver={e=>e.preventDefault()}
+                  onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleReelFile(f);}}>
+                  <input type="file" accept="video/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleReelFile(f);}}/>
+                  <span style={{fontSize:28}}>🎬</span>
+                  <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Browse local file for preview only</span>
+                </label>
+              </div>
             ):(
               <div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
-                <video src={uploadPreview} controls playsInline style={{width:160,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",flexShrink:0}}/>
+                <video src={uploadPreview||uploadedUrl||undefined} controls playsInline style={{width:160,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",flexShrink:0}}/>
                 <div style={{flex:1,minWidth:180}}>
-                  <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:12}}>{uploadFile?.name} · {uploadFile?Math.round(uploadFile.size/1024/1024*10)/10+"MB":""}</div>
-                  {!uploadedUrl?(
-                    <button onClick={uploadReel} disabled={uploading} style={{...btn,padding:"10px 22px",borderRadius:10,background:uploading?"rgba(255,255,255,0.04)":GRAD,color:"#fff",fontSize:13,opacity:uploading?0.5:1,marginBottom:8,display:"block"}}>
-                      {uploading?"⏳ Uploading…":"☁️ Upload Reel"}
-                    </button>
+                  {uploadedUrl&&uploadedUrl===uploadPreview?(
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginBottom:10,wordBreak:"break-all"}}>{uploadedUrl.length>60?uploadedUrl.slice(0,60)+"…":uploadedUrl}</div>
                   ):(
-                    <div style={{fontSize:13,color:"#22c55e",fontWeight:700,marginBottom:10}}>✓ Uploaded — ready to post</div>
+                    <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:12}}>{uploadFile?.name} · {uploadFile?Math.round(uploadFile.size/1024/1024*10)/10+"MB":""}</div>
                   )}
+                  {uploadedUrl?(
+                    <div style={{fontSize:13,color:"#22c55e",fontWeight:700,marginBottom:10}}>✓ Ready to post</div>
+                  ):uploadFile?(
+                    <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:8}}>
+                      <div style={{fontSize:11,color:"rgba(239,68,68,0.8)",lineHeight:1.5}}>⚠️ Large videos can't upload through the server. Paste the Higgsfield URL instead.</div>
+                      <input
+                        type="url"
+                        placeholder="Paste video URL to use for posting"
+                        style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:12,outline:"none",fontFamily:"inherit"}}
+                        onBlur={e=>{const v=e.target.value.trim();if(v.startsWith("http"))setUploadedUrl(v);}}
+                        onKeyDown={e=>{if(e.key==="Enter"){const v=(e.target as HTMLInputElement).value.trim();if(v.startsWith("http"))setUploadedUrl(v);}}}
+                      />
+                    </div>
+                  ):null}
                   <button onClick={()=>{setUploadFile(null);setUploadPreview(null);setUploadedUrl(null);setReelIG("");setReelFB("");setReelLI("");setGeneratedHashtags([]);setScheduleResult(null);setPostResult(null);setPostError(null);}} style={{...btn,fontSize:11,padding:"5px 14px",borderRadius:7,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.3)"}}>✕ Remove</button>
                 </div>
               </div>
