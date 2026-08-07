@@ -210,64 +210,29 @@ export async function GET(req: NextRequest) {
 
     const slug = slugify(post.title);
 
-    // Commit to GitHub
-    const committed = await commitToGitHub(slug, post.content);
-    if (!committed) {
-      return NextResponse.json({ ok: false, error: "GitHub commit failed" }, { status: 500 });
-    }
+    // Save to review queue — do NOT commit to GitHub yet
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
+    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent((post as any).tags?.[0] ?? "AI Agency · Houston, TX")}`;
+    const pending = await redis.get<any[]>("blog:pending_posts") ?? [];
+    const entry = {
+      id: `bp_${Date.now()}`,
+      slug,
+      keyword,
+      title: post.title,
+      content: post.content,
+      ogImageUrl,
+      generatedAt: new Date().toISOString(),
+      status: "pending",
+    };
+    pending.unshift(entry);
+    await redis.set("blog:pending_posts", pending.slice(0, 20));
 
-    // Mark keyword as used
+    // Mark keyword as used so it isn't picked again before approval
     usedRaw.push(keyword);
     await redis.set("blog:used_keywords", usedRaw);
 
-    // Submit to Google Indexing API for same-day crawl
-    const blogUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com"}/blog/${slug}`;
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com"}/api/seo/index-url`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-      body: JSON.stringify({ url: blogUrl }),
-    }).catch(() => {});
-
-    // Auto-post to Facebook + LinkedIn + Instagram
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-    const blogLink = `${siteUrl}/blog/${slug}`;
-    const shareMessage = `${post.title}\n\nMost business owners don't realize how much revenue slips through the cracks when phones go unanswered or follow-ups don't happen. We wrote up exactly how to fix it.\n\nFull breakdown → ${blogLink}\n\n#HoustonBusiness #AIAutomation #SmallBusiness #CyberCraft360`;
-    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(post.tags?.[0] ?? "AI Agency · Houston, TX")}`;
-    let socialResult: Record<string, unknown> = {};
-    try {
-      const [fbRes, liRes, igRes] = await Promise.all([
-        fetch(`${siteUrl}/api/social/post`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-          body: JSON.stringify({ message: shareMessage, link: blogLink, platforms: ["facebook"] }),
-        }),
-        fetch(`${siteUrl}/api/social/linkedin`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-          body: JSON.stringify({ text: shareMessage, link: blogLink, imageUrl: ogImageUrl }),
-        }),
-        fetch(`${siteUrl}/api/social/post`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-          body: JSON.stringify({ message: shareMessage, imageUrl: ogImageUrl, platforms: ["instagram"] }),
-        }),
-      ]);
-      socialResult = {
-        facebook: await fbRes.json(),
-        linkedin: await liRes.json(),
-        instagram: await igRes.json(),
-      };
-    } catch (e) {
-      socialResult = { error: String(e) };
-    }
-
-    // Log it
-    const log = await redis.get<any[]>("blog:auto_posts") ?? [];
-    log.unshift({ slug, keyword, title: post.title, publishedAt: new Date().toISOString(), social: socialResult });
-    await redis.set("blog:auto_posts", log.slice(0, 100));
-
-    console.log(`[blog-cron] Published: ${slug}`);
-    return NextResponse.json({ ok: true, slug, keyword, title: post.title, social: socialResult });
+    console.log(`[blog-cron] Queued for review: ${slug}`);
+    return NextResponse.json({ ok: true, queued: true, id: entry.id, slug, keyword, title: post.title });
 
   } catch (err) {
     console.error("[blog-cron] error:", err);

@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","reels","followups","competitors","roi","referrals","reports"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","reels","followups","competitors","roi","referrals","reports","review"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",reels:"🎬",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",reels:"Reels",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",reels:"🎬",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",reels:"Reels",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -94,6 +94,12 @@ const CARD_GROUPS = [
       { tab:"competitors" as Tab, icon:"🕵️", title:"Intel",      desc:"AI competitive analysis & counter-angles" },
       { tab:"roi"        as Tab, icon:"📑", title:"ROI Report",  desc:"Generate branded client PDF reports" },
       { tab:"reports"    as Tab, icon:"📬", title:"Reports",     desc:"Weekly AI report + proposal writer" },
+    ],
+  },
+  {
+    label: "Content Review", color: "#f59e0b",
+    cards: [
+      { tab:"review" as Tab, icon:"🔍", title:"Review Queue", desc:"Approve or edit AI-generated social & blog posts before they go live" },
     ],
   },
 ];
@@ -227,6 +233,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="roi"        &&<ROIReportTab   token={token}/>}
             {tab==="referrals"  &&<ReferralTab    token={token}/>}
             {tab==="reports"    &&<ReportsTab     token={token}/>}
+            {tab==="review"     &&<ReviewQueueTab token={token}/>}
           </>
         ):(
           <div style={{textAlign:"center",marginTop:60,padding:"0 24px"}}>
@@ -4308,6 +4315,182 @@ function ReelsTab({token}:{token:string}){
             </>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Review Queue Tab ──────────────────────────────────────────────────────────
+function ReviewQueueTab({token}:{token:string}){
+  const [social,setSocial]=useState<any[]>([]);
+  const [blog,setBlog]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [activeType,setActiveType]=useState<"social"|"blog">("social");
+
+  // Per-item edit state
+  const [editIG,setEditIG]=useState<Record<string,string>>({});
+  const [editFB,setEditFB]=useState<Record<string,string>>({});
+  const [editLI,setEditLI]=useState<Record<string,string>>({});
+  const [editBlog,setEditBlog]=useState<Record<string,string>>({});
+  const [busy,setBusy]=useState<Record<string,boolean>>({});
+  const [results,setResults]=useState<Record<string,any>>({});
+
+  async function load(){
+    setLoading(true);
+    try{
+      const r=await fetch("/api/admin/review",{headers:{"x-admin-token":token}});
+      const d=await r.json();
+      setSocial(d.social??[]);
+      setBlog(d.blog??[]);
+      // Pre-fill edits from existing captions
+      const ig:Record<string,string>={},fb:Record<string,string>={},li:Record<string,string>={},bl:Record<string,string>={};
+      (d.social??[]).forEach((p:any)=>{ig[p.id]=p.copy?.instagramCaption??"";fb[p.id]=p.copy?.facebookCaption??"";li[p.id]=p.copy?.linkedinCaption??"";});
+      (d.blog??[]).forEach((p:any)=>{bl[p.id]=p.content??"";});
+      setEditIG(ig);setEditFB(fb);setEditLI(li);setEditBlog(bl);
+    }catch{}
+    setLoading(false);
+  }
+
+  useEffect(()=>{load();},[token]);
+
+  async function approvePost(id:string){
+    setBusy(b=>({...b,[id]:true}));
+    try{
+      const r=await fetch(`/api/admin/review/social/${id}/approve`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-admin-token":token},
+        body:JSON.stringify({copy:{instagramCaption:editIG[id],facebookCaption:editFB[id],linkedinCaption:editLI[id]}}),
+      });
+      const d=await r.json();
+      setResults(prev=>({...prev,[id]:d}));
+      if(r.ok) setSocial(s=>s.filter(p=>p.id!==id));
+    }catch(e:any){setResults(prev=>({...prev,[id]:{error:e.message}}));}
+    setBusy(b=>({...b,[id]:false}));
+  }
+
+  async function rejectPost(id:string,type:"social"|"blog"){
+    setBusy(b=>({...b,[id]:true}));
+    try{
+      await fetch(`/api/admin/review/${type}/${id}/approve`,{method:"DELETE",headers:{"x-admin-token":token}});
+      if(type==="social") setSocial(s=>s.filter(p=>p.id!==id));
+      else setBlog(s=>s.filter(p=>p.id!==id));
+    }catch{}
+    setBusy(b=>({...b,[id]:false}));
+  }
+
+  async function approveBlog(id:string){
+    setBusy(b=>({...b,[id]:true}));
+    try{
+      const r=await fetch(`/api/admin/review/blog/${id}/approve`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-admin-token":token},
+        body:JSON.stringify({content:editBlog[id]}),
+      });
+      const d=await r.json();
+      setResults(prev=>({...prev,[id]:d}));
+      if(r.ok) setBlog(s=>s.filter(p=>p.id!==id));
+    }catch(e:any){setResults(prev=>({...prev,[id]:{error:e.message}}));}
+    setBusy(b=>({...b,[id]:false}));
+  }
+
+  const btnBase:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,borderRadius:8,fontSize:12,letterSpacing:"0.06em",padding:"8px 16px"};
+
+  return(
+    <div style={{padding:"0 0 60px"}}>
+      <SectionHeader icon="🔍" title="Review Queue" sub="AI-generated posts waiting for your approval before going live"/>
+
+      {/* Type tabs */}
+      <div style={{display:"flex",gap:8,marginBottom:20}}>
+        {(["social","blog"] as const).map(t=>(
+          <button key={t} onClick={()=>setActiveType(t)} style={{...btnBase,background:activeType===t?"rgba(167,139,250,0.15)":"rgba(255,255,255,0.04)",border:`1px solid ${activeType===t?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.08)"}`,color:activeType===t?"#a78bfa":"rgba(255,255,255,0.4)",textTransform:"capitalize"}}>
+            {t==="social"?"📲 Social Posts":"📝 Blog Posts"} {t==="social"&&social.length>0&&<span style={{background:"#a78bfa",color:"#000",borderRadius:10,padding:"1px 6px",fontSize:10,marginLeft:4}}>{social.length}</span>}{t==="blog"&&blog.length>0&&<span style={{background:"#a78bfa",color:"#000",borderRadius:10,padding:"1px 6px",fontSize:10,marginLeft:4}}>{blog.length}</span>}
+          </button>
+        ))}
+        <button onClick={load} style={{...btnBase,marginLeft:"auto",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.3)"}}>↻ Refresh</button>
+      </div>
+
+      {loading&&<div style={{textAlign:"center",padding:40,color:"rgba(255,255,255,0.3)"}}>Loading…</div>}
+
+      {/* Social posts */}
+      {!loading&&activeType==="social"&&(
+        social.length===0
+          ? <EmptyState>No social posts waiting for review</EmptyState>
+          : social.map(post=>(
+            <div key={post.id} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"20px",marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
+                <div>
+                  <p style={{margin:0,fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:4}}>{new Date(post.generatedAt).toLocaleString()}</p>
+                  <p style={{margin:0,fontSize:15,fontWeight:800,color:"#fff"}}>{post.copy?.imageHeadline}</p>
+                  <p style={{margin:"4px 0 0",fontSize:12,color:"rgba(255,255,255,0.35)"}}>Campaign {post.campaign} · Week {post.week} · {post.day} · Layout {post.layout}</p>
+                </div>
+                {post.squareImageUrl&&<img src={post.squareImageUrl} alt="" style={{width:90,height:90,borderRadius:8,objectFit:"cover",flexShrink:0}}/>}
+              </div>
+
+              {/* Caption editors */}
+              {[{label:"Instagram",key:"ig",val:editIG[post.id]??"",set:(v:string)=>setEditIG(p=>({...p,[post.id]:v}))},
+                {label:"Facebook",key:"fb",val:editFB[post.id]??"",set:(v:string)=>setEditFB(p=>({...p,[post.id]:v}))},
+                {label:"LinkedIn",key:"li",val:editLI[post.id]??"",set:(v:string)=>setEditLI(p=>({...p,[post.id]:v}))},
+              ].map(({label,val,set})=>(
+                <div key={label} style={{marginBottom:10}}>
+                  <label style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",display:"block",marginBottom:4}}>{label}</label>
+                  <textarea value={val} onChange={e=>set(e.target.value)} rows={3}
+                    style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,color:"#fff",fontSize:13,padding:"10px 12px",resize:"vertical",fontFamily:"inherit",lineHeight:1.5,boxSizing:"border-box"}}/>
+                </div>
+              ))}
+
+              {results[post.id]&&(
+                <div style={{marginBottom:10,padding:"10px 14px",borderRadius:8,background:results[post.id].error?"rgba(239,68,68,0.08)":"rgba(34,197,94,0.08)",border:`1px solid ${results[post.id].error?"rgba(239,68,68,0.25)":"rgba(34,197,94,0.25)"}`,fontSize:12,color:results[post.id].error?"#ef4444":"#22c55e"}}>
+                  {results[post.id].error?`Error: ${results[post.id].error}`:
+                   `Posted — IG: ${results[post.id].results?.instagram?.error?"✗":"✓"} · FB: ${results[post.id].results?.facebook?.error?"✗":"✓"} · LI: ${results[post.id].results?.linkedin?.error?"✗":"✓"}`}
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <button onClick={()=>approvePost(post.id)} disabled={!!busy[post.id]}
+                  style={{...btnBase,flex:1,padding:"10px 0",background:"linear-gradient(135deg,#a78bfa,#7c3aed)",color:"#fff",opacity:busy[post.id]?0.5:1}}>
+                  {busy[post.id]?"Posting…":"✅ Approve & Post"}
+                </button>
+                <button onClick={()=>rejectPost(post.id,"social")} disabled={!!busy[post.id]}
+                  style={{...btnBase,padding:"10px 16px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"#ef4444",opacity:busy[post.id]?0.5:1}}>
+                  🗑 Discard
+                </button>
+              </div>
+            </div>
+          ))
+      )}
+
+      {/* Blog posts */}
+      {!loading&&activeType==="blog"&&(
+        blog.length===0
+          ? <EmptyState>No blog posts waiting for review</EmptyState>
+          : blog.map(post=>(
+            <div key={post.id} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"20px",marginBottom:16}}>
+              <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)"}}>{new Date(post.generatedAt).toLocaleString()}</p>
+              <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#fff"}}>{post.title}</p>
+              <p style={{margin:"0 0 14px",fontSize:12,color:"rgba(255,255,255,0.35)"}}>Keyword: {post.keyword} · slug: {post.slug}</p>
+
+              <label style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",display:"block",marginBottom:6}}>MDX Content (editable)</label>
+              <textarea value={editBlog[post.id]??""} onChange={e=>setEditBlog(p=>({...p,[post.id]:e.target.value}))} rows={18}
+                style={{width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,color:"#e0e0e0",fontSize:12,padding:"12px 14px",resize:"vertical",fontFamily:"'Fira Mono',monospace",lineHeight:1.6,boxSizing:"border-box"}}/>
+
+              {results[post.id]&&(
+                <div style={{margin:"10px 0",padding:"10px 14px",borderRadius:8,background:results[post.id].error?"rgba(239,68,68,0.08)":"rgba(34,197,94,0.08)",border:`1px solid ${results[post.id].error?"rgba(239,68,68,0.25)":"rgba(34,197,94,0.25)"}`,fontSize:12,color:results[post.id].error?"#ef4444":"#22c55e"}}>
+                  {results[post.id].error?`Error: ${results[post.id].error}`:`Published → ${results[post.id].blogLink}`}
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:8,marginTop:12}}>
+                <button onClick={()=>approveBlog(post.id)} disabled={!!busy[post.id]}
+                  style={{...btnBase,flex:1,padding:"10px 0",background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"#000",opacity:busy[post.id]?0.5:1}}>
+                  {busy[post.id]?"Publishing…":"✅ Approve & Publish"}
+                </button>
+                <button onClick={()=>rejectPost(post.id,"blog")} disabled={!!busy[post.id]}
+                  style={{...btnBase,padding:"10px 16px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"#ef4444",opacity:busy[post.id]?0.5:1}}>
+                  🗑 Discard
+                </button>
+              </div>
+            </div>
+          ))
       )}
     </div>
   );

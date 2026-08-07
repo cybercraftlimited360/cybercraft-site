@@ -51,57 +51,27 @@ export async function GET(req: NextRequest) {
     const squareImageUrl = `${imageBase}?${imageParams.toString()}&aspect=square`;
     const landscapeImageUrl = `${imageBase}?${imageParams.toString()}&aspect=landscape`;
 
-    // Step 3: Post to all platforms simultaneously
-    const [igRes, fbRes, liRes] = await Promise.all([
-      fetch(`${siteUrl}/api/social/post`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        body: JSON.stringify({ message: copy.instagramCaption, imageUrl: squareImageUrl, platforms: ["instagram"] }),
-      }),
-      fetch(`${siteUrl}/api/social/post`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        body: JSON.stringify({ message: copy.facebookCaption, imageUrl: landscapeImageUrl, platforms: ["facebook"] }),
-      }),
-      fetch(`${siteUrl}/api/social/linkedin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        body: JSON.stringify({ text: copy.linkedinCaption, imageUrl: landscapeImageUrl }),
-      }),
-    ]);
-
-    const results = {
-      instagram: await igRes.json().catch(() => ({ error: "parse failed" })),
-      facebook: await fbRes.json().catch(() => ({ error: "parse failed" })),
-      linkedin: await liRes.json().catch(() => ({ error: "parse failed" })),
-    };
-
-    // Step 4: Mark campaign as used
-    const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
-    if (!used.includes(campaignIndex)) {
-      used.push(campaignIndex);
-      await redis.set("social:used_campaign_indexes", used);
-    }
-
-    // Step 5: Log it
-    const log = await redis.get<unknown[]>("social:auto_posts") ?? [];
-    log.unshift({
+    // Step 3: Save to review queue instead of posting directly
+    const pending = await redis.get<any[]>("social:pending_posts") ?? [];
+    const entry = {
+      id: `sp_${Date.now()}`,
       campaignIndex,
       campaign,
       week,
       day,
       layout,
-      headline: copy.imageHeadline,
+      copy,
       photoUrl,
       squareImageUrl,
       landscapeImageUrl,
-      postedAt: new Date().toISOString(),
-      results,
-    });
-    await redis.set("social:auto_posts", log.slice(0, 50));
+      generatedAt: new Date().toISOString(),
+      status: "pending",
+    };
+    pending.unshift(entry);
+    await redis.set("social:pending_posts", pending.slice(0, 20));
 
-    console.log(`[social-cron] Week ${week} ${day} — ${copy.imageHeadline}`);
-    return NextResponse.json({ ok: true, headline: copy.imageHeadline, campaign, week, day, layout, photoUrl, squareImageUrl, landscapeImageUrl, results });
+    console.log(`[social-cron] Queued for review: ${copy.imageHeadline}`);
+    return NextResponse.json({ ok: true, queued: true, id: entry.id, headline: copy.imageHeadline, campaign, week, day, layout, squareImageUrl, landscapeImageUrl });
 
   } catch (err) {
     console.error("[social-cron] error:", err);
