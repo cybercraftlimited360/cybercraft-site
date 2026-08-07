@@ -3976,11 +3976,19 @@ function ReelsTab({token}:{token:string}){
 
               {/* Feedback */}
               {postError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"10px 14px",color:"#ef4444",fontSize:12,marginBottom:12}}>{postError}</div>}
-              {postResult&&!postResult.error&&(
-                <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:10,padding:"12px 16px",marginBottom:12,fontSize:13,color:"#22c55e",fontWeight:700}}>
-                  ✅ Posted successfully to {Object.entries(reelPlatforms).filter(([,v])=>v).map(([k])=>k).join(", ")}
-                </div>
-              )}
+              {postResult&&(()=>{
+                const results=postResult.results??{};
+                const succeeded=Object.entries(results).filter(([,r]:any)=>!r?.error).map(([k])=>k);
+                const failed=Object.entries(results).filter(([,r]:any)=>r?.error);
+                return(
+                  <div style={{background:failed.length&&!succeeded.length?"rgba(239,68,68,0.08)":"rgba(34,197,94,0.08)",border:`1px solid ${failed.length&&!succeeded.length?"rgba(239,68,68,0.25)":"rgba(34,197,94,0.25)"}`,borderRadius:10,padding:"12px 16px",marginBottom:12,fontSize:13}}>
+                    {succeeded.length>0&&<div style={{color:"#22c55e",fontWeight:700,marginBottom:failed.length?6:0}}>✅ Posted to {succeeded.join(", ")}</div>}
+                    {failed.map(([platform,r]:any)=>(
+                      <div key={platform} style={{color:"#ef4444",fontSize:12,marginTop:3}}>❌ {platform}: {r.error}</div>
+                    ))}
+                  </div>
+                );
+              })()}
               {scheduleResult&&(
                 <div style={{background:scheduleResult.ok?"rgba(34,197,94,0.08)":"rgba(239,68,68,0.08)",border:`1px solid ${scheduleResult.ok?"rgba(34,197,94,0.25)":"rgba(239,68,68,0.25)"}`,borderRadius:10,padding:"12px 16px",marginBottom:12,fontSize:13,color:scheduleResult.ok?"#22c55e":"#ef4444",fontWeight:700}}>
                   {scheduleResult.ok?"📅 "+scheduleResult.msg:"❌ "+scheduleResult.msg}
