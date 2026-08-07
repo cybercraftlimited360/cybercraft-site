@@ -10,7 +10,7 @@ const KEYWORD_POOL = [
   "AI phone answering service for small business",
   "how to automate customer follow up",
   "AI vs hiring staff for small business",
-  "best AI tools for Houston businesses",
+  "best AI tools for small businesses",
   "how to never miss a business call",
   "AI chatbot for service businesses",
   "automating lead follow up with AI",
@@ -26,7 +26,7 @@ const KEYWORD_POOL = [
   // Industry-specific
   "AI for HVAC companies",
   "AI for dental offices",
-  "AI for real estate agents Houston",
+  "AI for real estate agents",
   "AI for restaurant businesses",
   "AI for law firms small business",
   "AI for home services businesses",
@@ -56,12 +56,12 @@ const KEYWORD_POOL = [
   "how to calculate ROI of business automation",
   "AI vs virtual receptionist cost comparison",
   "how to reduce customer service costs with AI",
-  // Houston-local
-  "AI automation agency Houston Texas",
-  "Houston small business AI solutions",
-  "best AI agency Houston TX",
-  "AI phone agent Houston business",
-  "Houston business automation services",
+  // USA-wide reach
+  "AI automation agency for small business USA",
+  "best AI agency for US small businesses",
+  "AI phone agent for US service businesses",
+  "business automation services across America",
+  "AI solutions for small business owners nationwide",
   // Education
   "how does an AI voice agent work",
   "difference between AI chatbot and AI voice agent",
@@ -90,7 +90,7 @@ async function generatePost(keyword: string): Promise<{ title: string; content: 
   const apiKey = process.env.CEREBRAS_API_KEY;
   if (!apiKey) return null;
 
-  const prompt = `You are Saad Imran, founder of CyberCraft360 — a boutique AI agency in Houston, TX that builds custom voice agents, chatbots, and workflow automation for small and mid-size businesses. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants. You are direct, specific, and allergic to corporate fluff.
+  const prompt = `You are Saad Imran, founder of CyberCraft360 — a boutique AI agency serving small and mid-size businesses across the United States. You build custom voice agents, chatbots, and workflow automation. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants nationwide. You are direct, specific, and allergic to corporate fluff.
 
 Write a thorough, authoritative blog post targeting this keyword: "${keyword}"
 
@@ -212,7 +212,7 @@ export async function GET(req: NextRequest) {
 
     // Save to review queue — do NOT commit to GitHub yet
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent((post as any).tags?.[0] ?? "AI Agency · Houston, TX")}`;
+    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent((post as any).tags?.[0] ?? "AI Agency · USA")}`;
     const pending = await redis.get<any[]>("blog:pending_posts") ?? [];
     const entry = {
       id: `bp_${Date.now()}`,

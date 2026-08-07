@@ -7,10 +7,10 @@ function verifyAdmin(req: NextRequest) {
 }
 
 const TRENDING_HASHTAGS = [
-  "#AIAutomation","#BusinessAutomation","#AIAgency","#HoustonBusiness","#CyberCraft360",
+  "#AIAutomation","#BusinessAutomation","#AIAgency","#CyberCraft360",
   "#WorkflowAutomation","#IntelligentSystems","#AIEngineering","#SmallBusiness",
   "#DigitalTransformation","#BusinessGrowth","#Productivity","#TechSolutions",
-  "#AutomateYourBusiness","#HoustonTech","#AIForBusiness","#LeadGeneration",
+  "#AutomateYourBusiness","#AIForBusiness","#LeadGeneration",
   "#SalesAutomation","#AIPhoneAgent","#NeverMissALead","#24_7Business",
   "#ScaleYourBusiness","#FutureOfWork","#BusinessEfficiency","#AIFirst",
 ];
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: "You are a social media expert for CyberCraft360, an AI automation agency in Houston, Texas. They build AI phone agents, automated workflows, lead qualification systems, and intelligent business systems for small-to-mid-size businesses. Your captions are direct, punchy, and conversion-focused. Always include a CTA pointing to CyberCraft360.com.",
+          content: "You are a social media expert for CyberCraft360, an AI automation agency serving businesses across the United States. They build AI phone agents, automated workflows, lead qualification systems, and intelligent business systems for small-to-mid-size businesses. Your captions are direct, punchy, and conversion-focused. Always include a CTA pointing to CyberCraft360.com.",
         },
         {
           role: "user",
@@ -43,8 +43,8 @@ Return ONLY valid JSON (no markdown, no explanation):
 {
   "instagram": "Hook line that stops the scroll.\\n\\n2-3 lines of value.\\n\\nCTA → CyberCraft360.com",
   "facebook": "Conversational opening.\\n\\nExpand the value prop with 2-3 sentences.\\n\\nCTA → CyberCraft360.com",
-  "linkedin": "Professional hook.\\n\\n2-3 lines positioning CyberCraft360 as the expert.\\n\\nTagline + CTA → CyberCraft360.com\\n\\n#AIEngineering #BusinessAutomation #HoustonBusiness",
-  "hashtags": ["#AIAutomation","#BusinessAutomation","#HoustonBusiness","#AIAgency","#WorkflowAutomation","#LeadGeneration","#AIPhoneAgent","#ScaleYourBusiness","#DigitalTransformation","#HoustonTech","#AIForBusiness","#NeverMissALead","#SalesAutomation","#CyberCraft360","#24_7Business"]
+  "linkedin": "Professional hook.\\n\\n2-3 lines positioning CyberCraft360 as the expert.\\n\\nTagline + CTA → CyberCraft360.com\\n\\n#AIEngineering #BusinessAutomation #SmallBusiness",
+  "hashtags": ["#AIAutomation","#BusinessAutomation","#AIAgency","#WorkflowAutomation","#LeadGeneration","#AIPhoneAgent","#ScaleYourBusiness","#DigitalTransformation","#AIForBusiness","#NeverMissALead","#SalesAutomation","#CyberCraft360","#24_7Business","#SmallBusiness"]
 }
 
 Keep Instagram under 300 chars before hashtags. Facebook under 500 chars. LinkedIn under 700 chars.`,

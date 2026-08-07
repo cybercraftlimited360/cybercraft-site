@@ -307,7 +307,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
 
   const headline = searchParams.get("hl") ?? "AUTOMATE\nEVERYTHING.";
-  const subline = searchParams.get("sl") ?? "AI Agency · Houston, TX";
+  const subline = searchParams.get("sl") ?? "AI Agency · USA";
   const body = searchParams.get("bd") ?? "";
   const rawPhotoUrl = searchParams.get("photo") ?? "";
   const layout = parseInt(searchParams.get("layout") ?? "1");

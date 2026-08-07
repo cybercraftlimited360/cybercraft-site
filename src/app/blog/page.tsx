@@ -3,11 +3,11 @@ import { getAllPosts } from "@/lib/blog";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blog — CyberCraft360 | AI Insights for Houston Businesses",
-  description: "Practical AI tips, case studies, and strategies for small and mid-size businesses in Houston looking to automate, grow, and compete.",
+  title: "Blog — CyberCraft360 | AI Insights for Small Businesses",
+  description: "Practical AI tips, case studies, and strategies for small and mid-size businesses looking to automate, grow, and compete.",
   openGraph: {
     title: "Blog — CyberCraft360",
-    description: "Practical AI tips and strategies for Houston businesses.",
+    description: "Practical AI tips and strategies for small businesses across the US.",
     url: "https://cybercraft360.com/blog",
     siteName: "CyberCraft360",
     type: "website",
@@ -53,7 +53,7 @@ export default function BlogIndex() {
             AI for the Real World
           </h1>
           <p className="text-[#8b8fa8] text-lg max-w-xl">
-            Practical strategies for Houston businesses ready to automate, capture more leads, and stop leaving money on the table.
+            Practical strategies for business owners ready to automate, capture more leads, and stop leaving money on the table.
           </p>
         </div>
 

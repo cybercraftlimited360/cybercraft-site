@@ -64,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }).catch(() => {});
 
   // Share to social
-  const shareMessage = `${entry.title}\n\nMost business owners don't realize how much revenue slips through the cracks when phones go unanswered or follow-ups don't happen. We wrote up exactly how to fix it.\n\nFull breakdown → ${blogLink}\n\n#HoustonBusiness #AIAutomation #SmallBusiness #CyberCraft360`;
+  const shareMessage = `${entry.title}\n\nMost business owners don't realize how much revenue slips through the cracks when phones go unanswered or follow-ups don't happen. We wrote up exactly how to fix it.\n\nFull breakdown → ${blogLink}\n\n#AIAutomation #SmallBusiness #BusinessAutomation #CyberCraft360`;
   const ogImageUrl = entry.ogImageUrl ?? `${siteUrl}/og?title=${encodeURIComponent(entry.title)}`;
 
   let socialResult: Record<string, unknown> = {};

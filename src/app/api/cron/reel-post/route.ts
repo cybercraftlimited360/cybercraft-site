@@ -12,9 +12,9 @@ function buildCaptions(script: any): Record<string, string> {
   const vo = script?.voiceoverScript ?? "";
   const hook = script?.hook ?? vo;
   return {
-    instagram: `${hook}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #WorkflowAutomation #IntelligentSystems #CyberCraft360`,
+    instagram: `${hook}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #WorkflowAutomation #IntelligentSystems #CyberCraft360`,
     facebook: `${vo}\n\nSchedule Your Discovery → CyberCraft360.com`,
-    linkedin: `${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360 #HoustonBusiness`,
+    linkedin: `${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360`,
   };
 }
 

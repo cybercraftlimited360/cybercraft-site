@@ -6,7 +6,7 @@ export const runtime = "edge";
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const title = searchParams.get("title") ?? "CyberCraft360";
-  const tag = searchParams.get("tag") ?? "AI Agency · Houston, TX";
+  const tag = searchParams.get("tag") ?? "AI Agency · USA";
 
   return new ImageResponse(
     (

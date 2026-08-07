@@ -4214,7 +4214,7 @@ function ReelsTab({token}:{token:string}){
 
                     {/* Actions */}
                     <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                      <button onClick={()=>{const vo=reel.script?.voiceoverScript||"";const h=reel.script?.hook||vo;setReelIG(`${h}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #CyberCraft360`);setReelFB(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com`);setReelLI(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #CyberCraft360`);setSection("upload");}} style={{...btn,padding:"11px 24px",borderRadius:10,background:GRAD,color:"#fff",fontSize:13}}>✓ Approve → Upload & Post</button>
+                      <button onClick={()=>{const vo=reel.script?.voiceoverScript||"";const h=reel.script?.hook||vo;setReelIG(`${h}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #AIAgency #CyberCraft360`);setReelFB(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com`);setReelLI(`${vo}\n\nSchedule Your Discovery → CyberCraft360.com\n\n#AIEngineering #BusinessAutomation #IntelligentSystems #SmallBusiness #CyberCraft360`);setSection("upload");}} style={{...btn,padding:"11px 24px",borderRadius:10,background:GRAD,color:"#fff",fontSize:13}}>✓ Approve → Upload & Post</button>
                       <button onClick={()=>deletePending(reel.id)} style={{...btn,padding:"11px 20px",borderRadius:10,background:"rgba(239,68,68,0.08)",color:"#ef4444",fontSize:13,border:"1px solid rgba(239,68,68,0.2)"}}>✕ Discard</button>
                     </div>
                   </div>

@@ -76,9 +76,9 @@ const CTA_OPTIONS = [
   "Create Your System →",
 ];
 
-const INSTAGRAM_BASE_TAGS = "#AIEngineering #BusinessAutomation #AIAgency #HoustonBusiness #WorkflowAutomation #IntelligentSystems #BusinessInfrastructure #AIArchitecture #SmallBusiness #OperationalExcellence #BusinessSystems #AutomationDesign #HoustonTX #CyberCraft360 #EnterpriseAI #BusinessGrowth";
+const INSTAGRAM_BASE_TAGS = "#AIEngineering #BusinessAutomation #AIAgency #WorkflowAutomation #IntelligentSystems #BusinessInfrastructure #AIArchitecture #SmallBusiness #OperationalExcellence #BusinessSystems #AutomationDesign #CyberCraft360 #EnterpriseAI #BusinessGrowth #AIForBusiness";
 
-const LINKEDIN_BASE_TAGS = "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #BusinessInfrastructure #AIArchitecture #HoustonBusiness #CyberCraft360";
+const LINKEDIN_BASE_TAGS = "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #BusinessInfrastructure #AIArchitecture #SmallBusiness #CyberCraft360";
 
 type CopyResult = {
   imageHeadline: string;
@@ -90,7 +90,7 @@ type CopyResult = {
   photoKeyword: string;
 };
 
-const BRAND_SYSTEM = `You are the Chief Creative Officer of CyberCraft360 — an AI Engineering firm based in Houston, TX. You write copy that gets mistaken for Apple, Stripe, Linear, or Porsche marketing. Your work appears on billboards, not brochures.
+const BRAND_SYSTEM = `You are the Chief Creative Officer of CyberCraft360 — an AI Engineering firm serving businesses across the United States. You write copy that gets mistaken for Apple, Stripe, Linear, or Porsche marketing. Your work appears on billboards, not brochures.
 
 WHO WE ARE:
 CyberCraft360 engineers intelligent business infrastructure for ambitious small and mid-size companies. We are NOT a software vendor, chatbot company, or automation tool. We are an AI Engineering Company — the operational backbone behind businesses that outperform their size.
@@ -128,7 +128,7 @@ imageHeadline:
 
 imageSubline:
 • 3–5 words. Calm category label or location anchor.
-• Examples: "AI Engineering · Houston, TX" / "Intelligent Systems Design" / "Business Infrastructure" / "Operational Intelligence"
+• Examples: "AI Engineering · USA" / "Intelligent Systems Design" / "Business Infrastructure" / "Operational Intelligence"
 • Not a sentence. Not a pitch. A quiet label.
 
 imageBody:
