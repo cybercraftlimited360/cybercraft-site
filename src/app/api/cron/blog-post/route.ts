@@ -86,7 +86,24 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-async function generatePost(keyword: string): Promise<{ title: string; content: string } | null> {
+// Slugs of existing published posts — used to inject internal links into new posts
+const EXISTING_SLUGS = [
+  { slug: "ai-receptionist-for-small-business",                          title: "AI Receptionist for Small Business" },
+  { slug: "ai-chatbot-for-service-businesses-that-actually-boosts-bookings", title: "AI Chatbot for Service Businesses That Boosts Bookings" },
+  { slug: "ai-for-contractors-and-trades-businesses-real-roi-in-the-field", title: "AI for Contractors and Trades Businesses" },
+  { slug: "5-signs-your-business-is-ready-for-ai",                       title: "5 Signs Your Business Is Ready for AI" },
+  { slug: "how-to-use-ai-to-follow-up-leads",                            title: "How to Use AI to Follow Up With Leads" },
+  { slug: "how-ai-saves-small-businesses-time-real-results-from-houston", title: "How AI Saves Small Businesses Time" },
+  { slug: "how-ai-helps-small-businesses-compete-with-bigger-companies",  title: "How AI Helps Small Businesses Compete With Bigger Companies" },
+  { slug: "how-much-does-a-custom-ai-chatbot-cost",                      title: "How Much Does a Custom AI Chatbot Cost?" },
+  { slug: "how-we-built-an-ai-that-books-appointments-while-you-sleep",  title: "How We Built an AI That Books Appointments While You Sleep" },
+  { slug: "ai-voice-agents-vs-call-centers",                             title: "AI Voice Agents vs. Call Centers" },
+  { slug: "why-small-businesses-need-ai-in-2025",                        title: "Why Small Businesses Need AI" },
+  { slug: "what-is-conversational-ai-a-houston-business-owners-guide",   title: "What Is Conversational AI?" },
+  { slug: "ai-chatbot-houston-texas",                                     title: "AI Chatbot for Businesses: What's Working in 2026" },
+];
+
+async function generatePost(keyword: string, linkSuggestions: string): Promise<{ title: string; content: string } | null> {
   const apiKey = process.env.CEREBRAS_API_KEY;
   if (!apiKey) return null;
 
@@ -111,6 +128,8 @@ STRUCTURE (follow this exactly):
 - Hook paragraph: start mid-thought or with a specific real scenario — NOT a definition or "AI is changing everything"
 - 5–6 H2 sections, each answering a specific question a business owner would actually have
 - Each section: 3–4 solid paragraphs with specific examples, numbers, or outcomes
+- INTERNAL LINKS: naturally weave 2–3 of the following links into the body where they are genuinely relevant. Do NOT force them. Do NOT add a "Related reading" section — embed them inline as anchor text:
+${linkSuggestions}
 - After the main sections: add an H2 "Common Questions" section with 3 real FAQs as H3s, each answered in 2–3 paragraphs
 - Close paragraph: CTA to book a free 30-minute strategy call at cybercraft360.com/book — feel like a natural next step, not a pitch
 - Link to the booking page at least once as: [Book a free strategy call](https://cybercraft360.com/book)
@@ -196,6 +215,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Build internal link suggestions from static list + previously published posts
+    const publishedLog = await redis.get<any[]>("blog:auto_posts") ?? [];
+    const dynamicSlugs = publishedLog
+      .filter((p: any) => p.slug && p.title)
+      .map((p: any) => ({ slug: p.slug as string, title: p.title as string }));
+    const allSlugs = [...EXISTING_SLUGS, ...dynamicSlugs]
+      .filter((v, i, arr) => arr.findIndex(x => x.slug === v.slug) === i);
+    const linkSuggestions = allSlugs
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4)
+      .map(p => `- [${p.title}](https://cybercraft360.com/blog/${p.slug})`)
+      .join("\n");
+
     // Pick next keyword (rotate through pool)
     const usedRaw = await redis.get<string[]>("blog:used_keywords") ?? [];
     const available = KEYWORD_POOL.filter(k => !usedRaw.includes(k));
@@ -203,7 +235,7 @@ export async function GET(req: NextRequest) {
     const keyword = pool[Math.floor(Math.random() * pool.length)];
 
     // Generate post
-    const post = await generatePost(keyword);
+    const post = await generatePost(keyword, linkSuggestions);
     if (!post) {
       return NextResponse.json({ ok: false, error: "Generation failed" }, { status: 500 });
     }

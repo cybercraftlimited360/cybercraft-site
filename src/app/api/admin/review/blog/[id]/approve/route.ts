@@ -56,12 +56,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
   const blogLink = `${siteUrl}/blog/${entry.slug}`;
 
-  // Trigger indexing
+  // Trigger Google indexing
   fetch(`${siteUrl}/api/seo/index-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` },
     body: JSON.stringify({ url: blogLink }),
   }).catch(() => {});
+
+  // Bing IndexNow — instant ping so Bing crawls the new post same day
+  const bingKey = process.env.BING_INDEXNOW_KEY;
+  if (bingKey) {
+    fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        host: "cybercraft360.com",
+        key: bingKey,
+        keyLocation: `https://cybercraft360.com/${bingKey}.txt`,
+        urlList: [blogLink],
+      }),
+    }).catch(() => {});
+  }
 
   // Share to social
   const shareMessage = `${entry.title}\n\nMost business owners don't realize how much revenue slips through the cracks when phones go unanswered or follow-ups don't happen. We wrote up exactly how to fix it.\n\nFull breakdown → ${blogLink}\n\n#AIAutomation #SmallBusiness #BusinessAutomation #CyberCraft360`;

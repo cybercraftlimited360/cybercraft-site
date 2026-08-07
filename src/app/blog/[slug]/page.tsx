@@ -49,13 +49,57 @@ function formatDate(dateStr: string) {
   });
 }
 
+// Extract FAQ pairs from markdown: ## Common Questions + ### H3 + paragraph
+function extractFAQs(content: string): Array<{ q: string; a: string }> {
+  const faqSection = content.split(/^## Common Questions/im)[1] ?? "";
+  const matches = [...faqSection.matchAll(/^### (.+)\n+([\s\S]+?)(?=\n###|\n##|$)/gm)];
+  return matches.slice(0, 6).map((m) => ({
+    q: m[1].trim(),
+    a: m[2].replace(/\n+/g, " ").replace(/\[.*?\]\(.*?\)/g, "").trim().slice(0, 300),
+  }));
+}
+
 export default async function BlogPost({ params }: Props) {
   const { slug } = await params;
   const post = getPost(slug);
   if (!post) notFound();
 
+  const siteUrl = "https://cybercraft360.com";
+  const postUrl = `${siteUrl}/blog/${slug}`;
+  const faqs = extractFAQs(post.content);
+
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: { "@type": "Person", name: "Saad Imran", url: siteUrl },
+    publisher: {
+      "@type": "Organization",
+      name: "CyberCraft360",
+      url: siteUrl,
+      logo: { "@type": "ImageObject", url: `${siteUrl}/logo-mark.svg` },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
+    image: `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(post.tags?.[0] ?? "AI Agency · USA")}`,
+  };
+
+  const faqSchema = faqs.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  } : null;
+
   return (
     <main className="min-h-screen bg-[#0f1117] text-[#e4e6f0]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto" style={{ backdropFilter: "blur(20px)", backgroundColor: "rgba(15,17,23,0.92)" }}>
         <div className="flex items-center gap-6">
