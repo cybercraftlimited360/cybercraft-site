@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { customPrompt, platforms, voiceId, autoPost = true } = body;
+  const { customPrompt, platforms, voiceId, autoPost = true, preferredClipId } = body;
   const token = makeToken(process.env.ADMIN_SECRET ?? "");
 
   // Pick campaign
@@ -36,10 +36,13 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. Generate script
+  const scriptPayload: any = customPrompt ? { customPrompt } : { campaignIndex: campaignIdx };
+  if (preferredClipId) scriptPayload.preferredClipId = preferredClipId;
+
   const scriptRes = await fetch(`${SITE_URL}/api/admin/reels/generate-script`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-admin-token": token },
-    body: JSON.stringify(customPrompt ? { customPrompt } : { campaignIndex: campaignIdx }),
+    body: JSON.stringify(scriptPayload),
   });
   if (!scriptRes.ok) return NextResponse.json({ error: "Script generation failed" }, { status: 500 });
   const { script, suggestedClips, campaignIndex: returnedIdx } = await scriptRes.json();

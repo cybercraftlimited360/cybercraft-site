@@ -154,24 +154,23 @@ function buildCommercialEdit(opts: {
     if (!overlay) return null;
     const fs = Math.round(W * (i === 0 ? 0.10 : 0.052));
     const isHero = i === 0;
+    const SYS = `'Helvetica Neue',Helvetica,Arial,sans-serif`;
     const html = isHero
       ? `<html><head><style>
-          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
           *{margin:0;padding:0;box-sizing:border-box;}
           @keyframes r{0%{opacity:0;transform:translateY(28px);}100%{opacity:1;transform:translateY(0);}}
           body{width:${W}px;height:${H}px;background:transparent;overflow:hidden;
-            font-family:'Montserrat',Helvetica,Arial,sans-serif;
+            font-family:${SYS};
             display:flex;align-items:center;justify-content:center;padding:${Math.round(W*0.08)}px;text-align:center;}
           .t{font-size:${fs}px;font-weight:900;color:#fff;line-height:1.0;letter-spacing:-3px;
              text-shadow:0 4px 80px rgba(0,0,0,0.9);animation:r 0.9s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;}
         </style></head><body><div class="t">${overlay}</div></body></html>`
       : `<html><head><style>
-          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&display=swap');
           *{margin:0;padding:0;box-sizing:border-box;}
           @keyframes u{0%{opacity:0;transform:translateY(16px);}100%{opacity:1;transform:translateY(0);}}
           @keyframes l{0%{width:0;opacity:0;}100%{width:40px;opacity:1;}}
           body{width:${W}px;height:${H}px;background:transparent;overflow:hidden;
-            font-family:'Montserrat',Helvetica,Arial,sans-serif;
+            font-family:${SYS};
             display:flex;flex-direction:column;justify-content:flex-end;
             padding:${Math.round(W*0.08)}px ${Math.round(W*0.08)}px ${Math.round(W*0.12)}px;}
           .r{height:1.5px;background:#00D5FF;margin-bottom:${Math.round(W*0.02)}px;border-radius:1px;
@@ -190,8 +189,7 @@ function buildCommercialEdit(opts: {
   // ── 4. Logo watermark (top-right, persistent) ────────────────────────────────
   const logoH = Math.round(H * 0.022);
   const logoHtml = `<html><head><style>
-    @keyframes f{0%{opacity:0;}100%{opacity:1;}}
-    *{margin:0;padding:0;} body{width:${W}px;height:${H}px;background:transparent;overflow:hidden;}
+    *{margin:0;padding:0;} @keyframes f{0%{opacity:0;}100%{opacity:1;}} body{width:${W}px;height:${H}px;background:transparent;overflow:hidden;}
     .w{position:absolute;top:${Math.round(H*0.032)}px;right:${Math.round(W*0.06)}px;
        animation:f 1.5s ease forwards;opacity:0;}
     img{height:${logoH}px;width:auto;display:block;filter:brightness(0) invert(1);opacity:0.75;}
@@ -202,13 +200,12 @@ function buildCommercialEdit(opts: {
   const cfs = Math.round(W * 0.028);
   const ecLogoH = Math.round(H * 0.048);
   const endCardHtml = `<html><head><style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap');
     *{margin:0;padding:0;box-sizing:border-box;}
     @keyframes f{0%{opacity:0;}100%{opacity:1;}}
     @keyframes u{0%{opacity:0;transform:translateY(24px);}100%{opacity:1;transform:translateY(0);}}
     @keyframes glow{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4);}100%{opacity:0.1;transform:translate(-50%,-50%) scale(1);}}
     body{width:${W}px;height:${H}px;background:#080A10;overflow:hidden;
-      font-family:'Montserrat',Helvetica,Arial,sans-serif;
+      font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       gap:${Math.round(W*0.04)}px;position:relative;}
     .glow{position:absolute;width:${Math.round(W*1.4)}px;height:${Math.round(W*1.4)}px;border-radius:50%;

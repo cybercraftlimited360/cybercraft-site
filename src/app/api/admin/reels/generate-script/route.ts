@@ -165,7 +165,7 @@ async function generateScript(campaign: typeof REEL_CAMPAIGNS[0], customPrompt?:
   }
 }
 
-async function fetchClips(): Promise<any[]> {
+async function fetchClips(preferredClipId?: string): Promise<any[]> {
   const { redis } = await import("@/lib/redis");
   const library = await redis.get<any[]>("reels:clip_library") ?? [];
 
@@ -174,10 +174,31 @@ async function fetchClips(): Promise<any[]> {
     ? Buffer.from(`cc360:${process.env.ADMIN_SECRET}:v2`).toString("base64")
     : "";
 
+  const toClip = (c: any) => ({
+    id: c.id,
+    url: c.veoUri
+      ? `${SITE_URL}/api/admin/reels/clip-proxy?id=${c.id}&token=${adminToken}`
+      : c.url,
+    duration: c.duration ?? 8,
+    prompt: c.prompt,
+    source: "veo",
+  });
+
   const now = Date.now();
   const fresh = library.filter((c: any) =>
     (c.veoUri || c.url) && (!c.expiresAt || new Date(c.expiresAt).getTime() > now)
   );
+
+  // If caller specified a preferred clip (e.g. just-generated custom clip),
+  // use ONLY that clip — repeated across all 10 slots — so the reel matches
+  // the user's prompt exactly and no random library clips bleed through.
+  if (preferredClipId) {
+    const preferred = fresh.find((c: any) => c.id === preferredClipId);
+    if (preferred) {
+      const mapped = toClip(preferred);
+      return Array(10).fill(mapped); // render route cycles with trim offsets
+    }
+  }
 
   if (fresh.length > 0) {
     const shuffled = [...fresh].sort(() => Math.random() - 0.5);
@@ -201,6 +222,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const customPrompt: string | undefined = body.customPrompt?.trim() || undefined;
+  const preferredClipId: string | undefined = body.preferredClipId || undefined;
 
   let campaignIdx = typeof body.campaignIndex === "number"
     ? body.campaignIndex % REEL_CAMPAIGNS.length
@@ -210,7 +232,7 @@ export async function POST(req: NextRequest) {
 
   const [script, videos] = await Promise.all([
     generateScript(campaign, customPrompt),
-    fetchClips(),
+    fetchClips(preferredClipId),
   ]);
 
   if (!script) return NextResponse.json({ ok: false, error: "Script generation failed" }, { status: 500 });

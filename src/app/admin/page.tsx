@@ -3376,6 +3376,71 @@ function ReelsTab({token}:{token:string}){
   const C="#00D5FF";
   const GRAD="linear-gradient(135deg,#00D5FF,#E64DFF)";
   const btn:React.CSSProperties={border:"none",cursor:"pointer",fontWeight:700,letterSpacing:"0.06em",transition:"all 0.15s"};
+  // Veo 3.1 custom clip state (prompt → generate clip before reel)
+  const [veoPrompt,setVeoPrompt]=useState("");
+  const [veoGenerating,setVeoGenerating]=useState(false);
+  const [veoClipReady,setVeoClipReady]=useState<{id:string;prompt:string}|null>(null);
+  const [veoError,setVeoError]=useState("");
+
+  async function generateCustomVeoClip(){
+    if(!veoPrompt.trim()||veoGenerating)return;
+    setVeoGenerating(true);setVeoError("");setVeoClipReady(null);
+    try{
+      const res=await fetch("/api/admin/reels/generate-clips",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({customPrompt:veoPrompt.trim()})});
+      const d=await res.json();
+      if(!d.ok)throw new Error(d.error||"Higgsfield generation failed");
+      const clip=d.clips?.[0];
+      if(clip){setVeoClipReady({id:clip.id,prompt:clip.prompt});loadClipLibrary();}
+    }catch(e:any){setVeoError(e.message||"Unknown error");}
+    finally{setVeoGenerating(false);}
+  }
+
+  // Caption generation + scheduling state
+  const [captionCtx,setCaptionCtx]=useState("");
+  const [generatingCaptions,setGeneratingCaptions]=useState(false);
+  const [generatedHashtags,setGeneratedHashtags]=useState<string[]>([]);
+  const [schedDays,setSchedDays]=useState<Set<string>>(new Set(["Tuesday","Thursday","Saturday"]));
+  const [schedTime,setSchedTime]=useState("11:00");
+  const [scheduling,setScheduling]=useState(false);
+  const [scheduleResult,setScheduleResult]=useState<{ok:boolean;msg:string}|null>(null);
+  const [scheduledPosts,setScheduledPosts]=useState<any[]>([]);
+
+  async function generateCaptions(){
+    setGeneratingCaptions(true);
+    try{
+      const res=await fetch("/api/admin/reels/generate-captions",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({context:captionCtx})});
+      const d=await res.json();
+      if(d.ok){setReelIG(d.instagram||"");setReelFB(d.facebook||"");setReelLI(d.linkedin||"");setGeneratedHashtags(d.hashtags||[]);}
+    }catch{}
+    finally{setGeneratingCaptions(false);}
+  }
+
+  async function schedulePost(){
+    if(!uploadedUrl||schedDays.size===0)return;
+    setScheduling(true);setScheduleResult(null);
+    try{
+      const platforms=Object.entries(reelPlatforms).filter(([,v])=>v).map(([k])=>k);
+      const res=await fetch("/api/admin/reels/schedule",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({videoUrl:uploadedUrl,platforms,captions:{instagram:reelIG,facebook:reelFB,linkedin:reelLI},days:Array.from(schedDays),time:schedTime})});
+      const d=await res.json();
+      if(d.ok){setScheduleResult({ok:true,msg:`Scheduled for ${Array.from(schedDays).join(", ")} at ${schedTime}`});setScheduledPosts(prev=>[...prev,d.post]);}
+      else setScheduleResult({ok:false,msg:d.error||"Schedule failed"});
+    }catch(e:any){setScheduleResult({ok:false,msg:e.message});}
+    finally{setScheduling(false);}
+  }
+
+  async function loadScheduledPosts(){
+    try{
+      const res=await fetch("/api/admin/reels/schedule",{headers:{"x-admin-token":token}});
+      const d=await res.json();
+      if(d.ok)setScheduledPosts(d.posts||[]);
+    }catch{}
+  }
+
+  async function deleteScheduled(id:string){
+    await fetch("/api/admin/reels/schedule",{method:"DELETE",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({id})});
+    setScheduledPosts(prev=>prev.filter((p:any)=>p.id!==id));
+  }
+
   // Post-Now pipeline state
   const [postNowMode,setPostNowMode]=useState<"auto"|"custom">("auto");
   const [postNowPrompt,setPostNowPrompt]=useState("");
@@ -3438,7 +3503,7 @@ function ReelsTab({token}:{token:string}){
     try{
       const res=await fetch("/api/admin/reels/generate-clips",{headers:{"x-admin-token":token}});
       const d=await res.json();
-      if(d.ok){setClipLibrary(d.clips||[]);setClipLibraryTotal(d.total||0);setClipLibraryAvailable(d.available||0);}
+      if(d.ok){setClipLibrary(d.clips||[]);setClipLibraryTotal(d.total||0);}
     }catch{}
     finally{setClipLibraryLoading(false);}
   }
@@ -3526,6 +3591,8 @@ function ReelsTab({token}:{token:string}){
       const platforms=Object.entries(postNowPlatforms).filter(([,v])=>v).map(([k])=>k);
       const body:any={platforms,voiceId:postNowVoice,autoPost};
       if(postNowMode==="custom"&&postNowPrompt.trim())body.customPrompt=postNowPrompt;
+      // If user generated a custom Veo clip, pin the reel to that exact clip
+      if(veoClipReady?.id)body.preferredClipId=veoClipReady.id;
 
       const res=await fetch("/api/admin/reels/post-now",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify(body)});
       const d=await res.json();
@@ -3584,12 +3651,12 @@ function ReelsTab({token}:{token:string}){
       <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
         {([
           ["commercials","🎬 Commercial Studio","7-scene · Apple-level · auto-assembled"],
-          ["postnow","🚀 Generate Reel","One click · Apple-level quality"],
-          ["clips","🎞 Clip Library",clipLibrary.length>0?`${clipLibrary.length} AI clips ready`:"Google Veo AI video clips"],
+          ["postnow","📤 Upload & Schedule","Upload reels · schedule · auto-captions"],
+          ["clips","🎞 Clip Library",clipLibrary.length>0?`${clipLibrary.length} AI clips ready`:"Higgsfield AI video clips"],
           ["pending","📋 Pending Reels",pendingReels.length>0?`${pendingReels.length} from cron`:"Cron-generated queue"],
           ["upload","📤 Upload & Post","Post your own edited video"],
         ] as const).map(([s,label,sub])=>(
-          <button key={s} onClick={()=>{setSection(s as any);if(s==="pending")loadPending();if(s==="clips")loadClipLibrary();}} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left"}}>
+          <button key={s} onClick={()=>{setSection(s as any);if(s==="pending")loadPending();if(s==="clips")loadClipLibrary();if(s==="postnow")loadScheduledPosts();}} style={{...btn,padding:"12px 20px",borderRadius:12,fontSize:13,border:`1px solid ${section===s?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.07)"}`,background:section===s?"rgba(0,213,255,0.08)":"rgba(255,255,255,0.02)",color:section===s?C:"rgba(255,255,255,0.4)",textAlign:"left"}}>
             <div style={{fontWeight:700}}>{label}{s==="pending"&&pendingReels.length>0&&<span style={{marginLeft:8,background:"rgba(0,213,255,0.2)",border:"1px solid rgba(0,213,255,0.35)",borderRadius:10,padding:"1px 7px",fontSize:10,color:C,fontWeight:800}}>{pendingReels.length}</span>}</div>
             <div style={{fontSize:11,fontWeight:400,color:section===s?"rgba(0,213,255,0.6)":"rgba(255,255,255,0.25)",marginTop:2}}>{sub}</div>
           </button>
@@ -3707,171 +3774,194 @@ function ReelsTab({token}:{token:string}){
         </div>
       )}
 
-      {/* ══════════════════════════ POST NOW SECTION ══════════════════════════ */}
+      {/* ══════════════════════════ UPLOAD & SCHEDULE SECTION ══════════════════════════ */}
       {section==="postnow"&&(
         <div style={{display:"flex",flexDirection:"column",gap:20}}>
 
-          {/* Mode */}
+          {/* ── Upload Zone ── */}
           <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>Commercial Brief</div>
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              {(["auto","custom"] as const).map(m=>(
-                <button key={m} onClick={()=>setPostNowMode(m)} style={{...btn,padding:"8px 18px",borderRadius:8,fontSize:12,border:`1px solid ${postNowMode===m?"rgba(0,213,255,0.3)":"rgba(255,255,255,0.08)"}`,background:postNowMode===m?"rgba(0,213,255,0.1)":"transparent",color:postNowMode===m?C:"rgba(255,255,255,0.4)"}}>
-                  {m==="auto"?"📅 Auto (Next Campaign)":"✍️ Custom Brief"}
-                </button>
-              ))}
-            </div>
-            {postNowMode==="custom"&&(
-              <textarea value={postNowPrompt} onChange={e=>setPostNowPrompt(e.target.value)} rows={3}
-                placeholder='Describe the commercial: topic, industry, visual feel, CTA...'
-                style={{width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(0,213,255,0.2)",borderRadius:8,padding:"12px 14px",color:"#fff",fontSize:13,lineHeight:1.65,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12}}/>
+            <div style={{fontSize:14,fontWeight:800,color:"#fff",marginBottom:4}}>📤 Upload Reel</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:18,lineHeight:1.65}}>Upload your finished reel from Higgsfield. Preview it, generate captions, then post now or schedule.</div>
+            {!uploadPreview?(
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,border:"2px dashed rgba(0,213,255,0.2)",borderRadius:12,padding:"44px 24px",cursor:"pointer",background:"rgba(0,213,255,0.02)"}}
+                onDragOver={e=>e.preventDefault()}
+                onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleReelFile(f);}}>
+                <input type="file" accept="video/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleReelFile(f);}}/>
+                <span style={{fontSize:40}}>🎬</span>
+                <span style={{fontSize:14,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>Drop your reel here or click to browse</span>
+                <span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>MP4 · MOV · any video format</span>
+              </label>
+            ):(
+              <div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
+                <video src={uploadPreview} controls playsInline style={{width:160,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",flexShrink:0}}/>
+                <div style={{flex:1,minWidth:180}}>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:12}}>{uploadFile?.name} · {uploadFile?Math.round(uploadFile.size/1024/1024*10)/10+"MB":""}</div>
+                  {!uploadedUrl?(
+                    <button onClick={uploadReel} disabled={uploading} style={{...btn,padding:"10px 22px",borderRadius:10,background:uploading?"rgba(255,255,255,0.04)":GRAD,color:"#fff",fontSize:13,opacity:uploading?0.5:1,marginBottom:8,display:"block"}}>
+                      {uploading?"⏳ Uploading…":"☁️ Upload Reel"}
+                    </button>
+                  ):(
+                    <div style={{fontSize:13,color:"#22c55e",fontWeight:700,marginBottom:10}}>✓ Uploaded — ready to post</div>
+                  )}
+                  <button onClick={()=>{setUploadFile(null);setUploadPreview(null);setUploadedUrl(null);setReelIG("");setReelFB("");setReelLI("");setGeneratedHashtags([]);setScheduleResult(null);setPostResult(null);setPostError(null);}} style={{...btn,fontSize:11,padding:"5px 14px",borderRadius:7,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.3)"}}>✕ Remove</button>
+                </div>
+              </div>
             )}
-
-            {/* Voice picker */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>ElevenLabs Voice</div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {VOICE_PRESETS.map(v=>(
-                  <button key={v.id} onClick={()=>setPostNowVoice(v.id)} style={{...btn,padding:"8px 14px",borderRadius:8,fontSize:12,border:`1px solid ${postNowVoice===v.id?"rgba(0,213,255,0.35)":"rgba(255,255,255,0.08)"}`,background:postNowVoice===v.id?"rgba(0,213,255,0.1)":"rgba(255,255,255,0.02)",color:postNowVoice===v.id?C:"rgba(255,255,255,0.5)"}}>
-                    <div style={{fontWeight:700}}>{v.name}</div>
-                    <div style={{fontSize:10,color:postNowVoice===v.id?"rgba(0,213,255,0.6)":"rgba(255,255,255,0.25)",fontWeight:400}}>{v.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Platform toggles */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Post To</div>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                {([
-                  {id:"instagram" as const,label:"Instagram",color:"#E1306C",icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>},
-                  {id:"facebook" as const,label:"Facebook",color:"#1877F2",icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>},
-                  {id:"linkedin" as const,label:"LinkedIn",color:"#0A66C2",icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>},
-                ]).map(({id,label,color,icon})=>(
-                  <button key={id} onClick={()=>setPostNowPlatforms(prev=>({...prev,[id]:!prev[id]}))}
-                    style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:10,border:`2px solid ${postNowPlatforms[id]?color:"rgba(255,255,255,0.1)"}`,background:postNowPlatforms[id]?`${color}18`:"rgba(255,255,255,0.02)",cursor:"pointer",color:postNowPlatforms[id]?color:"rgba(255,255,255,0.35)"}}>
-                    {icon}
-                    <span style={{fontSize:13,fontWeight:700}}>{label}</span>
-                    {postNowPlatforms[id]&&<span style={{fontSize:11,color,fontWeight:900}}>✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Needs Shotstack notice */}
-            <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.18)",borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:11,color:"rgba(255,193,7,0.75)",lineHeight:1.6}}>
-              <strong>Requires:</strong> SHOTSTACK_API_KEY in Vercel env vars (free at shotstack.io/pricing). Video renders in ~2 min → auto-posts via webhook. CyberCraft360 logo + text overlays + ElevenLabs audio are composited automatically.
-            </div>
-
-            {/* Two clear action buttons — always visible */}
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)"}}>Choose Action</div>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <button onClick={()=>firePostNow(false)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,flex:1,minWidth:180,padding:"16px 20px",borderRadius:12,background:"rgba(0,213,255,0.08)",border:`2px solid ${C}`,color:C,fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.4:1,textAlign:"center"}}>
-                  <div style={{fontSize:18,marginBottom:4}}>👁</div>
-                  <div style={{fontWeight:800}}>{pipelineActive&&!pipelineAutoPost?"Generating…":"Generate & Preview"}</div>
-                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Watch before posting</div>
-                </button>
-                <button onClick={()=>firePostNow(true)} disabled={pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())} style={{...btn,flex:1,minWidth:180,padding:"16px 20px",borderRadius:12,background:pipelineActive?"rgba(255,255,255,0.04)":GRAD,border:"2px solid transparent",color:"#fff",fontSize:14,opacity:pipelineActive||(postNowMode==="custom"&&!postNowPrompt.trim())?0.4:1,textAlign:"center"}}>
-                  <div style={{fontSize:18,marginBottom:4}}>🚀</div>
-                  <div style={{fontWeight:800}}>{pipelineActive&&pipelineAutoPost?"Pipeline Running…":"Generate & Post Now"}</div>
-                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Renders and auto-posts</div>
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* ── Live Pipeline Status ── */}
-          {(pipelineActive||pipelineStep>=0)&&(
-            <div style={{background:"rgba(0,213,255,0.03)",border:"1px solid rgba(0,213,255,0.15)",borderRadius:14,padding:22}}>
-              <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:C,marginBottom:18}}>Live Pipeline</div>
-
-              {/* Steps */}
-              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
-                {PIPELINE_STEPS.map((label,i)=>{
-                  const done=pipelineStep>i||(pipelineStep>=3&&i===3&&pipelineAutoPost)||(pipelineStep===4&&i===3);
-                  const active=(pipelineStep===i)||(pipelineStep===2&&i===2)||(pipelineStep===3&&i===3&&pipelineAutoPost);
-                  const waiting=!done&&!active;
-                  const icon=done?"✓":active?"●":"○";
-                  return(
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:12}}>
-                      <div style={{width:26,height:26,borderRadius:"50%",flexShrink:0,background:done?"rgba(34,197,94,0.15)":active?"rgba(0,213,255,0.15)":"rgba(255,255,255,0.04)",border:`1.5px solid ${done?"rgba(34,197,94,0.5)":active?C:"rgba(255,255,255,0.12)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:done?"#22c55e":active?C:"rgba(255,255,255,0.2)"}}>
-                        {icon}
-                      </div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:700,color:done?"#22c55e":active?"#fff":"rgba(255,255,255,0.3)"}}>{label}</div>
-                        {i===2&&pipelineRenderId&&active&&<div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginTop:2}}>Render ID: {pipelineRenderId} · polling every 12s…</div>}
-                      </div>
-                      {active&&<div style={{width:16,height:16,borderRadius:"50%",border:`2px solid ${C}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite",flexShrink:0}}/>}
-                    </div>
-                  );
-                })}
+          {/* ── Caption Generation ── */}
+          {uploadPreview&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#fff",marginBottom:14}}>✦ Generate Captions</div>
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>What is this reel about? <span style={{fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional — helps AI write better captions)</span></div>
+                <textarea value={captionCtx} onChange={e=>setCaptionCtx(e.target.value)} rows={2}
+                  placeholder="e.g. AI phone agents that answer 24/7, qualify leads, and book appointments — never miss a call again"
+                  style={{width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"11px 14px",color:"#fff",fontSize:13,lineHeight:1.6,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box",outline:"none"}}/>
               </div>
+              <button onClick={generateCaptions} disabled={generatingCaptions} style={{...btn,padding:"11px 24px",borderRadius:10,fontSize:13,fontWeight:800,background:generatingCaptions?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:`1.5px solid ${generatingCaptions?"rgba(255,255,255,0.08)":C}`,color:generatingCaptions?"rgba(255,255,255,0.3)":C,display:"flex",alignItems:"center",gap:8}}>
+                {generatingCaptions&&<div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${C}`,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>}
+                {generatingCaptions?"Generating captions…":"✦ Generate Captions + Hashtags"}
+              </button>
 
-              {/* Script preview */}
-              {pipelineScript&&(
-                <div style={{background:"rgba(0,0,0,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,border:"1px solid rgba(255,255,255,0.06)"}}>
-                  <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.3)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:6}}>Script</div>
-                  <div style={{fontSize:14,fontWeight:800,color:"#fff",marginBottom:4}}>{pipelineScript.title}</div>
-                  <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",fontStyle:"italic",lineHeight:1.65}}>"{pipelineScript.hook}"</div>
-                </div>
-              )}
-
-              {/* Audio preview */}
-              {pipelineAudio&&(
-                <div style={{background:"rgba(0,213,255,0.06)",border:"1px solid rgba(0,213,255,0.18)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-                  <div style={{fontSize:10,fontWeight:700,color:C,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Voiceover</div>
-                  <audio controls src={pipelineAudio} style={{width:"100%"}}/>
-                </div>
-              )}
-
-              {/* Done — show video */}
-              {(pipelineStep===4||pipelineStep===3)&&pipelineVideo&&(
-                <div style={{background:pipelineAutoPost?"rgba(34,197,94,0.08)":"rgba(0,213,255,0.06)",border:`1px solid ${pipelineAutoPost?"rgba(34,197,94,0.25)":"rgba(0,213,255,0.25)"}`,borderRadius:10,padding:"14px 16px"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:pipelineAutoPost?"#22c55e":C,marginBottom:10}}>
-                    {pipelineAutoPost?"✓ Reel rendered and posted":"👁 Preview — ready to post"}
-                  </div>
-                  <video src={pipelineVideo} controls playsInline style={{width:"100%",maxWidth:280,borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",marginBottom:12}}/>
-                  <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
-                    <a href={pipelineVideo} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"8px 18px",borderRadius:8,background:"rgba(255,255,255,0.06)",color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,textDecoration:"none",border:"1px solid rgba(255,255,255,0.12)"}}>⬇ Download</a>
-                    {!pipelineAutoPost&&!postVideoResult&&(
-                      <button onClick={postVideoNow} disabled={postingVideo} style={{...btn,padding:"8px 20px",borderRadius:8,background:postingVideo?"rgba(255,255,255,0.04)":GRAD,color:"#fff",fontSize:12,opacity:postingVideo?0.5:1}}>
-                        {postingVideo?"⏳ Posting…":"🚀 Post to Platforms"}
+              {/* Caption tabs + editor */}
+              {(reelIG||reelFB||reelLI)&&(
+                <div style={{marginTop:18}}>
+                  <div style={{display:"flex",gap:6,marginBottom:12}}>
+                    {(["instagram","linkedin","facebook"] as const).map(p=>(
+                      <button key={p} onClick={()=>setReelCapTab(p)} style={{...btn,padding:"7px 16px",borderRadius:8,fontSize:12,background:reelCapTab===p?"rgba(0,213,255,0.12)":"rgba(255,255,255,0.03)",color:reelCapTab===p?C:"rgba(255,255,255,0.4)",border:`1px solid ${reelCapTab===p?"rgba(0,213,255,0.3)":"rgba(255,255,255,0.07)"}`}}>
+                        {p==="instagram"?"Instagram":p==="linkedin"?"LinkedIn":"Facebook"}
                       </button>
-                    )}
-                    {postVideoResult&&!postVideoResult.error&&<span style={{fontSize:12,color:"#22c55e",fontWeight:700}}>✓ Posted!</span>}
-                    {postVideoResult?.error&&<span style={{fontSize:12,color:"#ef4444"}}>{postVideoResult.error}</span>}
+                    ))}
                   </div>
+                  {reelCapTab==="instagram"&&<EditableField label="Instagram Caption" value={reelIG} onChange={setReelIG} multiline limit={2200}/>}
+                  {reelCapTab==="linkedin"&&<EditableField label="LinkedIn Caption" value={reelLI} onChange={setReelLI} multiline limit={3000}/>}
+                  {reelCapTab==="facebook"&&<EditableField label="Facebook Caption" value={reelFB} onChange={setReelFB} multiline limit={63206}/>}
+
+                  {/* Trending hashtags */}
+                  {generatedHashtags.length>0&&(
+                    <div style={{marginTop:14}}>
+                      <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Trending Hashtags · tap to add to current tab</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {generatedHashtags.map(tag=>(
+                          <button key={tag} onClick={()=>{
+                            const append=(v:string,set:(s:string)=>void)=>set(v.includes(tag)?v:v+"\n"+tag);
+                            if(reelCapTab==="instagram")append(reelIG,setReelIG);
+                            else if(reelCapTab==="facebook")append(reelFB,setReelFB);
+                            else append(reelLI,setReelLI);
+                          }} style={{...btn,padding:"5px 12px",borderRadius:20,fontSize:11,background:"rgba(0,213,255,0.06)",border:"1px solid rgba(0,213,255,0.18)",color:"rgba(0,213,255,0.7)",fontWeight:600}}>
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {pipelineError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"10px 14px",color:"#ef4444",fontSize:12}}>{pipelineError}</div>}
             </div>
           )}
 
-          {/* ── What the automated video looks like ── */}
-          <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>What Every Reel Includes</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
-              {[
-                {icon:"🎬",t:"Cinematic B-Roll",b:"Google Veo 3.1 AI-generated clips matched to your commercial's visual direction. Ken-burns motion."},
-                {icon:"🏷",t:"Logo Watermark",b:"CyberCraft360 logo top-center throughout the video. Full-screen centered on the end card."},
-                {icon:"✍️",t:"Text Overlays",b:"Scene narrations rendered directly on the video. Montserrat Black, Apple-sized typography."},
-                {icon:"🎙",t:"ElevenLabs Voice",b:"Professional studio-quality voiceover synced to the commercial timeline."},
-                {icon:"🎞",t:"Cinematic Grade",b:"Dark gradient overlay, lifted blacks, moody atmosphere. Premium brand feel."},
-                {icon:"📱",t:"Platform Dimensions",b:"9:16 (1080×1920) for Instagram Reels & Facebook. Captions auto-filled for each platform."},
-                {icon:"⬛",t:"Premium End Card",b:"Pure black background. Large logo centered. Cyan CTA. CyberCraft360.com URL."},
-                {icon:"🤖",t:"Fully Automated",b:"Cron fires Tue/Thu/Sat at 11am CST. Script → Voice → Render → Post. No human steps."},
-              ].map(({icon,t,b})=>(
-                <div key={t} style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.05)"}}>
-                  <div style={{fontSize:18,marginBottom:8}}>{icon}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.8)",marginBottom:4}}>{t}</div>
-                  <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",lineHeight:1.6}}>{b}</div>
+          {/* ── Platforms + Schedule + Post ── */}
+          {uploadPreview&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
+
+              {/* Platform toggles */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Post To</div>
+                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  {([
+                    {id:"instagram" as const,label:"Instagram",color:"#E1306C",icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>},
+                    {id:"facebook" as const,label:"Facebook",color:"#1877F2",icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>},
+                    {id:"linkedin" as const,label:"LinkedIn",color:"#0A66C2",icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>},
+                  ]).map(({id,label,color,icon})=>(
+                    <button key={id} onClick={()=>setReelPlatforms(prev=>({...prev,[id]:!prev[id]}))}
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:10,border:`2px solid ${reelPlatforms[id]?color:"rgba(255,255,255,0.1)"}`,background:reelPlatforms[id]?`${color}18`:"rgba(255,255,255,0.02)",cursor:"pointer",color:reelPlatforms[id]?color:"rgba(255,255,255,0.35)"}}>
+                      {icon}
+                      <span style={{fontSize:13,fontWeight:700}}>{label}</span>
+                      {reelPlatforms[id]&&<span style={{fontSize:11,fontWeight:900,color}}>✓</span>}
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Schedule picker */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Schedule Days</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+                  {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(day=>{
+                    const sel=schedDays.has(day);
+                    return(
+                      <button key={day} onClick={()=>setSchedDays(prev=>{const n=new Set(prev);sel?n.delete(day):n.add(day);return n;})}
+                        style={{...btn,padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:700,background:sel?"rgba(0,213,255,0.12)":"rgba(255,255,255,0.03)",border:`1.5px solid ${sel?C:"rgba(255,255,255,0.08)"}`,color:sel?C:"rgba(255,255,255,0.35)"}}>
+                        {day.slice(0,3)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6}}>Post Time (CST)</div>
+                    <input type="time" value={schedTime} onChange={e=>setSchedTime(e.target.value)}
+                      style={{background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"9px 14px",color:"#fff",fontSize:14,fontWeight:700,outline:"none",colorScheme:"dark"}}/>
+                  </div>
+                  {schedDays.size>0&&(
+                    <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:18}}>
+                      Posts every <strong style={{color:"rgba(255,255,255,0.6)"}}>{Array.from(schedDays).join(", ")}</strong> at <strong style={{color:"rgba(255,255,255,0.6)"}}>{schedTime} CST</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Feedback */}
+              {postError&&<div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,padding:"10px 14px",color:"#ef4444",fontSize:12,marginBottom:12}}>{postError}</div>}
+              {postResult&&!postResult.error&&(
+                <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:10,padding:"12px 16px",marginBottom:12,fontSize:13,color:"#22c55e",fontWeight:700}}>
+                  ✅ Posted successfully to {Object.entries(reelPlatforms).filter(([,v])=>v).map(([k])=>k).join(", ")}
+                </div>
+              )}
+              {scheduleResult&&(
+                <div style={{background:scheduleResult.ok?"rgba(34,197,94,0.08)":"rgba(239,68,68,0.08)",border:`1px solid ${scheduleResult.ok?"rgba(34,197,94,0.25)":"rgba(239,68,68,0.25)"}`,borderRadius:10,padding:"12px 16px",marginBottom:12,fontSize:13,color:scheduleResult.ok?"#22c55e":"#ef4444",fontWeight:700}}>
+                  {scheduleResult.ok?"📅 "+scheduleResult.msg:"❌ "+scheduleResult.msg}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <button onClick={postReel} disabled={posting||!uploadedUrl} style={{...btn,flex:1,minWidth:160,padding:"14px 20px",borderRadius:12,background:posting||!uploadedUrl?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontSize:14,fontWeight:800,opacity:posting||!uploadedUrl?0.4:1,textAlign:"center"}}>
+                  <div style={{fontSize:16,marginBottom:2}}>🚀</div>
+                  <div>{posting?"Posting…":!uploadedUrl?"Upload first":"Post Now"}</div>
+                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Sends immediately</div>
+                </button>
+                <button onClick={schedulePost} disabled={scheduling||!uploadedUrl||schedDays.size===0} style={{...btn,flex:1,minWidth:160,padding:"14px 20px",borderRadius:12,background:scheduling||!uploadedUrl||schedDays.size===0?"rgba(255,255,255,0.04)":`rgba(0,213,255,0.1)`,border:`2px solid ${scheduling||!uploadedUrl||schedDays.size===0?"rgba(255,255,255,0.06)":C}`,color:scheduling||!uploadedUrl||schedDays.size===0?"rgba(255,255,255,0.25)":C,fontSize:14,fontWeight:800,opacity:1,textAlign:"center"}}>
+                  <div style={{fontSize:16,marginBottom:2}}>📅</div>
+                  <div>{scheduling?"Scheduling…":schedDays.size===0?"Pick days first":"Add to Schedule"}</div>
+                  <div style={{fontSize:11,fontWeight:400,opacity:0.7,marginTop:2}}>Auto-posts on selected days</div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ── Scheduled Queue ── */}
+          {scheduledPosts.length>0&&(
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#fff",marginBottom:14}}>📅 Scheduled Posts</div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {scheduledPosts.map((post:any)=>(
+                  <div key={post.id} style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,border:"1px solid rgba(255,255,255,0.06)"}}>
+                    <div style={{width:40,height:40,borderRadius:8,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>📅</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{(post.days||[]).join(", ")} at {post.time} CST</div>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>{(post.platforms||[]).join(" · ")} · added {new Date(post.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <button onClick={()=>deleteScheduled(post.id)} style={{...btn,padding:"5px 12px",borderRadius:7,fontSize:11,background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.18)",color:"rgba(239,68,68,0.6)"}}>Remove</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:12,fontSize:11,color:"rgba(255,255,255,0.25)",lineHeight:1.6}}>
+                ⚙ Scheduled posts run via your cron job. Make sure <strong style={{color:"rgba(255,255,255,0.4)"}}>CRON_SECRET</strong> is set in Vercel and the cron is active.
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -3883,24 +3973,19 @@ function ReelsTab({token}:{token:string}){
           <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:22}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16,marginBottom:20}}>
               <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Google Veo Clip Library</div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Higgsfield AI Clip Library</div>
                 <div style={{display:"flex",gap:24}}>
                   <div><div style={{fontSize:28,fontWeight:900,color:C}}>{clipLibraryTotal}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>clips ready</div></div>
-                  <div><div style={{fontSize:28,fontWeight:900,color:"rgba(255,255,255,0.4)"}}>{clipLibraryAvailable-clipLibraryTotal}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>prompts unused</div></div>
-                  <div><div style={{fontSize:28,fontWeight:900,color:"rgba(255,255,255,0.4)"}}>{clipLibraryAvailable}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>total prompts</div></div>
                 </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <button onClick={loadClipLibrary} disabled={clipLibraryLoading} style={{...btn,padding:"10px 18px",borderRadius:10,fontSize:12,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",opacity:clipLibraryLoading?0.5:1}}>{clipLibraryLoading?"⏳ Loading…":"↻ Refresh"}</button>
-                <button onClick={()=>generateMoreClips(1)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.08)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.2)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Generating…":"✦ Generate 1 Clip"}</button>
-                <button onClick={()=>generateMoreClips(5)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.1)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.3)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Running…":"✦✦ Generate 5 Clips"}</button>
-                <button onClick={()=>generateMoreClips(10)} disabled={generatingClips} style={{...btn,padding:"10px 20px",borderRadius:10,fontSize:12,background:generatingClips?"rgba(255,255,255,0.04)":"rgba(0,213,255,0.15)",border:`1px solid ${generatingClips?"rgba(255,255,255,0.08)":"rgba(0,213,255,0.4)"}`,color:generatingClips?"rgba(255,255,255,0.3)":C,opacity:generatingClips?0.6:1}}>{generatingClips?"⏳ Running…":"✦✦✦ Generate 10 Clips"}</button>
               </div>
             </div>
 
             {/* Generation notice */}
             <div style={{background:"rgba(255,193,7,0.06)",border:"1px solid rgba(255,193,7,0.15)",borderRadius:10,padding:"10px 14px",fontSize:11,color:"rgba(255,193,7,0.7)",lineHeight:1.6}}>
-              <strong>Google Veo 3.1</strong> · 8s · 720p · 9:16 · ~$0.35/clip · clips expire after 48h. Leave this tab open — results save automatically.
+              <strong>Higgsfield AI</strong> · 8s · 720p · 9:16 · Generate clips from the Describe Your Video step above. Leave this tab open — results save automatically.
             </div>
 
             {clipGenResult&&(
@@ -3921,9 +4006,8 @@ function ReelsTab({token}:{token:string}){
           {!clipLibraryLoading&&clipLibrary.length===0&&(
             <div style={{background:"rgba(255,255,255,0.02)",border:"1px dashed rgba(255,255,255,0.08)",borderRadius:14,padding:"44px 24px",textAlign:"center"}}>
               <div style={{fontSize:32,marginBottom:12}}>🎞</div>
-              <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No Veo clips yet</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Generate your first batch of Google Veo 3.1 clips — 5s · 720p · 9:16. Used automatically in every reel.</div>
-              <button onClick={()=>generateMoreClips(1)} disabled={generatingClips} style={{...btn,padding:"12px 28px",borderRadius:10,fontSize:13,background:GRAD,color:"#fff",opacity:generatingClips?0.5:1}}>{generatingClips?"⏳ Generating…":"✦ Generate First Clip"}</button>
+              <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",fontWeight:700,marginBottom:6}}>No Higgsfield clips yet</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginBottom:20}}>Use the "Describe Your Video" prompt above to generate your first Higgsfield AI clip — 8s · 720p · 9:16. Used automatically in every reel.</div>
             </div>
           )}
 
@@ -3943,7 +4027,7 @@ function ReelsTab({token}:{token:string}){
                     <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.5,marginBottom:10,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{clip.prompt}</div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                       <button onClick={()=>setPlayingClipId(clip.id)} style={{...btn,flex:1,padding:"6px 8px",borderRadius:8,fontSize:11,background:"rgba(0,213,255,0.08)",border:"1px solid rgba(0,213,255,0.2)",color:"rgba(0,213,255,0.8)"}}>▶ Play</button>
-                      <a href={`/api/admin/reels/clip-proxy?id=${clip.id}&token=${token}&disposition=attachment`} download="cybercraft360_clip.mp4" style={{...btn,flex:1,padding:"6px 8px",borderRadius:8,fontSize:11,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",textDecoration:"none",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>⬇ Save</a>
+                      <a href={clip.url??`/api/admin/reels/clip-proxy?id=${clip.id}&token=${token}&disposition=attachment`} download="cybercraft360_clip.mp4" style={{...btn,flex:1,padding:"6px 8px",borderRadius:8,fontSize:11,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",textDecoration:"none",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>⬇ Save</a>
                     </div>
                     <button onClick={()=>{setSection("upload");}} style={{...btn,width:"100%",marginTop:6,padding:"7px 8px",borderRadius:8,fontSize:11,background:"linear-gradient(135deg,rgba(229,49,108,0.15),rgba(10,102,194,0.15))",border:"1px solid rgba(255,255,255,0.12)",color:"rgba(255,255,255,0.7)",fontWeight:700}}>
                       <svg style={{display:"inline",verticalAlign:"middle",marginRight:4}} width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>

@@ -31,6 +31,9 @@ function gradeHtml(w: number, h: number): string {
 </body></html>`;
 }
 
+// System font stack — no external font CDN that Shotstack's sandbox might block
+const SYS_FONT = `'Helvetica Neue', Helvetica, Arial, sans-serif`;
+
 // ── LOGO — small, top-center, elegant ────────────────────────────────────────
 function logoHtml(w: number, h: number): string {
   const logoH = Math.round(h * 0.022);
@@ -49,7 +52,6 @@ img{height:${logoH}px;width:auto;display:block;filter:brightness(0) invert(1);op
 function heroHtml(text: string, w: number, h: number): string {
   const fs = Math.round(w * 0.092);
   const words = text.trim().split(/\s+/);
-  // Split into max 3 lines of 2-3 words each for dramatic effect
   const lines: string[] = [];
   for (let i = 0; i < words.length; i += 3) lines.push(words.slice(i, i + 3).join(" "));
 
@@ -59,40 +61,38 @@ function heroHtml(text: string, w: number, h: number): string {
 
   return `<html><head><style>
 *{margin:0;padding:0;box-sizing:border-box;}
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-@keyframes reveal{0%{opacity:0;transform:translateY(32px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes reveal{0%{opacity:0;transform:translateY(28px);}100%{opacity:1;transform:translateY(0);}}
 body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;
-  font-family:'Montserrat',Helvetica,Arial,sans-serif;
+  font-family:${SYS_FONT};
   display:flex;align-items:center;justify-content:center;
   padding:${Math.round(w*0.07)}px;text-align:center;}
 .wrap{display:flex;flex-direction:column;gap:${Math.round(w*0.008)}px;}
 .l{font-size:${fs}px;font-weight:900;color:#fff;line-height:1.0;
-   letter-spacing:-2.5px;text-shadow:0 4px 80px rgba(0,0,0,0.9);
+   letter-spacing:-2px;text-shadow:0 4px 80px rgba(0,0,0,0.9);
    opacity:0;animation:reveal 0.9s cubic-bezier(0.16,1,0.3,1) forwards;}
 </style></head><body>
 <div class="wrap">${lineHtml}</div>
 </body></html>`;
 }
 
-// ── SCENE TEXT — minimal lower-third, one phrase at a time ───────────────────
+// ── SCENE TEXT — minimal lower-third for mid/closing scenes ──────────────────
 function sceneTextHtml(text: string, w: number, h: number, delay: number = 0): string {
   const fs = Math.round(w * 0.042);
   const pad = Math.round(w * 0.08);
-  const d = (delay * 1000).toFixed(0);
+  const d = Math.round(delay * 1000);
   return `<html><head><style>
 *{margin:0;padding:0;box-sizing:border-box;}
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&display=swap');
-@keyframes up{0%{opacity:0;transform:translateY(20px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes up{0%{opacity:0;transform:translateY(18px);}100%{opacity:1;transform:translateY(0);}}
 @keyframes rule{0%{width:0;opacity:0;}100%{width:36px;opacity:1;}}
 body{width:${w}px;height:${h}px;background:transparent;overflow:hidden;
-  font-family:'Montserrat',Helvetica,Arial,sans-serif;
+  font-family:${SYS_FONT};
   display:flex;flex-direction:column;justify-content:flex-end;
   padding:${pad}px ${pad}px ${Math.round(pad*1.4)}px;}
-.r{height:1.5px;background:#00D5FF;margin-bottom:${Math.round(w*0.022)}px;border-radius:1px;
-   animation:rule 0.5s ${d}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;width:0;}
+.r{height:2px;background:#00D5FF;margin-bottom:${Math.round(w*0.022)}px;border-radius:1px;
+   animation:rule 0.45s ${d}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;width:0;}
 .t{font-size:${fs}px;font-weight:700;color:#fff;line-height:1.25;
-   letter-spacing:-0.5px;text-shadow:0 2px 40px rgba(0,0,0,0.95);
-   animation:up 0.7s ${Number(d)+120}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;max-width:88%;}
+   letter-spacing:-0.3px;text-shadow:0 2px 40px rgba(0,0,0,0.95);
+   animation:up 0.65s ${d+120}ms cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;max-width:88%;}
 </style></head><body>
 <div class="r"></div>
 <p class="t">${text.replace(/</g, "&lt;")}</p>
@@ -106,12 +106,11 @@ function endCardHtml(headline: string, cta: string, w: number, h: number): strin
   const cfs = Math.round(w * 0.028);
   return `<html><head><style>
 *{margin:0;padding:0;box-sizing:border-box;}
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap');
 @keyframes f{0%{opacity:0;}100%{opacity:1;}}
 @keyframes up{0%{opacity:0;transform:translateY(24px);}100%{opacity:1;transform:translateY(0);}}
 @keyframes glow{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}100%{opacity:0.12;transform:translate(-50%,-50%) scale(1);}}
 body{width:${w}px;height:${h}px;background:#080A10;overflow:hidden;
-  font-family:'Montserrat',Helvetica,Arial,sans-serif;
+  font-family:${SYS_FONT};
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:${Math.round(w*0.05)}px;position:relative;}
 .glow{position:absolute;width:${Math.round(w*1.2)}px;height:${Math.round(w*1.2)}px;border-radius:50%;
@@ -174,20 +173,26 @@ function buildEdit(opts: {
   const endCardDur = 8;
   const totalDuration = contentDuration + endCardDur;
 
-  // Background clips — cycle AI clips, slow ken-burns motion
+  // Background clips — cycle through library with different trim offsets and effects
+  // so the same clip doesn't look identical each time it repeats
   const goodClips = clips.filter((c: any) => c.url && c.duration >= 3);
   const bgClips: any[] = [];
   let cursor = 0, ci = 0;
-  const effects = ["zoomIn", "zoomOut", "slideLeft", "slideRight"];
+  const effects = ["zoomIn", "zoomOut", "slideLeft", "slideRight", "slideUp"];
+  const SEG = 5; // max seconds per clip segment — shorter = more scene variety
   while (cursor < contentDuration) {
     if (goodClips.length === 0) break;
-    const c = goodClips[ci % goodClips.length];
-    const len = Math.min(c.duration, contentDuration - cursor, 8);
+    const clipIdx = ci % goodClips.length;
+    const c = goodClips[clipIdx];
+    const len = Math.min(SEG, contentDuration - cursor);
     if (len < 0.5) break;
+    // Advance trim by 2s each full cycle so reuse looks different
+    const cycle = Math.floor(ci / goodClips.length);
+    const trimOffset = Math.min(cycle * 2, Math.max(0, c.duration - len - 0.1));
     bgClips.push({
-      asset: { type: "video", src: c.url, trim: 0, volume: 0 },
+      asset: { type: "video", src: c.url, trim: trimOffset, volume: 0 },
       start: cursor,
-      length: len + 0.5,
+      length: len + 0.3,
       effect: effects[ci % effects.length],
       transition: { in: "fade", out: "fade" },
     });
@@ -207,28 +212,27 @@ function buildEdit(opts: {
     start: 0, length: contentDuration,
   };
 
-  // Apple/McLaren text approach: only the hook (scene 0) and closing line (last scene) show text.
-  // Voiceover carries all narration — subtitles on B-roll cause sync problems and look cheap.
-  const lastIdx = timed.length - 1;
+  // Text overlays on EVERY scene — hero for scene 0, lower-third for all others
   const textClips = timed
     .map((sc: any, i: number) => {
       if (i === 0) {
-        // Full-frame hero hook
+        // Full-frame hero hook — large centered reveal
         return {
           asset: { type: "html", html: heroHtml(hook, W, H), width: W, height: H, background: "transparent" },
           start: sc.start + 0.2,
-          length: sc.dur - 0.2,
+          length: Math.max(sc.dur - 0.3, 1),
         };
       }
-      if (i === lastIdx && sc.narration) {
-        // Single closing statement — minimal lower-third
-        return {
-          asset: { type: "html", html: sceneTextHtml(sc.narration, W, H, 0.15), width: W, height: H, background: "transparent" },
-          start: sc.start + 0.3,
-          length: sc.dur - 0.3,
-        };
-      }
-      return null; // All middle scenes: pure B-roll, voiceover tells the story
+      // All other scenes: lower-third with the scene narration (truncated to 7 words max)
+      const rawText: string = sc.narration ?? sc.text ?? sc.visualDirection ?? "";
+      if (!rawText.trim()) return null;
+      const words = rawText.trim().split(/\s+/);
+      const label = words.slice(0, 7).join(" ") + (words.length > 7 ? "…" : "");
+      return {
+        asset: { type: "html", html: sceneTextHtml(label, W, H, 0.15), width: W, height: H, background: "transparent" },
+        start: sc.start + 0.4,
+        length: Math.max(sc.dur - 0.5, 1),
+      };
     })
     .filter(Boolean);
 
