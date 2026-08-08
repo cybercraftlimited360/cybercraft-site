@@ -4,11 +4,13 @@ import { sendEmail } from "@/lib/mailer";
 
 type Message = { role: string; content: string };
 
-interface Learning {
-  situation: string;
-  what_worked: string;
+interface SavedCall {
+  id: string;
+  date: string;
+  transcript: Message[];
   booked: boolean;
-  savedAt: string;
+  name: string;
+  company: string;
 }
 
 interface Booking {
@@ -116,28 +118,35 @@ If they won't book a call, get their email anyway so Saad can send them somethin
 - **NEVER ask the same question twice.** If someone skips, deflects, or refuses to answer something, move on. Don't circle back to it.
 - When the conversation is clearly over, put [END_CALL] at the very end. If you collected their email for booking, put [BOOK_EMAIL: email | time] before [END_CALL].`;
 
-async function loadLearnings(): Promise<string> {
+async function loadCallExamples(): Promise<string> {
   try {
-    const learnings = await redis.get<Learning[]>("amy:learnings") ?? [];
-    if (!learnings.length) return "";
-    const recent = learnings.slice(-5);
-    const lines = recent.map(l =>
-      `- Situation: ${l.situation} | What worked: ${l.what_worked}${l.booked ? " (they booked)" : ""}`
-    );
-    return `\n\n## WHAT HAS WORKED IN RECENT CALLS\nUse these patterns — they came from real conversations:\n${lines.join("\n")}`;
+    const calls = await redis.get<SavedCall[]>("amy:conversations") ?? [];
+    const successful = calls.filter(c => c.booked).slice(-4);
+    if (successful.length === 0) return "";
+    const examples = successful.map(c => {
+      const turns = c.transcript
+        .map(m => `${m.role === "user" ? "Caller" : "Amy"}: ${m.content}`)
+        .join("\n");
+      return `--- Successful call — ${c.name} at ${c.company} (booked a strategy session) ---\n${turns}`;
+    }).join("\n\n");
+    return `\n\n## SELF-LEARNING — STUDY THESE SUCCESSFUL PAST CALLS\nThese calls ended with a booking. Study the phrasing, how objections were handled, and how Amy moved toward the close. Replicate what worked:\n\n${examples}`;
   } catch { return ""; }
 }
 
-async function saveLearning(history: Message[], booked: boolean) {
+async function saveCall(history: Message[], booked: boolean, name: string, company: string) {
   try {
     if (history.length < 4) return;
-    const lastFew = history.slice(-6);
-    const situation = lastFew.find(m => m.role === "user")?.content?.slice(0, 120) ?? "general call";
-    const amyResponse = lastFew.filter(m => m.role === "assistant").pop()?.content?.slice(0, 200) ?? "";
-    if (!amyResponse) return;
-    const learnings = await redis.get<Learning[]>("amy:learnings") ?? [];
-    learnings.push({ situation, what_worked: amyResponse, booked, savedAt: new Date().toISOString() });
-    await redis.set("amy:learnings", learnings.slice(-30));
+    const clean = history.filter(m => !m.content?.startsWith("[CONTEXT:"));
+    const calls = await redis.get<SavedCall[]>("amy:conversations") ?? [];
+    calls.push({
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      transcript: clean,
+      booked,
+      name,
+      company,
+    });
+    await redis.set("amy:conversations", calls.slice(-200));
   } catch { /* non-critical */ }
 }
 
@@ -294,7 +303,7 @@ export async function POST(req: NextRequest) {
 
     const [rawHistory, learningsContext] = await Promise.all([
       redis.get<Message[]>(historyKey),
-      loadLearnings(),
+      loadCallExamples(),
     ]);
     const history = rawHistory ?? [];
     const systemPrompt = BASE_SYSTEM + learningsContext;
@@ -427,7 +436,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
 
     if (shouldEnd) {
       redis.hincrby("lauren:stats", "totalCalls", 1).catch(() => {});
-      saveLearning(history, hasBooking).catch(() => {});
+      saveCall(history, hasBooking, name, company).catch(() => {});
 
       // If LLM forgot to emit [BOOK_EMAIL] but we captured email during the call, book anyway
       if (!hasBooking && callState.email) {
