@@ -2596,14 +2596,31 @@ function ReportsTab({token}:{token:string}){
 // Note: this is a client-side fetch to /api/admin/reports which we need to create
 
 // ── Traffic Tab ───────────────────────────────────────────────────────────────
+function timeAgo(iso:string):string{
+  const diff=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+  if(diff<60) return `${diff}s ago`;
+  if(diff<3600) return `${Math.floor(diff/60)}m ago`;
+  if(diff<86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
 function TrafficTab({token}:{token:string}){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
+  const [tick,setTick]=useState(0);
 
-  useEffect(()=>{
+  const load=useCallback(()=>{
     fetch("/api/admin/traffic",{headers:{"x-admin-token":token}})
       .then(r=>r.json()).then(setData).catch(()=>{}).finally(()=>setLoading(false));
   },[token]);
+
+  useEffect(()=>{load();},[load]);
+
+  // Auto-refresh every 30 seconds for live feed
+  useEffect(()=>{
+    const id=setInterval(()=>{load();setTick(t=>t+1);},30000);
+    return()=>clearInterval(id);
+  },[load]);
 
   if(loading) return <div style={{color:"rgba(255,255,255,0.4)",padding:40,textAlign:"center"}}>Loading traffic data…</div>;
   if(!data) return <div style={{color:"#ef4444",padding:40,textAlign:"center"}}>Failed to load traffic data.</div>;
@@ -2611,10 +2628,77 @@ function TrafficTab({token}:{token:string}){
   const S=data.summary||{};
   const sourceColors:Record<string,string>={instagram:"#e1306c",facebook:"#1877f2",linkedin:"#0a66c2",google:"#34a853",twitter:"#1da1f2",direct:"#8b8fa8"};
   const maxDailyVisits=Math.max(...(data.daily||[]).map((d:any)=>d.visits),1);
+  const recentVisits:any[]=data.recentVisits||[];
+  const funnel:any[]=data.funnel||[];
+  const funnelMax=Math.max(...funnel.map((f:any)=>f.count),1);
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:24}}>
       <SectionHeader icon="📡" title="Traffic & Social Analytics" sub="Track visitors from Instagram, LinkedIn, Facebook and all UTM campaigns"/>
+
+      {/* Live Visitor Feed */}
+      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#22c55e",boxShadow:"0 0 0 3px rgba(34,197,94,0.25)",animation:"pulse 2s infinite"}}/>
+            <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>Live Visitor Feed</p>
+          </div>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Refreshes every 30s</span>
+        </div>
+        <style>{`@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.25)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0.08)}}`}</style>
+        {recentVisits.length===0
+          ? <p style={{color:"rgba(255,255,255,0.25)",fontSize:13,margin:0}}>No visitors yet — they'll appear here as they land.</p>
+          : <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {recentVisits.map((v:any,i:number)=>{
+                const isNew=Date.now()-new Date(v.time).getTime()<120000;
+                const pageLabel=v.page==="/"?"Homepage":v.page=="/book"?"Book a Call":v.page=="/blog"?"Blog":v.page;
+                const src=v.utm_source||v.referrer?.replace(/^https?:\/\/(www\.)?/,"").split("/")[0]||"Direct";
+                return(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:isNew?"rgba(34,197,94,0.04)":"rgba(255,255,255,0.015)",borderRadius:10,border:`1px solid ${isNew?"rgba(34,197,94,0.15)":"rgba(255,255,255,0.04)"}`}}>
+                    {isNew&&<span style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",flexShrink:0,boxShadow:"0 0 0 2px rgba(34,197,94,0.3)"}}/>}
+                    <span style={{fontSize:16,lineHeight:1,flexShrink:0}}>{v.flag||"🌐"}</span>
+                    <span style={{fontSize:12,color:"#e4e6f0",fontWeight:600,minWidth:100,flexShrink:0}}>{v.location?.split(",")[0]||"Unknown"}</span>
+                    <span style={{fontSize:11,color:"#00d4ff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pageLabel}</span>
+                    <span style={{fontSize:11,color:"rgba(255,255,255,0.3)",flexShrink:0,minWidth:60,textAlign:"right"}}>{src.length>20?src.slice(0,20)+"…":src}</span>
+                    <span style={{fontSize:10,color:"rgba(255,255,255,0.2)",flexShrink:0,minWidth:44,textAlign:"right"}}>{timeAgo(v.time)}</span>
+                    {v.isVpn&&<span style={{fontSize:9,fontWeight:700,color:"#f59e0b",background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.25)",borderRadius:4,padding:"1px 5px",flexShrink:0}}>VPN</span>}
+                  </div>
+                );
+              })}
+            </div>
+        }
+      </div>
+
+      {/* Funnel Tracker */}
+      {funnel.length>0&&(
+        <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Conversion Funnel</p>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {funnel.map((f:any,i:number)=>{
+              const pct=funnelMax>0?Math.round((f.count/funnelMax)*100):0;
+              const convRate=i>0&&funnel[i-1].count>0?Math.round((f.count/funnel[i-1].count)*100):null;
+              return(
+                <div key={f.stage}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.25)",width:16}}>{i+1}</span>
+                      <span style={{fontSize:13,fontWeight:600,color:"#fff"}}>{f.stage}</span>
+                      {convRate!==null&&(
+                        <span style={{fontSize:10,fontWeight:700,color:convRate>=10?"#22c55e":convRate>=3?"#f59e0b":"#ef4444",background:convRate>=10?"rgba(34,197,94,0.1)":convRate>=3?"rgba(245,158,11,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${convRate>=10?"rgba(34,197,94,0.25)":convRate>=3?"rgba(245,158,11,0.25)":"rgba(239,68,68,0.25)"}`,borderRadius:4,padding:"1px 6px"}}>↓ {convRate}%</span>
+                      )}
+                    </div>
+                    <span style={{fontSize:15,fontWeight:800,color:f.color}}>{f.count.toLocaleString()}</span>
+                  </div>
+                  <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:4,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:f.color,borderRadius:4,transition:"width 0.5s ease",opacity:0.85}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{fontSize:11,color:"rgba(255,255,255,0.2)",margin:"12px 0 0"}}>Based on last 200 recorded visits. Leads = total all-time from IRIS, Amy &amp; forms.</p>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12}}>

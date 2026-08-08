@@ -82,6 +82,30 @@ export async function GET(req: NextRequest) {
     const socialVisits = utmVisits.length;
     const directVisits = visits.filter(v => !v.utm_source && !v.referrer).length;
 
+    // Recent visits for live feed (last 20, enriched)
+    const recentVisits = visits.slice(0, 20).map(v => ({
+      ip: v.ip,
+      location: v.location,
+      flag: v.flag || "",
+      page: v.page || "/",
+      referrer: v.referrer || "",
+      utm_source: v.utm_source || "",
+      time: v.time,
+      isVpn: v.isVpn || false,
+      isDatacenter: v.isDatacenter || false,
+    }));
+
+    // Funnel: Homepage → /book → Leads
+    const homepageVisits = visits.filter(v => v.page === "/" || v.page === "").length;
+    const bookVisits = visits.filter(v => v.page === "/book").length;
+    const leads = await redis.get<any[]>("leads:all") ?? [];
+    const leadCount = leads.length;
+    const funnel = [
+      { stage: "Homepage", count: homepageVisits, color: "#00d4ff" },
+      { stage: "Book a Call", count: bookVisits, color: "#a78bfa" },
+      { stage: "Leads Generated", count: leadCount, color: "#22c55e" },
+    ];
+
     return NextResponse.json({
       summary: { totalVisits, todayVisits, socialVisits, directVisits },
       sources,
@@ -91,6 +115,8 @@ export async function GET(req: NextRequest) {
       blogPerformance,
       socialBreakdown,
       recentUtm: utmVisits.slice(0, 20),
+      recentVisits,
+      funnel,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
