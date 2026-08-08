@@ -326,8 +326,9 @@ function OverviewTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof u
       )}
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:24}}>
-        <MiniStat label="Visitors Today" value={data.visitors?.today||0} accent="#00d4ff" sub="page loads"/>
-        <MiniStat label="Total Visitors" value={data.visitors?.total||0} accent="#a78bfa" sub="all time"/>
+        <MiniStat label="Visitors Today" value={data.visitors?.today||0} accent="#00d4ff" sub="unique, bots excluded"/>
+        <MiniStat label="Organic Today" value={data.visitors?.todayOrganic||0} accent="#f59e0b" sub="search engine"/>
+        <MiniStat label="Total Visitors" value={data.visitors?.total||0} accent="#a78bfa" sub="unique all time"/>
       </div>
 
       <SectionTitle>Recent Visitors</SectionTitle>
@@ -2619,7 +2620,8 @@ function TrafficTab({token}:{token:string}){
 
   const S=data.summary||{};
   const sourceColors:Record<string,string>={instagram:"#e1306c",facebook:"#1877f2",linkedin:"#0a66c2",google:"#34a853",twitter:"#1da1f2",direct:"#8b8fa8"};
-  const maxDailyVisits=Math.max(...(data.daily||[]).map((d:any)=>d.visits),1);
+  const maxDailyVisits=Math.max(...(data.daily||[]).map((d:any)=>Math.max(d.visits||0,d.pageViews||0)),1);
+  const organicByEngine:Record<string,number>=data.organicByEngine||{};
   const recentVisits:any[]=data.recentVisits||[];
   const funnel:any[]=data.funnel||[];
   const funnelMax=Math.max(...funnel.map((f:any)=>f.count),1);
@@ -2741,12 +2743,14 @@ function TrafficTab({token}:{token:string}){
       {/* Summary cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12}}>
         {[
-          {label:"Total Visits (30d)",value:S.totalVisits??0,color:"#00d4ff"},
-          {label:"Today",value:S.todayVisits??0,color:"#22c55e"},
-          {label:"From Social",value:S.socialVisits??0,color:"#e1306c"},
-          {label:"Direct",value:S.directVisits??0,color:"#a78bfa"},
+          {label:"Unique Visitors (30d)",value:S.totalVisits??0,color:"#00d4ff",hint:"Bot-filtered, deduplicated by session"},
+          {label:"Today",value:S.todayVisits??0,color:"#22c55e",hint:"Unique visitors today"},
+          {label:"Organic Search",value:S.totalOrganic??0,color:"#f59e0b",hint:"Google, Bing, etc. — no ads needed"},
+          {label:"Direct",value:S.totalDirect??0,color:"#a78bfa",hint:"Typed URL or bookmark"},
+          {label:"Referral",value:S.totalReferral??0,color:"#06b6d4",hint:"Came from another website"},
+          {label:"Paid/Social",value:S.socialVisits??0,color:"#e1306c",hint:"UTM-tagged links"},
         ].map(c=>(
-          <div key={c.label} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:"16px 18px"}}>
+          <div key={c.label} title={(c as any).hint||""} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:"16px 18px"}}>
             <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 6px"}}>{c.label}</p>
             <p style={{fontSize:"1.8rem",fontWeight:800,color:c.color,margin:0,lineHeight:1}}>{c.value}</p>
           </div>
@@ -2755,19 +2759,57 @@ function TrafficTab({token}:{token:string}){
 
       {/* Daily chart */}
       <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
-        <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>Daily Visits — Last 30 Days</p>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>Unique Visitors — Last 30 Days</p>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+            <span style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(255,255,255,0.35)"}}><span style={{width:8,height:8,borderRadius:2,background:"#00d4ff",display:"inline-block"}}/>All visitors</span>
+            <span style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(255,255,255,0.35)"}}><span style={{width:8,height:8,borderRadius:2,background:"#f59e0b",display:"inline-block"}}/>Organic</span>
+          </div>
+        </div>
         <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
-          {(data.daily||[]).map((d:any)=>(
-            <div key={d.date} title={`${d.date}: ${d.visits} visits`} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              <div style={{width:"100%",background:d.visits>0?"#00d4ff":"rgba(255,255,255,0.05)",borderRadius:"3px 3px 0 0",height:`${Math.max((d.visits/maxDailyVisits)*72,d.visits>0?4:2)}px`,transition:"height 0.3s"}}/>
-            </div>
-          ))}
+          {(data.daily||[]).map((d:any)=>{
+            const totalH=Math.max((d.visits/maxDailyVisits)*76,d.visits>0?4:2);
+            const orgH=d.organic>0?Math.max((d.organic/maxDailyVisits)*76,3):0;
+            return(
+              <div key={d.date} title={`${d.date}: ${d.visits} unique visitors (${d.organic} organic, ${d.pageViews} page views)`} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",height:80,justifyContent:"flex-end"}}>
+                <div style={{width:"100%",background:d.visits>0?"rgba(0,212,255,0.25)":"rgba(255,255,255,0.04)",borderRadius:"3px 3px 0 0",height:`${totalH}px`,position:"relative",overflow:"hidden"}}>
+                  {orgH>0&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:`${Math.min(orgH/totalH*100,100)}%`,background:"#f59e0b",opacity:0.8}}/>}
+                </div>
+              </div>
+            );
+          })}
         </div>
         <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
           <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{data.daily?.[0]?.date}</span>
           <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{data.daily?.[data.daily.length-1]?.date}</span>
         </div>
+        <p style={{fontSize:10,color:"rgba(255,255,255,0.18)",margin:"8px 0 0"}}>Bots and datacenter traffic excluded · hover a bar for details</p>
       </div>
+
+      {/* Organic search engine breakdown */}
+      {Object.keys(organicByEngine).length>0&&(
+        <div style={{background:"rgba(245,158,11,0.04)",border:"1px solid rgba(245,158,11,0.15)",borderRadius:14,padding:20}}>
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#f59e0b",margin:"0 0 14px"}}>Organic Search Sources</p>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {Object.entries(organicByEngine).sort((a,b)=>b[1]-a[1]).map(([engine,count])=>{
+              const total=Object.values(organicByEngine).reduce((s,v)=>s+v,0);
+              const pct=Math.round((count/total)*100);
+              const engineIcons:Record<string,string>={google:"🔍",bing:"🔷",yahoo:"💜",duckduckgo:"🦆",yandex:"🟡",baidu:"🔴",ecosia:"🌿"};
+              return(
+                <div key={engine}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                    <span style={{fontSize:13,fontWeight:600,color:"#fff",textTransform:"capitalize"}}>{engineIcons[engine]||"🔍"} {engine}</span>
+                    <span style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{count} visits · {pct}%</span>
+                  </div>
+                  <div style={{height:5,background:"rgba(255,255,255,0.06)",borderRadius:3,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:"#f59e0b",borderRadius:3}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Social sources */}
       <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>

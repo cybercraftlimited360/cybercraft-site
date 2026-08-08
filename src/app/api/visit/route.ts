@@ -150,20 +150,47 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── Classify traffic source ──
+    const SEARCH_ENGINES = ["google", "bing", "yahoo", "duckduckgo", "baidu", "yandex", "ecosia"];
+    const referrerHost = referrer ? new URL(referrer.startsWith("http") ? referrer : "https://" + referrer).hostname.replace("www.", "") : "";
+    const isSearchOrganic = !utm_source && SEARCH_ENGINES.some(e => referrerHost.includes(e));
+    const isDirect = !utm_source && !referrer;
+    const isReferral = !utm_source && !!referrer && !isSearchOrganic;
+    const trafficSource = utm_source || (isSearchOrganic ? "organic" : isDirect ? "direct" : "referral");
+
+    // ── Skip datacenter/bot traffic from all counters ──
+    if (isDatacenter) {
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── Save to recent visits list (keep last 200) ──
+    const existing = await redis.get<typeof visit[]>("visits:recent") ?? [];
+    existing.unshift({ ...visit, trafficSource, isOrganic: isSearchOrganic });
+    await redis.set("visits:recent", existing.slice(0, 200));
+
+    // ── Count unique visitors by session (not page views) ──
+    const isNewSession = sessionId && !existing.slice(1).some((v: any) => v.sessionId === sessionId);
+    if (isNewSession || !sessionId) {
+      // Unique visitor counters
+      await redis.hincrby("visitors:daily", dateKey, 1);
+      if (isSearchOrganic) await redis.hincrby("visitors:organic:daily", dateKey, 1);
+      if (isDirect) await redis.hincrby("visitors:direct:daily", dateKey, 1);
+      if (isReferral) await redis.hincrby("visitors:referral:daily", dateKey, 1);
+      if (utm_source) await redis.hincrby("visitors:paid:daily", dateKey, 1);
+    }
+
+    // ── Always count page views (separate from unique visitors) ──
+    await redis.hincrby("visits:daily", dateKey, 1);
+
     // Track UTM source stats
     if (utm_source) {
       await redis.hincrby("traffic:sources", utm_source, 1);
       await redis.hincrby(`traffic:campaigns`, utm_campaign || utm_source, 1);
       await redis.hincrby(`traffic:daily:${dateKey}:${utm_source}`, "visits", 1);
     }
-
-    // Save to Redis list (keep last 200)
-    const existing = await redis.get<typeof visit[]>("visits:recent") ?? [];
-    existing.unshift(visit);
-    await redis.set("visits:recent", existing.slice(0, 200));
-
-    // Increment daily counter
-    await redis.hincrby("visits:daily", dateKey, 1);
+    if (isSearchOrganic) {
+      await redis.hincrby("traffic:sources", "organic_search", 1);
+    }
 
     // Throttled email notification — max 1 per 5 minutes
     const throttleKey = "visits:last_notified";
@@ -173,7 +200,7 @@ export async function POST(req: NextRequest) {
     if (!lastNotified || new Date(lastNotified).getTime() < fiveMinAgo) {
       await redis.set(throttleKey, now.toISOString());
 
-      const todayCount = await redis.hget<number>("visits:daily", dateKey) ?? 1;
+      const todayCount = await redis.hget<number>("visitors:daily", dateKey) ?? 1;
 
       const { sendEmail } = await import("@/lib/mailer");
       await sendEmail({

@@ -28,8 +28,14 @@ export async function GET(req: NextRequest) {
       visits: Number(count),
     })).sort((a, b) => b.visits - a.visits);
 
-    // Daily visit totals (last 30 days)
-    const rawDaily = await redis.hgetall("visits:daily") ?? {};
+    // Daily visit totals (last 30 days) — unique visitors + page views + organic
+    const [rawDaily, rawUniqueDaily, rawOrganicDaily, rawDirectDaily, rawReferralDaily] = await Promise.all([
+      redis.hgetall("visits:daily"),
+      redis.hgetall("visitors:daily"),
+      redis.hgetall("visitors:organic:daily"),
+      redis.hgetall("visitors:direct:daily"),
+      redis.hgetall("visitors:referral:daily"),
+    ]);
     const last30 = Array.from({ length: 30 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (29 - i));
@@ -37,7 +43,11 @@ export async function GET(req: NextRequest) {
     });
     const daily = last30.map(date => ({
       date,
-      visits: Number(rawDaily[date] ?? 0),
+      visits: Number(rawUniqueDaily?.[date] ?? 0),       // unique visitors
+      pageViews: Number(rawDaily?.[date] ?? 0),           // raw page loads
+      organic: Number(rawOrganicDaily?.[date] ?? 0),
+      direct: Number(rawDirectDaily?.[date] ?? 0),
+      referral: Number(rawReferralDaily?.[date] ?? 0),
     }));
 
     // Top pages
@@ -76,11 +86,33 @@ export async function GET(req: NextRequest) {
       topPage: Object.entries(data.pages).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "",
     }));
 
-    // Summary stats
+    // Summary stats — unique visitors (bot-filtered, deduplicated)
     const totalVisits = daily.reduce((s, d) => s + d.visits, 0);
     const todayVisits = daily[daily.length - 1]?.visits ?? 0;
+    const totalOrganic = daily.reduce((s, d) => s + d.organic, 0);
+    const todayOrganic = daily[daily.length - 1]?.organic ?? 0;
+    const totalDirect = daily.reduce((s, d) => s + d.direct, 0);
+    const totalReferral = daily.reduce((s, d) => s + d.referral, 0);
     const socialVisits = utmVisits.length;
     const directVisits = visits.filter(v => !v.utm_source && !v.referrer).length;
+
+    // Organic search sources from recent visits
+    const SEARCH_ENGINES = ["google", "bing", "yahoo", "duckduckgo", "baidu", "yandex", "ecosia"];
+    const organicVisits = visits.filter(v => {
+      if (v.utm_source) return false;
+      try {
+        const host = new URL(v.referrer?.startsWith("http") ? v.referrer : "https://" + (v.referrer || "")).hostname.replace("www.", "");
+        return SEARCH_ENGINES.some(e => host.includes(e));
+      } catch { return false; }
+    });
+    const organicByEngine: Record<string, number> = {};
+    for (const v of organicVisits) {
+      try {
+        const host = new URL(v.referrer?.startsWith("http") ? v.referrer : "https://" + v.referrer).hostname.replace("www.", "");
+        const engine = SEARCH_ENGINES.find(e => host.includes(e)) || "other";
+        organicByEngine[engine] = (organicByEngine[engine] ?? 0) + 1;
+      } catch { /* skip */ }
+    }
 
     // Recent visits for live feed (last 20, enriched)
     const recentVisits = visits.slice(0, 20).map(v => ({
@@ -110,7 +142,8 @@ export async function GET(req: NextRequest) {
     const sessions = await redis.get<any[]>("visits:sessions") ?? [];
 
     return NextResponse.json({
-      summary: { totalVisits, todayVisits, socialVisits, directVisits },
+      summary: { totalVisits, todayVisits, socialVisits, directVisits, totalOrganic, todayOrganic, totalDirect, totalReferral },
+      organicByEngine,
       sources,
       campaigns,
       daily,

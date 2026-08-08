@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const monthStr = now.toISOString().slice(0, 7);
     const todayStr = now.toISOString().slice(0, 10);
 
-    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys, irisConvsRaw, laurenConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw] =
+    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys, irisConvsRaw, laurenConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw, uniqueVisitorsDailyRaw, organicDailyRaw] =
       await Promise.all([
         getBookings(),
         redis.get<any[]>("leads:all"),
@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
         redis.get<any[]>("clients:offboarded"),
         redis.get<any[]>("visits:recent"),
         redis.hgetall("visits:daily"),
+        redis.hgetall("visitors:daily"),
+        redis.hgetall("visitors:organic:daily"),
       ]);
 
     const toArr = (v: any) => (Array.isArray(v) ? v : []);
@@ -199,9 +201,15 @@ export async function GET(req: NextRequest) {
       offboarded,
       visitors: {
         recent: recentVisits.slice(0, 50),
-        today: Number((visitsDailyRaw ?? {})[todayStr] ?? 0),
-        total: Object.values(visitsDailyRaw ?? {}).reduce((s: number, v) => s + Number(v), 0),
-        dailyRaw: Object.fromEntries(Object.entries(visitsDailyRaw ?? {}).map(([k,v])=>[k,Number(v)])),
+        // Unique visitors (deduplicated by session, bots excluded)
+        today: Number((uniqueVisitorsDailyRaw ?? {})[todayStr] ?? 0),
+        total: Object.values(uniqueVisitorsDailyRaw ?? {}).reduce((s: number, v) => s + Number(v), 0),
+        todayOrganic: Number((organicDailyRaw ?? {})[todayStr] ?? 0),
+        totalOrganic: Object.values(organicDailyRaw ?? {}).reduce((s: number, v) => s + Number(v), 0),
+        // Page views (raw, for reference)
+        pageViewsToday: Number((visitsDailyRaw ?? {})[todayStr] ?? 0),
+        pageViewsTotal: Object.values(visitsDailyRaw ?? {}).reduce((s: number, v) => s + Number(v), 0),
+        dailyRaw: Object.fromEntries(Object.entries(uniqueVisitorsDailyRaw ?? {}).map(([k,v])=>[k,Number(v)])),
       },
     });
   } catch (err) {
