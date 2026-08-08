@@ -244,7 +244,8 @@ export async function GET(req: NextRequest) {
 
     // Save to review queue — do NOT commit to GitHub yet
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent((post as any).tags?.[0] ?? "AI Agency · USA")}`;
+    const firstTag = post.content.match(/^tags:\s*\["?([^",\]]+)/m)?.[1]?.trim() ?? "AI Agency · USA";
+    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(firstTag)}`;
     const pending = await redis.get<any[]>("blog:pending_posts") ?? [];
     const entry = {
       id: `bp_${Date.now()}`,

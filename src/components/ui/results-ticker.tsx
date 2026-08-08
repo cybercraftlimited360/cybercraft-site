@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 const ITEMS = [
   "4,200 Calls Handled Monthly",
-  "£2.1M Saved for Clients",
+  "$2.1M Saved for Clients",
   "340% Average Client ROI",
   "0 Templates Used",
   "98% Uptime Guarantee",
