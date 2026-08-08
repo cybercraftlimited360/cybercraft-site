@@ -6,3 +6,5 @@ data/leads.json
 data/iris-conversations.json
 data/cipher-conversations.json
 data/pending-calls.json
+
+.vercel

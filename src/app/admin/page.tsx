@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","reels","followups","competitors","roi","referrals","reports","review"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","reels","followups","competitors","roi","referrals","reports","review","outreach"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",reels:"🎬",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",reels:"Reels",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",reels:"🎬",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",reels:"Reels",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -100,6 +100,12 @@ const CARD_GROUPS = [
     label: "Content Review", color: "#f59e0b",
     cards: [
       { tab:"review" as Tab, icon:"🔍", title:"Review Queue", desc:"Approve or edit AI-generated social & blog posts before they go live" },
+    ],
+  },
+  {
+    label: "Outreach", color: "#00d4ff",
+    cards: [
+      { tab:"outreach" as Tab, icon:"🎯", title:"Outreach", desc:"Lead scraper, Facebook groups, LinkedIn search, post monitor & message generator" },
     ],
   },
 ];
@@ -234,6 +240,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="referrals"  &&<ReferralTab    token={token}/>}
             {tab==="reports"    &&<ReportsTab     token={token}/>}
             {tab==="review"     &&<ReviewQueueTab token={token}/>}
+            {tab==="outreach"   &&<OutreachTab    token={token}/>}
           </>
         ):(
           <div style={{textAlign:"center",marginTop:60,padding:"0 24px"}}>
@@ -4491,6 +4498,366 @@ function ReviewQueueTab({token}:{token:string}){
               </div>
             </div>
           ))
+      )}
+    </div>
+  );
+}
+
+// ── Outreach Tab ──────────────────────────────────────────────────────────────
+const INDUSTRIES = ["HVAC","Dental","Real Estate","Plumbing","Roofing","Auto Repair","Cleaning"];
+const US_CITIES = [
+  "New York, NY","Los Angeles, CA","Chicago, IL","Houston, TX","Phoenix, AZ",
+  "Philadelphia, PA","San Antonio, TX","San Diego, CA","Dallas, TX","San Jose, CA",
+  "Austin, TX","Jacksonville, FL","Fort Worth, TX","Columbus, OH","Charlotte, NC",
+  "Indianapolis, IN","San Francisco, CA","Seattle, WA","Denver, CO","Nashville, TN",
+  "Oklahoma City, OK","El Paso, TX","Washington, DC","Las Vegas, NV","Boston, MA",
+  "Memphis, TN","Louisville, KY","Portland, OR","Baltimore, MD","Milwaukee, WI",
+];
+
+function OutreachTab({token}:{token:string}) {
+  const h = {"x-admin-token":token};
+  const [section, setSection] = useState<"leads"|"groups"|"monitor">("leads");
+
+  // Lead scraper state
+  const [industry, setIndustry] = useState("HVAC");
+  const [cities, setCities] = useState<string[]>(["New York, NY","Los Angeles, CA","Chicago, IL"]);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState<any>(null);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [msgBusy, setMsgBusy] = useState<Record<string,boolean>>({});
+  const [messages, setMessages] = useState<Record<string,any>>({});
+  const [filterMessaged, setFilterMessaged] = useState(false);
+
+  // Groups state
+  const [groupIndustry, setGroupIndustry] = useState("HVAC");
+  const [groups, setGroups] = useState<any[]>([]);
+  const [linkedin, setLinkedin] = useState<any[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+
+  // Monitor state
+  const [postText, setPostText] = useState("");
+  const [postUrl, setPostUrl] = useState("");
+  const [groupName, setGroupName] = useState("");
+  const [monitoring, setMonitoring] = useState(false);
+  const [monitorResult, setMonitorResult] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [copiedId, setCopiedId] = useState<string|null>(null);
+
+  const s = (v:string) => ({ padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box" as const });
+  const btn = (col="#00d4ff") => ({ padding:"10px 18px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${col},${col}cc)`,color:"#000",fontSize:13,fontWeight:700,cursor:"pointer" });
+
+  async function scrapeLeads() {
+    setScraping(true); setScrapeResult(null);
+    const res = await fetch("/api/admin/outreach/scrape",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({industry,cities})});
+    const d = await res.json(); setScrapeResult(d); setScraping(false);
+    if (d.ok) loadLeads();
+  }
+
+  async function loadLeads() {
+    setLeadsLoading(true);
+    const res = await fetch(`/api/admin/outreach/leads?industry=${encodeURIComponent(industry)}&messaged=${filterMessaged?"":"false"}`,{headers:h});
+    const d = await res.json(); setLeads(d.leads??[]); setLeadsLoading(false);
+  }
+
+  async function generateMessage(lead:any, platform:"linkedin"|"facebook"|"email") {
+    const key = `${lead.id}_${platform}`; setMsgBusy(b=>({...b,[key]:true}));
+    const res = await fetch("/api/admin/outreach/message",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({lead,platform})});
+    const d = await res.json(); setMessages(m=>({...m,[key]:d})); setMsgBusy(b=>({...b,[key]:false}));
+  }
+
+  async function markMessaged(id:string) {
+    await fetch("/api/admin/outreach/leads",{method:"PATCH",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id})});
+    setLeads(l=>l.map(x=>x.id===id?{...x,messaged:true}:x));
+  }
+
+  async function deleteLead(id:string) {
+    await fetch("/api/admin/outreach/leads",{method:"DELETE",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id})});
+    setLeads(l=>l.filter(x=>x.id!==id));
+  }
+
+  async function loadGroups() {
+    setGroupsLoading(true);
+    const res = await fetch(`/api/admin/outreach/groups?industry=${encodeURIComponent(groupIndustry)}`,{headers:h});
+    const d = await res.json(); setGroups(d.groups??[]); setLinkedin(d.linkedin??[]); setGroupsLoading(false);
+  }
+
+  async function analyzePost() {
+    setMonitoring(true); setMonitorResult(null);
+    const res = await fetch("/api/admin/outreach/monitor",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({postText,postUrl,groupName})});
+    const d = await res.json(); setMonitorResult(d); setMonitoring(false);
+    loadAlerts();
+  }
+
+  async function loadAlerts() {
+    const res = await fetch("/api/admin/outreach/monitor",{headers:h});
+    const d = await res.json(); setAlerts(d.alerts??[]);
+  }
+
+  async function markActioned(id:string) {
+    await fetch("/api/admin/outreach/monitor",{method:"PATCH",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id})});
+    setAlerts(a=>a.map(x=>x.id===id?{...x,actioned:true}:x));
+  }
+
+  function copyText(text:string, id:string) {
+    navigator.clipboard.writeText(text).catch(()=>{});
+    setCopiedId(id); setTimeout(()=>setCopiedId(null),2000);
+  }
+
+  useEffect(()=>{ loadLeads(); },[industry, filterMessaged]);
+  useEffect(()=>{ if(section==="groups") loadGroups(); },[section, groupIndustry]);
+  useEffect(()=>{ if(section==="monitor") loadAlerts(); },[section]);
+
+  const card = {background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20,marginBottom:14};
+  const tag = (col:string) => ({fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:`rgba(${col},0.12)`,color:`rgb(${col})`,display:"inline-block"});
+
+  return (
+    <div style={{maxWidth:860,margin:"0 auto",padding:"24px 0"}}>
+      <h2 style={{fontSize:22,fontWeight:800,color:"#fff",margin:"0 0 6px"}}>Outreach</h2>
+      <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:"0 0 24px"}}>Find leads, join the right communities, monitor pain-point posts, generate messages.</p>
+
+      {/* Section tabs */}
+      <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
+        {(["leads","groups","monitor"] as const).map(s=>(
+          <button key={s} onClick={()=>setSection(s)}
+            style={{padding:"8px 18px",borderRadius:20,border:`1px solid ${section===s?"#00d4ff":"rgba(255,255,255,0.1)"}`,background:section===s?"rgba(0,212,255,0.1)":"none",color:section===s?"#00d4ff":"rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>
+            {s==="leads"?"🗺 Lead Scraper":s==="groups"?"👥 Groups & LinkedIn":"👁 Post Monitor"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Lead Scraper ── */}
+      {section==="leads" && (
+        <div>
+          <div style={card}>
+            <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 14px"}}>Scrape New Leads</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <div>
+                <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Industry</label>
+                <select value={industry} onChange={e=>setIndustry(e.target.value)} style={s("")}>
+                  {INDUSTRIES.map(i=><option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Cities (pick up to 5)</label>
+                <select multiple value={cities} onChange={e=>setCities([...e.target.selectedOptions].map(o=>o.value))}
+                  style={{...s(""),height:90,resize:"none"}}>
+                  {US_CITIES.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+              <button onClick={scrapeLeads} disabled={scraping} style={{...btn(),opacity:scraping?0.5:1}}>
+                {scraping?"Scraping…":"🔍 Scrape Leads"}
+              </button>
+              {scrapeResult && (
+                <span style={{fontSize:12,color:scrapeResult.ok?"#22c55e":"#ef4444"}}>
+                  {scrapeResult.ok ? `✓ Found ${scrapeResult.found} leads, ${scrapeResult.new} new (total: ${scrapeResult.total})` : scrapeResult.error}
+                </span>
+              )}
+            </div>
+            {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_CONFIGURED && (
+              <p style={{fontSize:11,color:"rgba(245,158,11,0.7)",marginTop:10}}>
+                ⚠ Add GOOGLE_MAPS_API_KEY to Vercel environment variables to enable scraping. Get a free key at console.cloud.google.com → Places API.
+              </p>
+            )}
+          </div>
+
+          {/* Lead list */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
+            <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:0}}>{leads.length} leads for {industry}</p>
+            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"rgba(255,255,255,0.4)",cursor:"pointer"}}>
+              <input type="checkbox" checked={filterMessaged} onChange={e=>setFilterMessaged(e.target.checked)}/>
+              Show already messaged
+            </label>
+          </div>
+
+          {leadsLoading ? <p style={{color:"rgba(255,255,255,0.3)",fontSize:13}}>Loading…</p> : leads.length===0 ? (
+            <p style={{color:"rgba(255,255,255,0.2)",fontSize:13}}>No leads yet. Run the scraper above.</p>
+          ) : leads.map(lead=>{
+            const liKey=`${lead.id}_linkedin`; const fbKey=`${lead.id}_facebook`; const emKey=`${lead.id}_email`;
+            return (
+              <div key={lead.id} style={{...card,opacity:lead.messaged?0.55:1}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:12}}>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                      <span style={{fontSize:15,fontWeight:700,color:"#fff"}}>{lead.name}</span>
+                      {lead.messaged && <span style={{...tag("34,197,94")}}>Messaged</span>}
+                      <span style={{...tag("0,212,255")}}>Score {lead.score}</span>
+                    </div>
+                    <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:"0 0 4px"}}>{lead.address}</p>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:12,color:"rgba(255,255,255,0.4)"}}>
+                      {lead.rating && <span>⭐ {lead.rating} ({lead.reviewCount} reviews)</span>}
+                      {lead.phone && <a href={`tel:${lead.phone}`} style={{color:"#00d4ff",textDecoration:"none"}}>{lead.phone}</a>}
+                      {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{color:"#00d4ff",textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",maxWidth:160,whiteSpace:"nowrap"}}>Website</a>}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    {!lead.messaged && <button onClick={()=>markMessaged(lead.id)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(34,197,94,0.3)",background:"rgba(34,197,94,0.06)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Messaged</button>}
+                    <button onClick={()=>deleteLead(lead.id)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.4)",fontSize:11,cursor:"pointer"}}>✕</button>
+                  </div>
+                </div>
+
+                {/* Message generator */}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+                  {([["linkedin","LinkedIn","124,58,237"],["facebook","Facebook","59,130,246"],["email","Email","34,197,94"]] as const).map(([p,label,col])=>{
+                    const key=`${lead.id}_${p}`;
+                    return <button key={p} onClick={()=>generateMessage(lead,p)} disabled={msgBusy[key]}
+                      style={{padding:"7px 14px",borderRadius:8,border:`1px solid rgba(${col},0.3)`,background:`rgba(${col},0.07)`,color:`rgb(${col})`,fontSize:12,fontWeight:600,cursor:"pointer",opacity:msgBusy[key]?0.5:1}}>
+                      {msgBusy[key]?`Drafting…`:`✍ ${label} Message`}
+                    </button>;
+                  })}
+                </div>
+
+                {/* Show generated messages */}
+                {[liKey,fbKey,emKey].map(key=>{
+                  const msg = messages[key]; if(!msg) return null;
+                  const text = msg.message ?? (msg.subject ? `Subject: ${msg.subject}\n\n${msg.body}` : msg.body) ?? "";
+                  return (
+                    <div key={key} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:"0.1em"}}>
+                          {key.includes("linkedin")?"LinkedIn":key.includes("facebook")?"Facebook":"Email"}
+                        </span>
+                        <button onClick={()=>copyText(text,key)} style={{padding:"4px 10px",borderRadius:7,border:"1px solid rgba(0,212,255,0.25)",background:"rgba(0,212,255,0.05)",color:"#00d4ff",fontSize:11,cursor:"pointer"}}>
+                          {copiedId===key?"✓ Copied":"Copy"}
+                        </button>
+                      </div>
+                      <pre style={{fontSize:12,color:"rgba(255,255,255,0.75)",margin:0,whiteSpace:"pre-wrap",fontFamily:"system-ui,sans-serif",lineHeight:1.6}}>{text}</pre>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Groups & LinkedIn ── */}
+      {section==="groups" && (
+        <div>
+          <div style={{...card,marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+              <div style={{flex:1,minWidth:160}}>
+                <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Industry</label>
+                <select value={groupIndustry} onChange={e=>setGroupIndustry(e.target.value)} style={s("")}>
+                  {INDUSTRIES.map(i=><option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <button onClick={loadGroups} disabled={groupsLoading} style={{...btn(),marginTop:20,opacity:groupsLoading?0.5:1}}>
+                {groupsLoading?"Loading…":"Load Groups"}
+              </button>
+            </div>
+          </div>
+
+          {groups.length > 0 && (
+            <>
+              <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 12px"}}>Facebook Groups to Join</p>
+              {groups.map((g,i)=>(
+                <div key={i} style={{...card,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                  <div>
+                    <p style={{fontSize:14,fontWeight:700,color:"#fff",margin:"0 0 4px"}}>{g.name}</p>
+                    <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:"0 0 4px"}}>{g.desc}</p>
+                    <span style={{fontSize:11,color:"rgba(0,212,255,0.6)"}}>{g.members} members</span>
+                  </div>
+                  <a href={g.url} target="_blank" rel="noopener noreferrer"
+                    style={{padding:"8px 16px",borderRadius:9,border:"1px solid rgba(0,212,255,0.3)",background:"rgba(0,212,255,0.07)",color:"#00d4ff",fontSize:12,fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>
+                    Join Group →
+                  </a>
+                </div>
+              ))}
+
+              <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"20px 0 12px"}}>LinkedIn Searches</p>
+              {linkedin.map((l,i)=>(
+                <div key={i} style={{...card,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                  <div>
+                    <p style={{fontSize:14,fontWeight:700,color:"#fff",margin:"0 0 4px"}}>{l.title}</p>
+                    <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:0}}>{l.desc}</p>
+                  </div>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer"
+                    style={{padding:"8px 16px",borderRadius:9,border:"1px solid rgba(124,58,237,0.3)",background:"rgba(124,58,237,0.07)",color:"#a78bfa",fontSize:12,fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>
+                    Search LinkedIn →
+                  </a>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Post Monitor ── */}
+      {section==="monitor" && (
+        <div>
+          <div style={card}>
+            <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 14px"}}>Paste a Facebook Post</p>
+            <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:"0 0 14px"}}>When you see a post in a group, paste it here. The AI will detect if it's a pain-point opportunity and draft a comment for you.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+              <textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder="Paste the post text here…" rows={4}
+                style={{...s(""),resize:"vertical"}}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <input value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="Group name (optional)" style={s("")}/>
+                <input value={postUrl} onChange={e=>setPostUrl(e.target.value)} placeholder="Post URL (optional)" style={s("")}/>
+              </div>
+            </div>
+            <button onClick={analyzePost} disabled={monitoring||!postText.trim()} style={{...btn(),opacity:(monitoring||!postText.trim())?0.5:1}}>
+              {monitoring?"Analyzing…":"🔍 Analyze Post"}
+            </button>
+
+            {monitorResult && (
+              <div style={{marginTop:16,padding:"14px 16px",borderRadius:11,background:monitorResult.isRelevant?"rgba(34,197,94,0.07)":"rgba(255,255,255,0.03)",border:`1px solid ${monitorResult.isRelevant?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.07)"}`}}>
+                {monitorResult.isRelevant ? (
+                  <>
+                    <p style={{fontSize:13,fontWeight:700,color:"#22c55e",margin:"0 0 8px"}}>✅ Relevant — opportunity detected</p>
+                    <p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:"0 0 12px"}}>Matched: {monitorResult.matchedKeywords.join(", ")}</p>
+                    <div style={{background:"rgba(255,255,255,0.03)",borderRadius:9,padding:"12px 14px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:"0.1em"}}>Draft Comment</span>
+                        <button onClick={()=>copyText(monitorResult.commentDraft,"monitor_draft")} style={{padding:"4px 10px",borderRadius:7,border:"1px solid rgba(0,212,255,0.25)",background:"rgba(0,212,255,0.05)",color:"#00d4ff",fontSize:11,cursor:"pointer"}}>
+                          {copiedId==="monitor_draft"?"✓ Copied":"Copy"}
+                        </button>
+                      </div>
+                      <pre style={{fontSize:13,color:"rgba(255,255,255,0.8)",margin:0,whiteSpace:"pre-wrap",fontFamily:"system-ui,sans-serif",lineHeight:1.7}}>{monitorResult.commentDraft}</pre>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{fontSize:13,color:"rgba(255,255,255,0.4)",margin:0}}>Not relevant — no pain-point keywords detected. No action needed.</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Saved alerts */}
+          {alerts.length > 0 && (
+            <>
+              <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"20px 0 12px"}}>Saved Opportunities ({alerts.filter(a=>!a.actioned).length} pending)</p>
+              {alerts.map(alert=>(
+                <div key={alert.id} style={{...card,opacity:alert.actioned?0.5:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:10}}>
+                    <div>
+                      {alert.groupName && <span style={{fontSize:11,color:"rgba(0,212,255,0.6)",marginRight:8}}>{alert.groupName}</span>}
+                      <span style={{fontSize:11,color:"rgba(255,255,255,0.25)"}}>{new Date(alert.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    {!alert.actioned && (
+                      <button onClick={()=>markActioned(alert.id)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid rgba(34,197,94,0.3)",background:"rgba(34,197,94,0.06)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:600}}>
+                        ✓ Done
+                      </button>
+                    )}
+                  </div>
+                  <p style={{fontSize:12,color:"rgba(255,255,255,0.45)",margin:"0 0 10px",fontStyle:"italic"}}>"{alert.postText}…"</p>
+                  <div style={{background:"rgba(255,255,255,0.03)",borderRadius:9,padding:"10px 12px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <span style={{fontSize:11,color:"rgba(255,255,255,0.3)",textTransform:"uppercase",letterSpacing:"0.1em"}}>Draft</span>
+                      <button onClick={()=>copyText(alert.commentDraft,alert.id)} style={{padding:"3px 9px",borderRadius:7,border:"1px solid rgba(0,212,255,0.2)",background:"rgba(0,212,255,0.04)",color:"#00d4ff",fontSize:11,cursor:"pointer"}}>
+                        {copiedId===alert.id?"✓ Copied":"Copy"}
+                      </button>
+                    </div>
+                    <pre style={{fontSize:12,color:"rgba(255,255,255,0.7)",margin:0,whiteSpace:"pre-wrap",fontFamily:"system-ui,sans-serif",lineHeight:1.6}}>{alert.commentDraft}</pre>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
       )}
     </div>
   );
