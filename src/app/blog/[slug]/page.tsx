@@ -108,7 +108,7 @@ export default async function BlogPost({ params }: Props) {
         {/* Logo */}
         <div className="flex justify-center mb-12">
           <a href="/">
-            <Image src="/logo.png" alt="CyberCraft360" width={160} height={40} style={{ objectFit: "contain", opacity: 0.85 }} />
+            <Image src="/logo.png" alt="CyberCraft360" width={80} height={80} style={{ objectFit: "contain", opacity: 0.85 }} />
           </a>
         </div>
         {/* Tags */}
