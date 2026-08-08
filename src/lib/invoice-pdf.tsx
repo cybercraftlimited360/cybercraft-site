@@ -196,6 +196,6 @@ function InvoiceDocument({
 }
 
 export async function generateInvoicePDF(props: InvoicePDFProps): Promise<Buffer> {
-  const element = React.createElement(InvoiceDocument, props);
-  return renderToBuffer(element) as Promise<Buffer>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return renderToBuffer(React.createElement(InvoiceDocument, props) as any) as Promise<Buffer>;
 }

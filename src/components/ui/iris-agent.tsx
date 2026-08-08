@@ -2,6 +2,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Browser speech API — typed as any since SpeechRecognition is not in all TS dom libs
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySpeechRecognition = any;
+
 type Message = { role: "user" | "assistant"; content: string };
 
 const PERSONAS = {
@@ -61,7 +65,7 @@ export default function IrisAgent() {
   const [currentLang, setCurrentLang] = useState("en-US");
   const [capturedLead, setCapturedLead] = useState<CapturedLead | null>(null);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<AnySpeechRecognition>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const messagesRef = useRef<Message[]>([]);
   const bookedRef = useRef(false);
@@ -79,7 +83,8 @@ export default function IrisAgent() {
     // Auto-enable text mode on touch/mobile devices
     const isTouch = window.matchMedia("(pointer: coarse)").matches;
     if (isTouch) { setTextMode(true); }
-    const SR = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR || !window.speechSynthesis) { setSupported(false); setTextMode(true); return; }
     synthRef.current = window.speechSynthesis;
   }, []);
@@ -175,7 +180,8 @@ export default function IrisAgent() {
   }, [getBestVoice, persona.voices]);
 
   const startListening = useCallback(() => {
-    const SR = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
 
     const recognition = new SR();
@@ -189,7 +195,7 @@ export default function IrisAgent() {
     setTranscript("");
     setInterimTranscript("");
 
-    recognition.onresult = async (e) => {
+    recognition.onresult = async (e: AnySpeechRecognition) => {
       let interim = "";
       let final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {

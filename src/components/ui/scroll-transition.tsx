@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { motion, AnimatePresence, useAnimate } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 export default function ScrollTransition() {
   const [active, setActive] = useState(false);
   const [label, setLabel] = useState("");
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
