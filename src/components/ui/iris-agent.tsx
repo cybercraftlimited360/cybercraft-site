@@ -71,12 +71,18 @@ export default function IrisAgent() {
   const bookedRef = useRef(false);
   const currentLangRef = useRef("en-US");
   const leadSavedRef = useRef(false);
+  const textModeRef = useRef(false);
+  const startedRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const startListeningRef = useRef<() => void>(() => {});
 
   const persona = PERSONAS[activePersona];
 
   useEffect(() => { messagesRef.current = messages; }, [messages]);
   useEffect(() => { bookedRef.current = bookedCall; }, [bookedCall]);
   useEffect(() => { currentLangRef.current = currentLang; }, [currentLang]);
+  useEffect(() => { textModeRef.current = textMode; }, [textMode]);
+  useEffect(() => { startedRef.current = started; }, [started]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -250,7 +256,10 @@ export default function IrisAgent() {
         }
 
         setPhase("speaking");
-        speakText(reply, lang, () => setPhase("idle"));
+        speakText(reply, lang, () => {
+          if (!textModeRef.current && startedRef.current) setTimeout(() => startListeningRef.current(), 400);
+          else setPhase("idle");
+        });
       } catch {
         setPhase("idle");
       }
@@ -260,6 +269,9 @@ export default function IrisAgent() {
     recognition.onend = () => { setInterimTranscript(""); if (phase === "listening") setPhase("idle"); };
     recognition.start();
   }, [activePersona, phase, speakText]);
+
+  // Keep ref in sync so autoListen can call the latest startListening without circular deps
+  useEffect(() => { startListeningRef.current = startListening; }, [startListening]);
 
   const sendTextMessage = useCallback(async (text: string) => {
     if (!text.trim() || phase === "thinking") return;
@@ -297,7 +309,10 @@ export default function IrisAgent() {
       }
 
       setPhase("speaking");
-      speakText(reply, lang, () => setPhase("idle"));
+      speakText(reply, lang, () => {
+        if (!textModeRef.current && startedRef.current) setTimeout(() => startListeningRef.current(), 400);
+        else setPhase("idle");
+      });
     } catch {
       setPhase("idle");
     }
@@ -309,7 +324,10 @@ export default function IrisAgent() {
     setAgentText(persona.greeting);
     setCurrentLang(persona.defaultLang);
     setPhase("speaking");
-    speakText(persona.greeting, persona.defaultLang, () => setPhase("idle"));
+    speakText(persona.greeting, persona.defaultLang, () => {
+      if (!textModeRef.current && startedRef.current) setTimeout(() => startListeningRef.current(), 400);
+      else setPhase("idle");
+    });
   };
 
   const handleEnd = async () => {
@@ -418,7 +436,7 @@ export default function IrisAgent() {
            phase === "listening" ? `Listening... (${currentLang})` :
            phase === "thinking" ? `${persona.name} is thinking...` :
            phase === "speaking" ? `${persona.name} is speaking...` :
-           textMode ? "Type your message below" : "Tap orb to respond"}
+           textMode ? "Type your message below" : "Listening automatically..."}
         </motion.p>
       </AnimatePresence>
 
