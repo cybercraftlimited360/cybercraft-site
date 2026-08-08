@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/blog-post",
-      "schedule": "0 9 * * 2,4"
+      "schedule": "0 9 * * 2"
     },
     {
       "path": "/api/cron/social-post",

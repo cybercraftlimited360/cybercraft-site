@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getAllPosts, getPost } from "@/lib/blog";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
+import SiteSecondaryNav from "@/components/ui/site-secondary-nav";
+import CursorGlow from "@/components/ui/cursor-glow";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -97,28 +99,17 @@ export default async function BlogPost({ params }: Props) {
   } : null;
 
   return (
-    <main className="min-h-screen bg-[#0f1117] text-[#e4e6f0]">
+    <main className="min-h-screen bg-[#0a0c12] text-[#e4e6f0]">
+      <CursorGlow />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto" style={{ backdropFilter: "blur(20px)", backgroundColor: "rgba(15,17,23,0.92)" }}>
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-xs uppercase tracking-[0.2em] text-[#a78bfa] font-medium hover:text-white transition-colors">← CyberCraft360</Link>
-          <Link href="/blog" className="text-sm text-[#8b8fa8] hover:text-white transition-colors">Blog</Link>
-        </div>
-        <Link
-          href="/book"
-          className="text-sm bg-[#a78bfa] text-[#0f1117] font-semibold px-4 py-2 rounded-full hover:bg-white transition-colors"
-        >
-          Book a Call
-        </Link>
-      </nav>
+      <SiteSecondaryNav active="blog" />
 
       <article className="max-w-2xl mx-auto px-6 py-20">
         {/* Tags */}
         <div className="flex items-center gap-2 mb-6">
           {post.tags.map((tag) => (
-            <span key={tag} className="text-xs font-medium text-[#a78bfa] bg-[#a78bfa]/10 px-2.5 py-1 rounded-full">
+            <span key={tag} className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ color: "#00d4ff", background: "rgba(0,212,255,0.1)" }}>
               {tag}
             </span>
           ))}
@@ -133,7 +124,7 @@ export default async function BlogPost({ params }: Props) {
         </h1>
 
         {/* Meta */}
-        <div className="flex items-center gap-3 text-sm text-[#8b8fa8] mb-12 pb-8 border-b border-white/5">
+        <div className="flex items-center gap-3 text-sm mb-12 pb-8 border-b border-white/5" style={{ color: "rgba(255,255,255,0.35)" }}>
           <span>{formatDate(post.date)}</span>
           <span>·</span>
           <span>{post.readingTime}</span>
@@ -145,17 +136,18 @@ export default async function BlogPost({ params }: Props) {
         </div>
 
         {/* CTA */}
-        <div className="mt-20 border border-[#a78bfa]/20 rounded-2xl p-10 text-center bg-[#a78bfa]/5">
-          <p className="text-xs uppercase tracking-[0.2em] text-[#a78bfa] mb-3 font-medium">Free Strategy Call</p>
+        <div className="mt-20 rounded-2xl p-10 text-center" style={{ border: "1px solid rgba(0,212,255,0.2)", background: "rgba(0,212,255,0.04)" }}>
+          <p className="text-xs uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: "#00d4ff" }}>Free Strategy Call</p>
           <h2 className="text-3xl font-light text-white mb-3" style={{ fontFamily: "var(--font-cormorant)" }}>
             Ready to See This in Action?
           </h2>
-          <p className="text-[#8b8fa8] mb-7 text-sm max-w-sm mx-auto">
-            30 minutes with Saad — we'll show you exactly what we'd build for your business.
+          <p className="mb-7 text-sm max-w-sm mx-auto" style={{ color: "rgba(255,255,255,0.45)" }}>
+            30 minutes with Saad — we&apos;ll show you exactly what we&apos;d build for your business.
           </p>
           <Link
             href="/book"
-            className="inline-block bg-[#a78bfa] text-[#0f1117] font-semibold px-8 py-3 rounded-full hover:bg-white transition-colors text-sm"
+            className="inline-block font-semibold px-8 py-3 rounded-xl text-sm no-underline transition-opacity hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}
           >
             Book Your Free Call
           </Link>

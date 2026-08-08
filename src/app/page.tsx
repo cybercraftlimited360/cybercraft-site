@@ -98,15 +98,17 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             );
           })}
           <li>
-              <a href="/blog" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors mr-4 no-underline">
-                Blog
-              </a>
-              <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all mr-2">
-                Get a Quote
-              </a>
-              <button onClick={() => { setTab("book"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity">
-                Book a Call
-              </button>
+            <a href="/blog" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors no-underline" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+              Blog
+            </a>
+          </li>
+          <li className="flex items-center gap-2">
+            <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+              Get a Quote
+            </a>
+            <button onClick={() => { setTab("book"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+              Book a Call
+            </button>
           </li>
         </ul>
 
@@ -412,7 +414,7 @@ export default function Home() {
                   }}
                 >
                   <div style={{
-                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontFamily: "var(--font-jakarta), system-ui, sans-serif",
                     fontSize: "1.4rem",
                     fontWeight: 800,
                     color: "#00d4ff",
@@ -420,7 +422,7 @@ export default function Home() {
                     textShadow: "0 0 20px rgba(0,212,255,0.6)",
                   }}>{stat}</div>
                   <div style={{
-                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontFamily: "var(--font-jakarta), system-ui, sans-serif",
                     fontSize: "0.62rem",
                     fontWeight: 500,
                     color: "rgba(255,255,255,0.55)",
@@ -440,7 +442,7 @@ export default function Home() {
               {/* Brand name with hover effect */}
               <motion.div
                 style={{
-                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontFamily: "var(--font-jakarta), system-ui, sans-serif",
                   fontSize: "clamp(1.6rem, 3.5vw, 3rem)",
                   fontWeight: 800,
                   letterSpacing: "0.18em",
@@ -481,7 +483,7 @@ export default function Home() {
                   <em style={{ color: "#00d4ff", fontStyle: "italic" }}>that never clock out.</em>
                 </p>
                 <p style={{
-                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontFamily: "var(--font-jakarta), system-ui, sans-serif",
                   fontSize: "clamp(0.75rem, 1.1vw, 0.92rem)",
                   fontWeight: 400,
                   color: "rgba(255,255,255,0.82)",
