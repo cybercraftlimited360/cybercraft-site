@@ -2620,7 +2620,9 @@ function TrafficTab({token}:{token:string}){
 
   const S=data.summary||{};
   const sourceColors:Record<string,string>={instagram:"#e1306c",facebook:"#1877f2",linkedin:"#0a66c2",google:"#34a853",twitter:"#1da1f2",direct:"#8b8fa8"};
-  const maxDailyVisits=Math.max(...(data.daily||[]).map((d:any)=>Math.max(d.visits||0,d.pageViews||0)),1);
+  const [chartPeriod,setChartPeriod]=useState<"daily"|"weekly"|"monthly">("daily");
+  const chartData:any[]=(chartPeriod==="weekly"?data.weekly:chartPeriod==="monthly"?data.monthly:data.daily)||[];
+  const maxChartVisits=Math.max(...chartData.map((d:any)=>Math.max(d.visits||0,1)),1);
   const organicByEngine:Record<string,number>=data.organicByEngine||{};
   const recentVisits:any[]=data.recentVisits||[];
   const funnel:any[]=data.funnel||[];
@@ -2757,33 +2759,62 @@ function TrafficTab({token}:{token:string}){
         ))}
       </div>
 
-      {/* Daily chart */}
+      {/* Visitor chart with period toggle */}
       <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>Unique Visitors — Last 30 Days</p>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <span style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(255,255,255,0.35)"}}><span style={{width:8,height:8,borderRadius:2,background:"#00d4ff",display:"inline-block"}}/>All visitors</span>
-            <span style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(255,255,255,0.35)"}}><span style={{width:8,height:8,borderRadius:2,background:"#f59e0b",display:"inline-block"}}/>Organic</span>
+            <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>Unique Visitors</p>
+            <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"rgba(255,255,255,0.3)"}}>
+              <span style={{width:8,height:8,borderRadius:2,background:"rgba(0,212,255,0.5)",display:"inline-block"}}/>All
+              <span style={{width:8,height:8,borderRadius:2,background:"#f59e0b",display:"inline-block",marginLeft:6}}/>Organic
+            </div>
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            {(["daily","weekly","monthly"] as const).map(p=>(
+              <button key={p} onClick={()=>setChartPeriod(p)} style={{padding:"4px 12px",borderRadius:6,border:"1px solid",fontSize:11,fontWeight:700,cursor:"pointer",textTransform:"capitalize",transition:"all 0.15s",
+                background:chartPeriod===p?"rgba(0,212,255,0.15)":"transparent",
+                borderColor:chartPeriod===p?"rgba(0,212,255,0.4)":"rgba(255,255,255,0.1)",
+                color:chartPeriod===p?"#00d4ff":"rgba(255,255,255,0.35)"}}>
+                {p==="daily"?"Daily":p==="weekly"?"Weekly":"Monthly"}
+              </button>
+            ))}
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
-          {(data.daily||[]).map((d:any)=>{
-            const totalH=Math.max((d.visits/maxDailyVisits)*76,d.visits>0?4:2);
-            const orgH=d.organic>0?Math.max((d.organic/maxDailyVisits)*76,3):0;
+
+        {/* Period label */}
+        <p style={{fontSize:10,color:"rgba(255,255,255,0.2)",margin:"0 0 10px"}}>
+          {chartPeriod==="daily"?"Last 30 days":chartPeriod==="weekly"?"Last 12 weeks":"Last 12 months"}
+          {" · "}Total: <strong style={{color:"#00d4ff"}}>{chartData.reduce((s:number,d:any)=>s+(d.visits||0),0)}</strong> unique visitors
+        </p>
+
+        <div style={{display:"flex",alignItems:"flex-end",gap:chartPeriod==="monthly"?6:chartPeriod==="weekly"?5:3,height:100,overflowX:"auto"}}>
+          {chartData.map((d:any)=>{
+            const totalH=Math.max((d.visits/maxChartVisits)*94,d.visits>0?4:2);
+            const orgH=d.organic>0?Math.min((d.organic/d.visits)*totalH,totalH):0;
             return(
-              <div key={d.date} title={`${d.date}: ${d.visits} unique visitors (${d.organic} organic, ${d.pageViews} page views)`} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",height:80,justifyContent:"flex-end"}}>
-                <div style={{width:"100%",background:d.visits>0?"rgba(0,212,255,0.25)":"rgba(255,255,255,0.04)",borderRadius:"3px 3px 0 0",height:`${totalH}px`,position:"relative",overflow:"hidden"}}>
-                  {orgH>0&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:`${Math.min(orgH/totalH*100,100)}%`,background:"#f59e0b",opacity:0.8}}/>}
+              <div key={d.date} title={`${d.label||d.date}\n${d.visits} unique visitors\n${d.organic} organic\n${d.pageViews} page views`}
+                style={{flex:chartPeriod==="monthly"?"0 0 28px":chartPeriod==="weekly"?"0 0 18px":1,minWidth:chartPeriod==="monthly"?28:chartPeriod==="weekly"?18:0,
+                  display:"flex",flexDirection:"column",alignItems:"center",position:"relative",height:100,justifyContent:"flex-end",cursor:"default"}}>
+                <div style={{width:"100%",background:d.visits>0?"rgba(0,212,255,0.2)":"rgba(255,255,255,0.04)",borderRadius:"3px 3px 0 0",height:`${totalH}px`,position:"relative",overflow:"hidden",border:d.visits>0?"1px solid rgba(0,212,255,0.15)":"none"}}>
+                  {orgH>0&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:`${orgH/totalH*100}%`,background:"#f59e0b",opacity:0.75}}/>}
                 </div>
+                {(chartPeriod==="monthly"||(chartPeriod==="weekly"&&chartData.length<=12))&&(
+                  <span style={{fontSize:8,color:"rgba(255,255,255,0.2)",marginTop:3,textAlign:"center",whiteSpace:"nowrap",overflow:"hidden",maxWidth:"100%"}}>
+                    {chartPeriod==="monthly"?(d.label||d.date).slice(0,3):d.label?.split("–")[0]||d.date.slice(5)}
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
-          <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{data.daily?.[0]?.date}</span>
-          <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{data.daily?.[data.daily.length-1]?.date}</span>
-        </div>
-        <p style={{fontSize:10,color:"rgba(255,255,255,0.18)",margin:"8px 0 0"}}>Bots and datacenter traffic excluded · hover a bar for details</p>
+
+        {chartPeriod==="daily"&&(
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+            <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{chartData[0]?.label||chartData[0]?.date}</span>
+            <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{chartData[chartData.length-1]?.label||chartData[chartData.length-1]?.date}</span>
+          </div>
+        )}
+        <p style={{fontSize:10,color:"rgba(255,255,255,0.18)",margin:"8px 0 0"}}>Bots &amp; datacenter traffic excluded · hover a bar for details</p>
       </div>
 
       {/* Organic search engine breakdown */}

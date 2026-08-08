@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       visits: Number(count),
     })).sort((a, b) => b.visits - a.visits);
 
-    // Daily visit totals (last 30 days) — unique visitors + page views + organic
+    // Daily visit totals — unique visitors + page views + organic (fetch all available)
     const [rawDaily, rawUniqueDaily, rawOrganicDaily, rawDirectDaily, rawReferralDaily] = await Promise.all([
       redis.hgetall("visits:daily"),
       redis.hgetall("visitors:daily"),
@@ -36,18 +36,70 @@ export async function GET(req: NextRequest) {
       redis.hgetall("visitors:direct:daily"),
       redis.hgetall("visitors:referral:daily"),
     ]);
-    const last30 = Array.from({ length: 30 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (29 - i));
-      return d.toISOString().slice(0, 10);
-    });
-    const daily = last30.map(date => ({
+
+    // Helper: build a date range of N days back
+    function dateRange(days: number) {
+      return Array.from({ length: days }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (days - 1 - i));
+        return d.toISOString().slice(0, 10);
+      });
+    }
+
+    // ── Daily: last 30 days ──
+    const daily = dateRange(30).map(date => ({
       date,
-      visits: Number(rawUniqueDaily?.[date] ?? 0),       // unique visitors
-      pageViews: Number(rawDaily?.[date] ?? 0),           // raw page loads
+      label: new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      visits: Number(rawUniqueDaily?.[date] ?? 0),
+      pageViews: Number(rawDaily?.[date] ?? 0),
       organic: Number(rawOrganicDaily?.[date] ?? 0),
       direct: Number(rawDirectDaily?.[date] ?? 0),
       referral: Number(rawReferralDaily?.[date] ?? 0),
+    }));
+
+    // ── Weekly: last 12 weeks (Mon–Sun buckets) ──
+    function getISOWeekStart(date: Date): string {
+      const d = new Date(date);
+      const day = d.getUTCDay();
+      const diff = (day === 0 ? -6 : 1 - day); // adjust to Monday
+      d.setUTCDate(d.getUTCDate() + diff);
+      return d.toISOString().slice(0, 10);
+    }
+    const weeklyMap: Record<string, { visits: number; pageViews: number; organic: number; direct: number; referral: number }> = {};
+    dateRange(84).forEach(date => { // last 12 weeks = 84 days
+      const wk = getISOWeekStart(new Date(date + "T12:00:00Z"));
+      if (!weeklyMap[wk]) weeklyMap[wk] = { visits: 0, pageViews: 0, organic: 0, direct: 0, referral: 0 };
+      weeklyMap[wk].visits   += Number(rawUniqueDaily?.[date] ?? 0);
+      weeklyMap[wk].pageViews += Number(rawDaily?.[date] ?? 0);
+      weeklyMap[wk].organic  += Number(rawOrganicDaily?.[date] ?? 0);
+      weeklyMap[wk].direct   += Number(rawDirectDaily?.[date] ?? 0);
+      weeklyMap[wk].referral += Number(rawReferralDaily?.[date] ?? 0);
+    });
+    const weekly = Object.entries(weeklyMap).sort(([a], [b]) => a.localeCompare(b)).map(([weekStart, data]) => {
+      const weekEnd = new Date(weekStart + "T12:00:00Z");
+      weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+      return {
+        date: weekStart,
+        label: `${new Date(weekStart + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+        ...data,
+      };
+    });
+
+    // ── Monthly: last 12 months ──
+    const monthlyMap: Record<string, { visits: number; pageViews: number; organic: number; direct: number; referral: number }> = {};
+    dateRange(365).forEach(date => {
+      const mo = date.slice(0, 7); // YYYY-MM
+      if (!monthlyMap[mo]) monthlyMap[mo] = { visits: 0, pageViews: 0, organic: 0, direct: 0, referral: 0 };
+      monthlyMap[mo].visits   += Number(rawUniqueDaily?.[date] ?? 0);
+      monthlyMap[mo].pageViews += Number(rawDaily?.[date] ?? 0);
+      monthlyMap[mo].organic  += Number(rawOrganicDaily?.[date] ?? 0);
+      monthlyMap[mo].direct   += Number(rawDirectDaily?.[date] ?? 0);
+      monthlyMap[mo].referral += Number(rawReferralDaily?.[date] ?? 0);
+    });
+    const monthly = Object.entries(monthlyMap).sort(([a], [b]) => a.localeCompare(b)).map(([mo, data]) => ({
+      date: mo,
+      label: new Date(mo + "-15T12:00:00Z").toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      ...data,
     }));
 
     // Top pages
@@ -147,6 +199,8 @@ export async function GET(req: NextRequest) {
       sources,
       campaigns,
       daily,
+      weekly,
+      monthly,
       topPages,
       blogPerformance,
       socialBreakdown,
