@@ -249,8 +249,8 @@ export default function IrisAgent() {
           setBookedCall(true);
         }
 
-        // Capture lead if extracted and not yet saved
-        if (data.lead && (data.lead.name || data.lead.company) && !leadSavedRef.current) {
+        // Only show lead card once we have contact info (email or phone)
+        if (data.lead && (data.lead.email || data.lead.phone) && !leadSavedRef.current) {
           leadSavedRef.current = true;
           setCapturedLead(data.lead);
         }
@@ -303,7 +303,7 @@ export default function IrisAgent() {
       if (reply.toLowerCase().includes("book") || reply.toLowerCase().includes("strategy session")) {
         setBookedCall(true);
       }
-      if (data.lead && (data.lead.name || data.lead.company) && !leadSavedRef.current) {
+      if (data.lead && (data.lead.email || data.lead.phone) && !leadSavedRef.current) {
         leadSavedRef.current = true;
         setCapturedLead(data.lead);
       }

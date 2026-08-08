@@ -108,6 +108,12 @@ When someone gives you their phone or email, always read it back to confirm it:
 - Email: spell it out. "So that's j-o-h-n dot smith at gmail dot com?" Same thing — wait for confirmation.
 If they say no, just ask them to repeat it. Easy.
 
+CRITICAL — booking and links:
+- NEVER say you will "send" or "email" or "text" a link. You cannot send anything.
+- When someone wants to book, give them the URL directly in your response: cybercraft360.com/book
+- Say something like "You can book directly at cybercraft360.com/book — takes about 30 seconds." Then stop.
+- Do NOT promise follow-up emails, links, or messages of any kind.
+
 ---
 
 How to handle pushback:
@@ -213,20 +219,30 @@ export async function POST(req: NextRequest) {
         if (ext.name || ext.company || ext.email || ext.phone) {
           lead = ext;
 
-          // Fire to leads dashboard (non-blocking)
-          const baseUrl = req.nextUrl.origin;
-          fetch(`${baseUrl}/api/leads`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: ext.name || "Voice Visitor",
-              company: ext.company || "Unknown",
-              challenge: ext.challenge || "Spoke with IRIS voice agent",
-              source: "IRIS Voice Agent",
-              ...(ext.phone ? { phone: ext.phone } : {}),
-              ...(ext.email ? { email: ext.email } : {}),
-            }),
-          }).catch(() => {});
+          // Only fire to leads dashboard once we have contact info (email or phone)
+          // so the admin always has a way to follow up
+          const hasContact = ext.email || ext.phone;
+          const alreadyFired = conversations.some(
+            c => c.persona === persona &&
+            c.lead?.email === ext.email &&
+            c.lead?.phone === ext.phone &&
+            (c.lead?.email || c.lead?.phone)
+          );
+          if (hasContact && !alreadyFired) {
+            const baseUrl = req.nextUrl.origin;
+            fetch(`${baseUrl}/api/leads`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: ext.name || "Voice Visitor",
+                company: ext.company || "Unknown",
+                challenge: ext.challenge || "Spoke with IRIS voice agent",
+                source: "IRIS Voice Agent",
+                ...(ext.phone ? { phone: ext.phone } : {}),
+                ...(ext.email ? { email: ext.email } : {}),
+              }),
+            }).catch(() => {});
+          }
         }
       } catch { /* silently skip */ }
     }
