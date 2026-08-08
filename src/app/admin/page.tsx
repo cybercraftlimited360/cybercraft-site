@@ -4567,8 +4567,13 @@ function OutreachTab({token}:{token:string}) {
   }
 
   async function markMessaged(id:string) {
-    await fetch("/api/admin/outreach/leads",{method:"PATCH",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id})});
+    await fetch("/api/admin/outreach/leads",{method:"PATCH",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id,messaged:true})});
     setLeads(l=>l.map(x=>x.id===id?{...x,messaged:true}:x));
+  }
+
+  async function resetMessaged(id:string) {
+    await fetch("/api/admin/outreach/leads",{method:"PATCH",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id,messaged:false})});
+    setLeads(l=>l.map(x=>x.id===id?{...x,messaged:false}:x));
   }
 
   async function deleteLead(id:string) {
@@ -4690,11 +4695,29 @@ function OutreachTab({token}:{token:string}) {
                       {lead.rating && <span>⭐ {lead.rating} ({lead.reviewCount} reviews)</span>}
                       {lead.phone && <a href={`tel:${lead.phone}`} style={{color:"#00d4ff",textDecoration:"none"}}>{lead.phone}</a>}
                       {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{color:"#00d4ff",textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",maxWidth:160,whiteSpace:"nowrap"}}>Website</a>}
+                      {lead.email && <a href={`mailto:${lead.email}`} style={{color:"#22c55e",textDecoration:"none"}}>{lead.email}</a>}
+                      {lead.ownerName && <span style={{color:"rgba(245,158,11,0.8)"}}>👤 {lead.ownerName}</span>}
+                      {lead.facebookUrl && <a href={lead.facebookUrl} target="_blank" rel="noopener noreferrer" style={{color:"#60a5fa",textDecoration:"none"}}>Facebook</a>}
+                      {lead.linkedinUrl && <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{color:"#a78bfa",textDecoration:"none"}}>LinkedIn</a>}
                     </div>
+                    {lead.flags?.length > 0 && (
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                        {lead.flags.map((f:string)=>(
+                          <span key={f} style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:20,
+                            background:f==="No website"?"rgba(245,158,11,0.12)":f==="Open 24/7"?"rgba(0,212,255,0.1)":f==="Missed call signals"?"rgba(239,68,68,0.1)":"rgba(124,58,237,0.1)",
+                            color:f==="No website"?"#f59e0b":f==="Open 24/7"?"#00d4ff":f==="Missed call signals"?"#ef4444":"#a78bfa"}}>
+                            {f==="No website"?"⚠ No website":f==="Open 24/7"?"🕐 Open 24/7":f==="Missed call signals"?"🔴 Missed call signals":"📊 "+f}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div style={{display:"flex",gap:6}}>
-                    {!lead.messaged && <button onClick={()=>markMessaged(lead.id)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(34,197,94,0.3)",background:"rgba(34,197,94,0.06)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Messaged</button>}
-                    <button onClick={()=>deleteLead(lead.id)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.4)",fontSize:11,cursor:"pointer"}}>✕</button>
+                  <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
+                    {!lead.messaged
+                      ? <button onClick={()=>markMessaged(lead.id)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(34,197,94,0.3)",background:"rgba(34,197,94,0.06)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>✓ Mark Sent</button>
+                      : <button onClick={()=>resetMessaged(lead.id)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"rgba(255,255,255,0.3)",fontSize:11,cursor:"pointer"}}>↺ Reset</button>
+                    }
+                    <button onClick={()=>deleteLead(lead.id)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.4)",fontSize:11,cursor:"pointer"}}>✕ Remove</button>
                   </div>
                 </div>
 
