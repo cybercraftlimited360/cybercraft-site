@@ -4,7 +4,7 @@ import { getAllPosts, getPost } from "@/lib/blog";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
 import SiteSecondaryNav from "@/components/ui/site-secondary-nav";
-import CursorGlow from "@/components/ui/cursor-glow";
+import Image from "next/image";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -100,12 +100,17 @@ export default async function BlogPost({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-[#0a0c12] text-[#e4e6f0]">
-      <CursorGlow />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
       <SiteSecondaryNav active="blog" />
 
       <article className="max-w-2xl mx-auto px-6 py-20">
+        {/* Logo */}
+        <div className="flex justify-center mb-12">
+          <a href="/">
+            <Image src="/logo.png" alt="CyberCraft360" width={160} height={40} style={{ objectFit: "contain", opacity: 0.85 }} />
+          </a>
+        </div>
         {/* Tags */}
         <div className="flex items-center gap-2 mb-6">
           {post.tags.map((tag) => (

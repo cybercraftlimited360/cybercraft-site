@@ -1,5 +1,4 @@
 import Scheduler from "@/components/ui/scheduler";
-import CursorGlow from "@/components/ui/cursor-glow";
 import SiteSecondaryNav from "@/components/ui/site-secondary-nav";
 
 export const metadata = { title: "Book a Strategy Session — CyberCraft360" };
@@ -7,7 +6,6 @@ export const metadata = { title: "Book a Strategy Session — CyberCraft360" };
 export default function BookPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0c12", fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
-      <CursorGlow />
       <SiteSecondaryNav active="book" />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px", minHeight: "calc(100vh - 60px)" }}>
         <div style={{ width: "100%", maxWidth: 460 }}>

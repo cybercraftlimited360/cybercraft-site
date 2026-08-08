@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Check, Building2, Users, Target, Wrench, DollarSign, User } from "lucide-react";
-import CursorGlow from "@/components/ui/cursor-glow";
 
 const INDUSTRIES = [
   "Real Estate", "Healthcare & Medical", "Legal & Law",
@@ -212,7 +211,6 @@ export default function IntakePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0c12] text-white">
-      <CursorGlow />
       {/* Top bar */}
       <div className="h-1 bg-gradient-to-r from-[#00d4ff] via-[#7c3aed] to-[#00d4ff]" />
 

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getAllPosts } from "@/lib/blog";
 import type { Metadata } from "next";
 import SiteSecondaryNav from "@/components/ui/site-secondary-nav";
-import CursorGlow from "@/components/ui/cursor-glow";
 
 export const metadata: Metadata = {
   title: "Blog — CyberCraft360 | AI Insights for Small Businesses",
@@ -27,7 +26,6 @@ export default function BlogIndex() {
 
   return (
     <main className="min-h-screen bg-[#0a0c12] text-[#e4e6f0]">
-      <CursorGlow />
       <SiteSecondaryNav active="blog" />
 
       <div className="max-w-4xl mx-auto px-6 py-20">
