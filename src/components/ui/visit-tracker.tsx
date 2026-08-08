@@ -1,14 +1,25 @@
 "use client";
 import { useEffect } from "react";
 
+function getOrCreateSessionId(): string {
+  let sid = sessionStorage.getItem("cc_sid");
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem("cc_sid", sid);
+  }
+  return sid;
+}
+
 export default function VisitTracker() {
   useEffect(() => {
+    const sid = getOrCreateSessionId();
+    const params = new URLSearchParams(window.location.search);
     const t = setTimeout(() => {
-      const params = new URLSearchParams(window.location.search);
       fetch("/api/visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          sessionId: sid,
           page: window.location.pathname,
           referrer: document.referrer || "",
           utm_source: params.get("utm_source") || "",

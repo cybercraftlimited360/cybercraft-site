@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
+type Session = {
+  id: string;
+  firstSeen: string;
+  lastSeen: string;
+  ip: string;
+  location: string;
+  flag: string;
+  org: string;
+  timezone: string;
+  pages: string[];
+  events: string[];
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const { page, referrer, utm_source, utm_medium, utm_campaign, utm_content } = await req.json();
+    const body = await req.json();
+    const { page, referrer, utm_source, utm_medium, utm_campaign, utm_content, sessionId, event } = body;
 
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -17,7 +31,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Vercel edge geo headers — much more accurate than ip-api.com, zero latency
+    // ── If this is a behavior event ping (no page), just update the session ──
+    if (event && sessionId && !page) {
+      if (sessionId) {
+        const sessions = await redis.get<Session[]>("visits:sessions") ?? [];
+        const idx = sessions.findIndex(s => s.id === sessionId);
+        if (idx !== -1) {
+          sessions[idx].events = [...new Set([...sessions[idx].events, event])];
+          sessions[idx].lastSeen = new Date().toISOString();
+          await redis.set("visits:sessions", sessions.slice(0, 200));
+        }
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── Vercel edge geo headers ──
     const vercelCity    = req.headers.get("x-vercel-ip-city") ?? "";
     const vercelRegion  = req.headers.get("x-vercel-ip-country-region") ?? "";
     const vercelCountry = req.headers.get("x-vercel-ip-country") ?? "";
@@ -26,25 +54,45 @@ export async function POST(req: NextRequest) {
     const vercelLon     = req.headers.get("x-vercel-ip-longitude") ?? "";
     const vercelFlag    = req.headers.get("x-vercel-ip-flag") ?? "";
 
-    let geo: { city?: string; region?: string; country?: string; isp?: string; proxy?: boolean; hosting?: boolean } = {
+    let geo: { city?: string; region?: string; country?: string; isp?: string; org?: string; proxy?: boolean; hosting?: boolean } = {
       city: vercelCity ? decodeURIComponent(vercelCity) : undefined,
       region: vercelRegion || undefined,
       country: vercelCountry || undefined,
     };
 
-    // Fall back to ip-api.com only if Vercel headers are missing (local dev)
-    if (!vercelCountry && ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
+    // Always fetch org/ISP from ip-api.com (non-blocking, used for company identification)
+    // Falls back gracefully — Vercel geo handles location accuracy
+    let orgName = "";
+    if (ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
       try {
-        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp,proxy,hosting,status`, { signal: AbortSignal.timeout(2000) });
+        const fields = vercelCountry
+          ? "isp,org,status"
+          : "city,regionName,country,isp,org,proxy,hosting,status";
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=${fields}`, {
+          signal: AbortSignal.timeout(2000),
+        });
         const geoData = await geoRes.json();
         if (geoData.status === "success") {
-          geo = { city: geoData.city, region: geoData.regionName, country: geoData.country, isp: geoData.isp, proxy: geoData.proxy, hosting: geoData.hosting };
+          orgName = geoData.org || geoData.isp || "";
+          // Strip ASN prefix: "AS1234 Comcast" → "Comcast"
+          orgName = orgName.replace(/^AS\d+\s+/i, "").trim();
+          if (!vercelCountry) {
+            geo = {
+              city: geoData.city,
+              region: geoData.regionName,
+              country: geoData.country,
+              isp: geoData.isp,
+              org: geoData.org,
+              proxy: geoData.proxy,
+              hosting: geoData.hosting,
+            };
+          }
         }
       } catch { /* non-blocking */ }
     }
 
     const location = [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "Unknown location";
-    const isp = geo.isp || "";
+    const isp = geo.isp || orgName || "";
     const isVpn = geo.proxy === true;
     const isDatacenter = geo.hosting === true;
 
@@ -54,6 +102,7 @@ export async function POST(req: NextRequest) {
       ip,
       location,
       isp,
+      org: orgName,
       isVpn,
       isDatacenter,
       flag: vercelFlag,
@@ -68,7 +117,38 @@ export async function POST(req: NextRequest) {
       utm_medium: utm_medium || "",
       utm_campaign: utm_campaign || "",
       utm_content: utm_content || "",
+      sessionId: sessionId || "",
     };
+
+    // ── Session tracking ──
+    if (sessionId) {
+      const sessions = await redis.get<Session[]>("visits:sessions") ?? [];
+      const idx = sessions.findIndex(s => s.id === sessionId);
+      if (idx !== -1) {
+        // Update existing session
+        const s = sessions[idx];
+        if (!s.pages.includes(page || "/")) s.pages.push(page || "/");
+        s.lastSeen = now.toISOString();
+        if (orgName && !s.org) s.org = orgName;
+        await redis.set("visits:sessions", sessions.slice(0, 200));
+      } else {
+        // New session
+        const newSession: Session = {
+          id: sessionId,
+          firstSeen: now.toISOString(),
+          lastSeen: now.toISOString(),
+          ip,
+          location,
+          flag: vercelFlag,
+          org: orgName,
+          timezone: vercelTz,
+          pages: [page || "/"],
+          events: [],
+        };
+        sessions.unshift(newSession);
+        await redis.set("visits:sessions", sessions.slice(0, 200));
+      }
+    }
 
     // Track UTM source stats
     if (utm_source) {
@@ -93,7 +173,6 @@ export async function POST(req: NextRequest) {
     if (!lastNotified || new Date(lastNotified).getTime() < fiveMinAgo) {
       await redis.set(throttleKey, now.toISOString());
 
-      // Get recent visit count for context
       const todayCount = await redis.hget<number>("visits:daily", dateKey) ?? 1;
 
       const { sendEmail } = await import("@/lib/mailer");
@@ -117,8 +196,8 @@ export async function POST(req: NextRequest) {
           <td style="padding:9px 0;font-size:13px;font-weight:600;color:#a78bfa;">${vercelFlag ? vercelFlag + " " : ""}${location}${vercelTz ? ` · ${vercelTz}` : ""}</td>
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">ISP</td>
-          <td style="padding:9px 0;font-size:13px;color:rgba(255,255,255,0.6);">${isp || "—"}</td>
+          <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Organization</td>
+          <td style="padding:9px 0;font-size:13px;color:${orgName ? "#22c55e" : "rgba(255,255,255,0.4)"};">${orgName || isp || "—"}</td>
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">IP</td>

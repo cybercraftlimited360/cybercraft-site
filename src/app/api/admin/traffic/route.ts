@@ -106,6 +106,9 @@ export async function GET(req: NextRequest) {
       { stage: "Leads Generated", count: leadCount, color: "#22c55e" },
     ];
 
+    // Sessions (journey + behavior events)
+    const sessions = await redis.get<any[]>("visits:sessions") ?? [];
+
     return NextResponse.json({
       summary: { totalVisits, todayVisits, socialVisits, directVisits },
       sources,
@@ -117,6 +120,7 @@ export async function GET(req: NextRequest) {
       recentUtm: utmVisits.slice(0, 20),
       recentVisits,
       funnel,
+      sessions: sessions.slice(0, 50),
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

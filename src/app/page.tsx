@@ -29,6 +29,7 @@ import BeforeAfter from "@/components/demo/BeforeAfter";
 import DemoIrisChat from "@/components/demo/DemoIrisChat";
 import LaurenCallDemo from "@/components/demo/LaurenCallDemo";
 import HowItWorksModal from "@/components/demo/HowItWorksModal";
+import { trackEvent } from "@/lib/track";
 
 type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
 
@@ -106,7 +107,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
               Get a Quote
             </a>
-            <button onClick={() => { setTab("book"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+            <button onClick={() => { setTab("book"); trackEvent("book_clicked"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
               Book a Call
             </button>
           </li>

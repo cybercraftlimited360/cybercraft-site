@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { trackEvent } from "@/lib/track";
 
 // Browser speech API — typed as any since SpeechRecognition is not in all TS dom libs
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -253,6 +254,7 @@ export default function IrisAgent() {
         if (data.lead && (data.lead.email || data.lead.phone) && !leadSavedRef.current) {
           leadSavedRef.current = true;
           setCapturedLead(data.lead);
+          trackEvent("iris_lead_captured");
         }
 
         setPhase("speaking");
@@ -319,6 +321,7 @@ export default function IrisAgent() {
   }, [activePersona, phase, speakText]);
 
   const handleStart = () => {
+    trackEvent("iris_opened");
     setStarted(true);
     setMessages([]);
     setAgentText(persona.greeting);

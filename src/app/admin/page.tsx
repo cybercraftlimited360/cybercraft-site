@@ -2623,6 +2623,7 @@ function TrafficTab({token}:{token:string}){
   const recentVisits:any[]=data.recentVisits||[];
   const funnel:any[]=data.funnel||[];
   const funnelMax=Math.max(...funnel.map((f:any)=>f.count),1);
+  const sessions:any[]=data.sessions||[];
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:24}}>
@@ -2649,7 +2650,10 @@ function TrafficTab({token}:{token:string}){
                   <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:isNew?"rgba(34,197,94,0.04)":"rgba(255,255,255,0.015)",borderRadius:10,border:`1px solid ${isNew?"rgba(34,197,94,0.15)":"rgba(255,255,255,0.04)"}`}}>
                     {isNew&&<span style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",flexShrink:0,boxShadow:"0 0 0 2px rgba(34,197,94,0.3)"}}/>}
                     <span style={{fontSize:16,lineHeight:1,flexShrink:0}}>{v.flag||"🌐"}</span>
-                    <span style={{fontSize:12,color:"#e4e6f0",fontWeight:600,minWidth:100,flexShrink:0}}>{v.location?.split(",")[0]||"Unknown"}</span>
+                    <div style={{minWidth:100,flexShrink:0}}>
+                      <div style={{fontSize:12,color:"#e4e6f0",fontWeight:600}}>{v.location?.split(",")[0]||"Unknown"}</div>
+                      {v.org&&<div style={{fontSize:10,color:"#22c55e",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{v.org}</div>}
+                    </div>
                     <span style={{fontSize:11,color:"#00d4ff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pageLabel}</span>
                     <span style={{fontSize:11,color:"rgba(255,255,255,0.3)",flexShrink:0,minWidth:60,textAlign:"right"}}>{src.length>20?src.slice(0,20)+"…":src}</span>
                     <span style={{fontSize:10,color:"rgba(255,255,255,0.2)",flexShrink:0,minWidth:44,textAlign:"right"}}>{timeAgo(v.time)}</span>
@@ -2689,6 +2693,48 @@ function TrafficTab({token}:{token:string}){
             })}
           </div>
           <p style={{fontSize:11,color:"rgba(255,255,255,0.2)",margin:"12px 0 0"}}>Based on last 200 recorded visits. Leads = total all-time from IRIS, Amy &amp; forms.</p>
+        </div>
+      )}
+
+      {/* Session Journey Panel */}
+      {sessions.length>0&&(
+        <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20}}>
+          <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:"0 0 14px"}}>Session Journeys</p>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {sessions.slice(0,15).map((s:any,i:number)=>{
+              const eventIcons:Record<string,string>={iris_opened:"🎙️",iris_lead_captured:"🎯",book_clicked:"📅"};
+              const pageShort=(p:string)=>p==="/"?"Home":p==="/book"?"Book":p==="/blog"?"Blog":p.replace("/blog/","📝 ").slice(0,22);
+              const duration=s.lastSeen&&s.firstSeen?Math.round((new Date(s.lastSeen).getTime()-new Date(s.firstSeen).getTime())/1000):0;
+              const durLabel=duration<60?`${duration}s`:duration<3600?`${Math.floor(duration/60)}m`:">1h";
+              return(
+                <div key={s.id||i} style={{padding:"10px 14px",background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                    <span style={{fontSize:14,lineHeight:1}}>{s.flag||"🌐"}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:"#e4e6f0"}}>{s.location?.split(",")[0]||"Unknown"}</span>
+                    {s.org&&<span style={{fontSize:11,color:"#22c55e",background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:4,padding:"1px 6px"}}>{s.org.length>28?s.org.slice(0,28)+"…":s.org}</span>}
+                    <span style={{marginLeft:"auto",fontSize:10,color:"rgba(255,255,255,0.25)"}}>{durLabel} · {timeAgo(s.firstSeen)}</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                    {(s.pages||[]).map((p:string,pi:number)=>(
+                      <span key={pi} style={{display:"flex",alignItems:"center",gap:4}}>
+                        {pi>0&&<span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>→</span>}
+                        <span style={{fontSize:11,color:"#a78bfa",background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.15)",borderRadius:4,padding:"2px 7px"}}>{pageShort(p)}</span>
+                      </span>
+                    ))}
+                    {(s.events||[]).length>0&&(
+                      <span style={{display:"flex",alignItems:"center",gap:3,marginLeft:4}}>
+                        <span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>·</span>
+                        {(s.events||[]).map((ev:string,ei:number)=>(
+                          <span key={ei} title={ev} style={{fontSize:13}}>{eventIcons[ev]||"⚡"}</span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{fontSize:10,color:"rgba(255,255,255,0.15)",margin:"10px 0 0"}}>🎙️ IRIS opened · 🎯 Lead captured · 📅 Book clicked</p>
         </div>
       )}
 
