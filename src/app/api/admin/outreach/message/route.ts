@@ -13,7 +13,10 @@ export async function POST(req: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: "Missing CEREBRAS_API_KEY" }, { status: 500 });
 
   const { lead, platform } = await req.json() as {
-    lead: { name: string; industry: string; city: string; rating: number; reviewCount: number; website?: string };
+    lead: {
+      name: string; industry: string; city: string; rating: number; reviewCount: number;
+      website?: string; email?: string; ownerName?: string; flags?: string[];
+    };
     platform: "linkedin" | "facebook" | "email";
   };
 
@@ -28,6 +31,9 @@ export async function POST(req: NextRequest) {
   };
 
   const pain = painPoints[lead.industry] ?? "missed calls and slow lead follow-up";
+  const ownerLine = lead.ownerName ? `\n- Owner name: ${lead.ownerName}` : "";
+  const flagLine = lead.flags?.length ? `\n- Notable signals: ${lead.flags.join(", ")}` : "";
+  const emailLine = lead.email ? `\n- Email on file: ${lead.email}` : "";
 
   const prompts: Record<string, string> = {
     linkedin: `Write a short, personalized LinkedIn connection message from Saad Imran, founder of CyberCraft360, to the owner or manager of "${lead.name}", a ${lead.industry} business in ${lead.city}.
@@ -35,12 +41,13 @@ export async function POST(req: NextRequest) {
 Context about their business:
 - Rating: ${lead.rating ?? "unknown"} stars, ${lead.reviewCount} Google reviews
 - Common pain point for their industry: ${pain}
-- Website: ${lead.website ?? "none found"}
+- Website: ${lead.website ?? "none found"}${ownerLine}${flagLine}
 
 Rules:
 - Under 300 characters (LinkedIn limit)
+- If owner name is provided, address them by first name
 - Sound like a real person, not a sales pitch
-- Reference something specific about their type of business
+- Reference something specific about their type of business or the signals above
 - No "I hope this message finds you well"
 - End with a soft question, not a CTA
 - First person, conversational
@@ -49,10 +56,11 @@ Return ONLY the message text, nothing else.`,
 
     facebook: `Write a short Facebook message from Saad Imran, founder of CyberCraft360, to the owner of "${lead.name}", a ${lead.industry} business in ${lead.city}.
 
-Context: ${pain}
+Context: ${pain}${ownerLine}${flagLine}
 
 Rules:
 - 2-3 sentences max
+- If owner name is provided, address them by first name
 - Sounds like a real person stumbled on their page
 - Mention something specific to ${lead.industry}
 - Soft, no pressure
@@ -65,12 +73,13 @@ Return ONLY the message text, nothing else.`,
 Context:
 - Rating: ${lead.rating ?? "unknown"} stars, ${lead.reviewCount} reviews
 - Pain point: ${pain}
-- Website: ${lead.website ?? "none found"}
+- Website: ${lead.website ?? "none found"}${ownerLine}${flagLine}${emailLine}
 
 Rules:
 - Subject line + body
+- If owner name is provided, use it in the greeting
 - Under 150 words total
-- Specific stat or observation in the first line
+- Specific stat or observation in the first line (reference their review count or score if notable)
 - One clear CTA: 15-minute call
 - No corporate language
 - Sign off as Saad, CyberCraft360

@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
+import { detectPainPoints } from "@/lib/outreach";
 
 function auth(req: NextRequest) {
   const secret = process.env.ADMIN_SECRET;
   if (!secret) return false;
   return req.headers.get("x-admin-token") === Buffer.from(`cc360:${secret}:v2`).toString("base64");
 }
-
-const PAIN_KEYWORDS = [
-  "missed call", "missing calls", "can't answer", "no receptionist", "after hours",
-  "lost a lead", "lost leads", "can't keep up", "overwhelmed with calls", "calls going to voicemail",
-  "need a receptionist", "hiring receptionist", "too many calls", "no one answers",
-  "automate", "automation help", "follow up", "following up with leads", "lead follow up",
-  "chatbot", "AI receptionist", "AI for my business", "answering service",
-  "booking appointments", "can't book", "no-show", "reduce no shows",
-];
 
 // Generate a comment draft using Cerebras
 async function generateComment(postText: string, apiKey: string): Promise<string> {
@@ -62,9 +54,7 @@ export async function POST(req: NextRequest) {
     groupName?: string;
   };
 
-  const lower = postText.toLowerCase();
-  const matchedKeywords = PAIN_KEYWORDS.filter(k => lower.includes(k.toLowerCase()));
-  const isRelevant = matchedKeywords.length > 0;
+  const { isRelevant, matched: matchedKeywords, confidence } = detectPainPoints(postText);
 
   const comment = isRelevant ? await generateComment(postText, apiKey) : null;
 
@@ -77,6 +67,7 @@ export async function POST(req: NextRequest) {
       postUrl,
       groupName,
       matchedKeywords,
+      confidence,
       commentDraft: comment,
       createdAt: new Date().toISOString(),
       actioned: false,
@@ -84,7 +75,7 @@ export async function POST(req: NextRequest) {
     await redis.set("outreach:monitor_log", log.slice(0, 100));
   }
 
-  return NextResponse.json({ isRelevant, matchedKeywords, commentDraft: comment });
+  return NextResponse.json({ isRelevant, matchedKeywords, confidence, commentDraft: comment });
 }
 
 // GET — list saved monitor alerts

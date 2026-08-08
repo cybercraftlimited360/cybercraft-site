@@ -4576,6 +4576,11 @@ function OutreachTab({token}:{token:string}) {
     setLeads(l=>l.map(x=>x.id===id?{...x,messaged:false}:x));
   }
 
+  async function markConverted(lead:any, converted:boolean) {
+    await fetch("/api/admin/outreach/outcome",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({leadId:lead.id,converted})});
+    setLeads(l=>l.map(x=>x.id===lead.id?{...x,converted}:x));
+  }
+
   async function deleteLead(id:string) {
     await fetch("/api/admin/outreach/leads",{method:"DELETE",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id})});
     setLeads(l=>l.filter(x=>x.id!==id));
@@ -4673,7 +4678,7 @@ function OutreachTab({token}:{token:string}) {
             <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:0}}>{leads.length} leads for {industry}</p>
             <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"rgba(255,255,255,0.4)",cursor:"pointer"}}>
               <input type="checkbox" checked={filterMessaged} onChange={e=>setFilterMessaged(e.target.checked)}/>
-              Show already messaged
+              Show contacted leads
             </label>
           </div>
 
@@ -4687,7 +4692,8 @@ function OutreachTab({token}:{token:string}) {
                   <div>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
                       <span style={{fontSize:15,fontWeight:700,color:"#fff"}}>{lead.name}</span>
-                      {lead.messaged && <span style={{...tag("34,197,94")}}>Messaged</span>}
+                      {lead.messaged && <span style={{...tag("34,197,94")}}>Contacted</span>}
+                      {lead.converted && <span style={{...tag("251,191,36")}}>Converted</span>}
                       <span style={{...tag("0,212,255")}}>Score {lead.score}</span>
                     </div>
                     <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:"0 0 4px"}}>{lead.address}</p>
@@ -4716,6 +4722,12 @@ function OutreachTab({token}:{token:string}) {
                     {!lead.messaged
                       ? <button onClick={()=>markMessaged(lead.id)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(34,197,94,0.3)",background:"rgba(34,197,94,0.06)",color:"#22c55e",fontSize:11,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>✓ Mark Sent</button>
                       : <button onClick={()=>resetMessaged(lead.id)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"rgba(255,255,255,0.3)",fontSize:11,cursor:"pointer"}}>↺ Reset</button>
+                    }
+                    {lead.messaged && !lead.converted &&
+                      <button onClick={()=>markConverted(lead,true)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid rgba(251,191,36,0.3)",background:"rgba(251,191,36,0.06)",color:"rgb(251,191,36)",fontSize:11,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>★ Converted</button>
+                    }
+                    {lead.converted &&
+                      <button onClick={()=>markConverted(lead,false)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"rgba(255,255,255,0.3)",fontSize:11,cursor:"pointer"}}>↺ Not Converted</button>
                     }
                     <button onClick={()=>deleteLead(lead.id)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"none",color:"rgba(239,68,68,0.4)",fontSize:11,cursor:"pointer"}}>✕ Remove</button>
                   </div>
