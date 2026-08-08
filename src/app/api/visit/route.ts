@@ -17,9 +17,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // IP geolocation (free, no key needed)
-    let geo: { city?: string; region?: string; country?: string; isp?: string; proxy?: boolean; hosting?: boolean } = {};
-    if (ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
+    // Vercel edge geo headers — much more accurate than ip-api.com, zero latency
+    const vercelCity    = req.headers.get("x-vercel-ip-city") ?? "";
+    const vercelRegion  = req.headers.get("x-vercel-ip-country-region") ?? "";
+    const vercelCountry = req.headers.get("x-vercel-ip-country") ?? "";
+    const vercelTz      = req.headers.get("x-vercel-ip-timezone") ?? "";
+    const vercelLat     = req.headers.get("x-vercel-ip-latitude") ?? "";
+    const vercelLon     = req.headers.get("x-vercel-ip-longitude") ?? "";
+    const vercelFlag    = req.headers.get("x-vercel-ip-flag") ?? "";
+
+    let geo: { city?: string; region?: string; country?: string; isp?: string; proxy?: boolean; hosting?: boolean } = {
+      city: vercelCity ? decodeURIComponent(vercelCity) : undefined,
+      region: vercelRegion || undefined,
+      country: vercelCountry || undefined,
+    };
+
+    // Fall back to ip-api.com only if Vercel headers are missing (local dev)
+    if (!vercelCountry && ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
       try {
         const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp,proxy,hosting,status`, { signal: AbortSignal.timeout(2000) });
         const geoData = await geoRes.json();
@@ -42,6 +56,10 @@ export async function POST(req: NextRequest) {
       isp,
       isVpn,
       isDatacenter,
+      flag: vercelFlag,
+      timezone: vercelTz,
+      lat: vercelLat,
+      lon: vercelLon,
       page: page || "/",
       referrer: referrer || "",
       ua: ua.slice(0, 120),
@@ -96,7 +114,7 @@ export async function POST(req: NextRequest) {
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Location</td>
-          <td style="padding:9px 0;font-size:13px;font-weight:600;color:#a78bfa;">${location}</td>
+          <td style="padding:9px 0;font-size:13px;font-weight:600;color:#a78bfa;">${vercelFlag ? vercelFlag + " " : ""}${location}${vercelTz ? ` · ${vercelTz}` : ""}</td>
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">ISP</td>
