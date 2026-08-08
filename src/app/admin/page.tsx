@@ -2596,14 +2596,6 @@ function ReportsTab({token}:{token:string}){
 // Note: this is a client-side fetch to /api/admin/reports which we need to create
 
 // ── Traffic Tab ───────────────────────────────────────────────────────────────
-function timeAgo(iso:string):string{
-  const diff=Math.floor((Date.now()-new Date(iso).getTime())/1000);
-  if(diff<60) return `${diff}s ago`;
-  if(diff<3600) return `${Math.floor(diff/60)}m ago`;
-  if(diff<86400) return `${Math.floor(diff/3600)}h ago`;
-  return `${Math.floor(diff/86400)}d ago`;
-}
-
 function TrafficTab({token}:{token:string}){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
