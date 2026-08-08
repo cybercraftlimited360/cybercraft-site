@@ -6,7 +6,9 @@ const GITHUB_BRANCH = "main";
 const POSTS_PATH = "src/content/blog";
 
 function auth(req: NextRequest) {
-  return req.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) return false;
+  return req.headers.get("x-admin-token") === Buffer.from(`cc360:${secret}:v2`).toString("base64");
 }
 
 async function commitToGitHub(slug: string, content: string): Promise<boolean> {

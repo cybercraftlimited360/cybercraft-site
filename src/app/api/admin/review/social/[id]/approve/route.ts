@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 function auth(req: NextRequest) {
-  return req.headers.get("x-admin-token") === process.env.ADMIN_TOKEN;
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) return false;
+  return req.headers.get("x-admin-token") === Buffer.from(`cc360:${secret}:v2`).toString("base64");
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
