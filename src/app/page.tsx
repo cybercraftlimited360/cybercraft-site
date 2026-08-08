@@ -2146,21 +2146,29 @@ export default function Home() {
           <div className="flex flex-col gap-4">
             <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Services</p>
             {["AI Chatbots", "Voice AI Agents", "AI eBook Generator", "Workflow Automation", "Lead Intelligence", "AI Cybersecurity", "Premium Websites", "AI Ads & Marketing"].map(s => (
-              <a key={s} href="#services" style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s" }}
+              <button key={s} onClick={() => {
+                setTab("services");
+                const tb = document.querySelector("[data-tabbar]") as HTMLElement;
+                if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" });
+              }} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", transition: "color 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
                 onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
-              >{s}</a>
+              >{s}</button>
             ))}
           </div>
 
           {/* Col 3 — Company */}
           <div className="flex flex-col gap-4">
             <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Company</p>
-            {[["About", "#about"], ["How It Works", "#about"], ["Case Studies", "#clients"], ["FAQ", "#faq"], ["Book a Call", "#contact"]].map(([label, href]) => (
-              <a key={label} href={href} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s" }}
+            {([["About", "about"], ["How It Works", "about"], ["Case Studies", "results"], ["FAQ", "faq"], ["Book a Call", "book"]] as [string, SiteTab][]).map(([label, targetTab]) => (
+              <button key={label} onClick={() => {
+                setTab(targetTab);
+                const tb = document.querySelector("[data-tabbar]") as HTMLElement;
+                if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" });
+              }} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", transition: "color 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
                 onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
-              >{label}</a>
+              >{label}</button>
             ))}
           </div>
 
@@ -2177,14 +2185,19 @@ export default function Home() {
                 Book a free 45-min strategy call. No pitch. Just clarity.
               </p>
               <Magnetic strength={0.25} radius={80}>
-                <a href="#contact" style={{
+                <button onClick={() => {
+                  setTab("book");
+                  const tb = document.querySelector("[data-tabbar]") as HTMLElement;
+                  if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" });
+                }} style={{
                   display: "inline-block", padding: "10px 18px",
                   borderRadius: "8px", fontSize: "0.7rem", fontWeight: 700,
-                  letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none",
+                  letterSpacing: "0.12em", textTransform: "uppercase",
                   background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff",
+                  border: "none", cursor: "pointer",
                 }}>
                   Book a Free Call →
-                </a>
+                </button>
               </Magnetic>
             </div>
 
