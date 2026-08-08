@@ -105,12 +105,6 @@ export default async function BlogPost({ params }: Props) {
       <SiteSecondaryNav active="blog" />
 
       <article className="max-w-2xl mx-auto px-6 py-20">
-        {/* Logo */}
-        <div className="flex justify-center mb-12">
-          <a href="/">
-            <Image src="/logo.png" alt="CyberCraft360" width={80} height={80} style={{ objectFit: "contain", opacity: 0.85 }} />
-          </a>
-        </div>
         {/* Tags */}
         <div className="flex items-center gap-2 mb-6">
           {post.tags.map((tag) => (
