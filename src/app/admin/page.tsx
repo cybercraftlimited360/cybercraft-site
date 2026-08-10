@@ -331,6 +331,34 @@ function OverviewTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof u
         <MiniStat label="Total Visitors" value={data.visitors?.total||0} accent="#a78bfa" sub="unique all time"/>
       </div>
 
+      <SectionTitle>💼 Pricing Reference</SectionTitle>
+      <Card style={{marginBottom:20,padding:0,overflow:"hidden"}}>
+        {[
+          {name:"Starter",accent:"#00d4ff",impl:"$1,500",monthly:"$499/mo",perDay:"$16/day",tagline:"Never Miss Another Lead",solutions:["AI Website Chatbot","WhatsApp AI Assistant","AI Appointment Booking","AI Lead Capture"],industries:"Plumbers · Electricians · Med Spas · Restaurants · Contractors"},
+          {name:"Growth",accent:"#7c3aed",impl:"$3,000",monthly:"$999/mo",perDay:"$33/day",tagline:"Replace 1–2 Admin Roles with AI",solutions:["AI Voice Receptionist","AI Customer Support","AI Sales Agent","CRM & Workflow Automation"],industries:"Law Firms · Real Estate · Dental Practices · HVAC Companies"},
+          {name:"Enterprise",accent:"#e64dff",impl:"$7,500+",monthly:"$2,500/mo",perDay:"$83/day",tagline:"Full AI Ecosystem",solutions:["AI Call Center","Custom AI Integrations","Enterprise AI Ecosystem","Dedicated Strategy Team"],industries:"Multi-location · Franchises · Healthcare Groups · Large Service Cos"},
+        ].map((t,i)=>(
+          <div key={t.name} style={{padding:"16px 20px",borderTop:i>0?"1px solid rgba(255,255,255,0.06)":"none",display:"flex",gap:16,alignItems:"flex-start"}}>
+            <div style={{flexShrink:0,width:3,alignSelf:"stretch",borderRadius:2,background:t.accent}}/>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                <span style={{fontSize:13,fontWeight:800,color:t.accent}}>{t.name}</span>
+                <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{t.tagline}</span>
+              </div>
+              <div style={{display:"flex",gap:16,marginBottom:6}}>
+                <div><span style={{fontSize:18,fontWeight:800,color:"#fff"}}>{t.monthly}</span><span style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginLeft:4}}>{t.perDay}</span></div>
+                <div style={{borderLeft:"1px solid rgba(255,255,255,0.08)",paddingLeft:16}}><span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Setup: </span><span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>{t.impl} one-time</span></div>
+              </div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginBottom:4}}>{t.solutions.join(" · ")}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>{t.industries}</div>
+            </div>
+          </div>
+        ))}
+        <div style={{padding:"12px 20px",borderTop:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.02)"}}>
+          <span style={{fontSize:10,color:"rgba(255,255,255,0.25)"}}>⚠️ Internal reference only — not shown on website · Final pricing scoped per project</span>
+        </div>
+      </Card>
+
       <SectionTitle>Recent Visitors</SectionTitle>
       <Card style={{marginBottom:20}}>
         {data.visitors?.recent?.length>0?data.visitors.recent.slice(0,8).map((v:any,i:number)=>(

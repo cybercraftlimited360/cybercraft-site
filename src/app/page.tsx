@@ -31,11 +31,11 @@ import LaurenCallDemo from "@/components/demo/LaurenCallDemo";
 import HowItWorksModal from "@/components/demo/HowItWorksModal";
 import { trackEvent } from "@/lib/track";
 
-type SiteTab = "about" | "demo" | "services" | "pricing" | "results" | "faq" | "book";
+type SiteTab = "about" | "demo" | "services" | "results" | "faq" | "book";
 
 const TAB_MAP: Record<string, SiteTab> = {
   about: "about", demo: "demo", services: "services",
-  pricing: "pricing", clients: "results", faq: "faq",
+  clients: "results", faq: "faq",
 };
 
 function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void }) {
@@ -51,7 +51,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  const navLinks = ["About", "Demo", "Services", "Pricing", "Clients", "FAQ"];
+  const navLinks = ["About", "Demo", "Services", "Clients", "FAQ"];
 
   return (
     <>
@@ -220,7 +220,6 @@ function TabBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
     { id: "about",    label: "How It Works", emoji: "⚡" },
     { id: "demo",     label: "Live Demo",    emoji: "🤖" },
     { id: "services", label: "Services",     emoji: "🧠" },
-    { id: "pricing",  label: "Pricing",      emoji: "💼" },
     { id: "results",  label: "Results",      emoji: "📈" },
     { id: "faq",      label: "FAQ",          emoji: "❓" },
     { id: "book",     label: "Book a Call",  emoji: "📅" },
@@ -310,8 +309,8 @@ export default function Home() {
   React.useEffect(() => {
     const HASH_TAB: Record<string, SiteTab> = {
       "#about": "about", "#demo": "demo", "#services": "services",
-      "#pricing": "pricing", "#clients": "results", "#faq": "faq",
-      "#contact": "book", "#proposal": "pricing", "#roi": "pricing",
+      "#clients": "results", "#faq": "faq",
+      "#contact": "book", "#proposal": "book", "#roi": "about",
     };
     function handleClick(e: MouseEvent) {
       const a = (e.target as Element).closest("a[href]") as HTMLAnchorElement | null;
@@ -1325,7 +1324,7 @@ export default function Home() {
 
       {/* SERVICES TAB END */}</>}
 
-      {tab === "pricing" && <>
+      {false && <>
       {/* ROI CALCULATORS */}
       {(() => {
         function ROISection() {
