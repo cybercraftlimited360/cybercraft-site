@@ -106,6 +106,16 @@ export default async function BlogPost({ params }: Props) {
       <SiteSecondaryNav active="blog" />
 
       <article className="max-w-2xl mx-auto px-6 py-20">
+        {/* Back link */}
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-sm no-underline mb-10 group"
+          style={{ color: "rgba(255,255,255,0.35)" }}
+        >
+          <span style={{ transition: "transform 0.2s" }} className="group-hover:-translate-x-1">←</span>
+          <span className="group-hover:text-white transition-colors duration-200">All posts</span>
+        </Link>
+
         {/* Tags */}
         <div className="flex items-center gap-2 mb-6">
           {post.tags.map((tag) => (
