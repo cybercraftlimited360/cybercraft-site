@@ -3585,6 +3585,8 @@ function ReviewQueueTab({token}:{token:string}){
   const [blog,setBlog]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [activeType,setActiveType]=useState<"social"|"blog">("social");
+  const [generating,setGenerating]=useState(false);
+  const [genError,setGenError]=useState<string|null>(null);
 
   // Per-item edit state
   const [editIG,setEditIG]=useState<Record<string,string>>({});
@@ -3611,6 +3613,17 @@ function ReviewQueueTab({token}:{token:string}){
   }
 
   useEffect(()=>{load();},[token]);
+
+  async function generateDraft(){
+    setGenerating(true);setGenError(null);
+    try{
+      const r=await fetch("/api/admin/review/generate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({type:activeType})});
+      const d=await r.json();
+      if(!r.ok){setGenError(d.error||"Generation failed");return;}
+      await load();
+    }catch(e:any){setGenError(e.message||"Error");}
+    finally{setGenerating(false);}
+  }
 
   async function approvePost(id:string){
     setBusy(b=>({...b,[id]:true}));
@@ -3666,7 +3679,11 @@ function ReviewQueueTab({token}:{token:string}){
           </button>
         ))}
         <button onClick={load} style={{...btnBase,marginLeft:"auto",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.3)"}}>↻ Refresh</button>
+        <button onClick={generateDraft} disabled={generating} style={{...btnBase,background:generating?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#a78bfa,#7c3aed)",color:"#fff",opacity:generating?0.5:1,border:"none",padding:"8px 16px"}}>
+          {generating?`Generating ${activeType}…`:`+ Generate ${activeType==="social"?"Social Post":"Blog Post"}`}
+        </button>
       </div>
+      {genError&&<div style={{marginBottom:12,padding:"10px 14px",borderRadius:8,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.25)",fontSize:12,color:"#ef4444"}}>{genError}</div>}
 
       {loading&&<div style={{textAlign:"center",padding:40,color:"rgba(255,255,255,0.3)"}}>Loading…</div>}
 

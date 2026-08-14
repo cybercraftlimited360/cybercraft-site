@@ -36,10 +36,10 @@ async function commitToGitHub(slug: string, content: string): Promise<boolean> {
 }
 
 // POST — approve: optionally accept edited content in body, then commit
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json().catch(() => ({}));
   const { content: editedContent } = body as { content?: string };
 
@@ -121,9 +121,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // DELETE — reject / discard
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await params;
   const pending = await redis.get<any[]>("blog:pending_posts") ?? [];
-  await redis.set("blog:pending_posts", pending.filter((p) => p.id !== params.id));
+  await redis.set("blog:pending_posts", pending.filter((p) => p.id !== id));
   return NextResponse.json({ ok: true });
 }
