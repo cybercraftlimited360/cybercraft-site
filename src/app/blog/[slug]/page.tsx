@@ -5,6 +5,7 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
 import SiteSecondaryNav from "@/components/ui/site-secondary-nav";
 import Image from "next/image";
+import BlogChecklistCTA from "@/components/ui/blog-checklist-cta";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -133,6 +134,9 @@ export default async function BlogPost({ params }: Props) {
         <div className="prose-blog">
           <MDXRemote source={post.content} />
         </div>
+
+        {/* Lead magnet */}
+        <BlogChecklistCTA source={slug} />
 
         {/* CTA */}
         <div className="mt-20 rounded-2xl p-10 text-center" style={{ border: "1px solid rgba(0,212,255,0.2)", background: "rgba(0,212,255,0.04)" }}>

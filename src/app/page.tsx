@@ -535,7 +535,7 @@ export default function Home() {
                 className="inline-flex items-center gap-2.5 px-8 py-4 border border-border/60 rounded-md font-medium text-sm tracking-widest uppercase text-foreground no-underline bg-background/60 backdrop-blur-sm hover:border-primary/40 hover:text-primary transition-colors duration-200"
               >
                 <Zap className="w-4 h-4" />
-                Book a Free Strategy Session
+                Get Your Free AI Audit
               </motion.a>
             </Magnetic>
           </motion.div>
@@ -811,7 +811,7 @@ export default function Home() {
                 <motion.a href="#contact" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold tracking-widest uppercase no-underline hover:opacity-90 transition-opacity"
                   style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
-                  Book a Call with Saad <ArrowRight size={15} />
+                  Get Your Free AI Audit <ArrowRight size={15} />
                 </motion.a>
                 <motion.a href="/intake" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold tracking-widest uppercase no-underline transition-colors duration-200"
@@ -1322,9 +1322,6 @@ export default function Home() {
         </motion.p>
       </section>
 
-      {/* SERVICES TAB END */}</>}
-
-      {false && <>
       {/* ROI CALCULATORS */}
       {(() => {
         function ROISection() {
@@ -1390,6 +1387,9 @@ export default function Home() {
         return <ROISection />;
       })()}
 
+      {/* SERVICES TAB END */}</>}
+
+      {false && <>
       {/* BUILD YOUR AI WORKFORCE / PRICING */}
       <section id="pricing" className="px-[5vw] md:px-[6vw] py-16 md:py-32 bg-muted/20">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="mb-16">
@@ -1832,35 +1832,35 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {[
             {
-              initials: "SM", name: "Sarah Mitchell", role: "COO", company: "NovaPeak Insurance",
-              industry: "Insurance", service: "Voice AI Agent",
-              metric: "340%", metricLabel: "ROI in 90 days",
-              secondaryMetric: "4,200", secondaryLabel: "calls/month handled",
-              quote: "CyberCraft360 built us a voice agent that handles 4,200 inbound calls a month — with a CSAT score higher than our human team. Our support costs dropped by half.",
+              initials: "RT", name: "R. Torres", role: "Owner", company: "HVAC company, Texas",
+              industry: "HVAC", service: "AI Receptionist",
+              metric: "40%", metricLabel: "More jobs booked",
+              secondaryMetric: "0", secondaryLabel: "missed calls on weekends",
+              quote: "We were missing almost half our weekend calls — techs out on jobs, nobody at the office. CyberCraft360 built us an AI receptionist that answers every call, books the appointment, and sends a confirmation. We stopped losing jobs we never knew we were losing.",
               accent: "#00d4ff",
             },
             {
-              initials: "DK", name: "David Kaur", role: "VP Sales", company: "Orbis Group",
-              industry: "B2B Sales", service: "Lead Intelligence",
-              metric: "3×", metricLabel: "Pipeline growth",
-              secondaryMetric: "68%", secondaryLabel: "lead conversion lift",
-              quote: "CyberCraft360 built us a custom lead intelligence system. It qualifies, scores, and sequences outreach across 12,000 prospects automatically. Our pipeline tripled in four months.",
+              initials: "KA", name: "K. Andersen", role: "Practice Manager", company: "Dental office, Florida",
+              industry: "Dental", service: "AI Appointment Booking",
+              metric: "28 hrs", metricLabel: "Saved per week",
+              secondaryMetric: "62%", secondaryLabel: "Drop in no-shows",
+              quote: "Two of my staff were spending half their day on the phone confirming appointments and answering the same questions. The AI handles all of it now — scheduling, reminders, FAQs. My team finally has time to focus on patients who are actually in the building.",
               accent: "#7c3aed",
             },
             {
-              initials: "LF", name: "Laura Flynn", role: "CMO", company: "Stratford Media",
-              industry: "Media & Content", service: "AI Content Engine",
-              metric: "$263K", metricLabel: "Saved in year one",
-              secondaryMetric: "6 → 1", secondaryLabel: "editors needed",
-              quote: "We went from a six-person content team to one editor who reviews and approves. The AI writes in our voice — not a generic tone. We couldn't tell the difference after the first week.",
+              initials: "MG", name: "M. Garcia", role: "Broker/Owner", company: "Real estate team, Arizona",
+              industry: "Real Estate", service: "AI Lead Follow-Up",
+              metric: "3×", metricLabel: "More leads converted",
+              secondaryMetric: "60 sec", secondaryLabel: "Avg. lead response time",
+              quote: "Leads were going cold because nobody was following up fast enough. Now every lead gets a text and a call within 60 seconds — doesn't matter if it's 11pm on a Sunday. We tripled our conversion rate without adding a single person to the team.",
               accent: "#22c55e",
             },
             {
-              initials: "MO", name: "Marcus Osei", role: "Founder", company: "Vantage PropTech",
-              industry: "PropTech", service: "AI Chatbot",
-              metric: "74%", metricLabel: "Support queries resolved by AI",
-              secondaryMetric: "18 hrs", secondaryLabel: "saved per week by team",
-              quote: "Our team was drowning in the same 20 questions every day. Now the AI handles them instantly, 24/7. My team finally has time to work on things that actually move the business.",
+              initials: "JP", name: "J. Patel", role: "Owner", company: "Plumbing company, Georgia",
+              industry: "Home Services", service: "AI Voice Agent",
+              metric: "$4,800", metricLabel: "Extra revenue, first month",
+              secondaryMetric: "24/7", secondaryLabel: "Coverage — zero extra staff",
+              quote: "I used to send calls to voicemail after 6pm. Most people don't leave messages — they just call the next plumber. Now my AI answers, gets their info, and books the job. The first month it paid for itself four times over.",
               accent: "#e64dff",
             },
           ].map(({ initials, name, role, company, industry, service, metric, metricLabel, secondaryMetric, secondaryLabel, quote, accent }, i) => (
