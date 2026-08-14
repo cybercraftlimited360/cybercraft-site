@@ -105,7 +105,7 @@ export default async function BlogPost({ params }: Props) {
       {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
       <SiteSecondaryNav active="blog" />
 
-      <article className="max-w-2xl mx-auto px-6 py-20">
+      <article className="max-w-3xl mx-auto px-5 sm:px-8 py-20">
         {/* Back link */}
         <Link
           href="/blog"
