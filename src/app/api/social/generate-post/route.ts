@@ -5,41 +5,42 @@ import { redis } from "@/lib/redis";
 export const runtime = "edge";
 
 // ── Service / Topic Rotation ───────────────────────────────────────────────────
-// GPT rotates through these. Tracks used topics in Redis.
+// Each topic has a `pexels` query targeting dark, premium, cinematic photography
+// — the kind used by Apple, McLaren, Vercel: architectural, moody, editorial.
 const TOPICS = [
   // Core AI services
-  { topic: "AI Voice Agents",          image: "premium commercial phone environment, executive on call in modern glass office, cinematic lighting, photorealistic" },
-  { topic: "AI Chatbots",              image: "sleek digital interface on high-end device, luxury hospitality setting, professional service environment, photorealistic" },
-  { topic: "Workflow Automation",      image: "modern operations center, multiple screens showing dashboards, clean industrial workspace, professionals at work, photorealistic" },
-  { topic: "Lead Qualification",       image: "premium sales environment, executive reviewing reports, sophisticated office, confident professional, cinematic" },
-  { topic: "Lead Follow-Up",           image: "business professional making calls from premium office, golden hour light, executive workspace, cinematic" },
-  { topic: "Appointment Booking",      image: "elegant reception area of a premium business, calendar on screen, clean minimal design, photorealistic" },
-  { topic: "Customer Support Automation", image: "premium customer experience environment, service desk in luxury setting, clean architecture, photorealistic" },
-  { topic: "CRM Automation",           image: "data visualization on large screens in modern office, strategic environment, professionals analyzing insights, cinematic" },
-  { topic: "Business Intelligence",    image: "executive boardroom with data displays, sophisticated analytics environment, premium architectural interior, cinematic" },
-  { topic: "Marketing Automation",     image: "creative digital studio, modern marketing workspace, clean design environment, professionals at work, photorealistic" },
-  { topic: "Sales Automation",         image: "premium sales operations floor, executives in modern office, city view, confident and sophisticated, photorealistic" },
-  { topic: "Operations Automation",    image: "clean industrial operations environment, modern manufacturing or logistics facility, precision and order, cinematic" },
+  { topic: "AI Voice Agents",               image: "premium commercial phone environment, executive on call in modern glass office, cinematic lighting, photorealistic", pexels: "luxury glass office executive dark minimal architecture" },
+  { topic: "AI Chatbots",                   image: "sleek digital interface on high-end device, luxury hospitality setting, professional service environment, photorealistic", pexels: "dark minimal technology luxury interior design" },
+  { topic: "Workflow Automation",           image: "modern operations center, multiple screens showing dashboards, clean industrial workspace, professionals at work, photorealistic", pexels: "dark control room screens technology cinematic" },
+  { topic: "Lead Qualification",            image: "premium sales environment, executive reviewing reports, sophisticated office, confident professional, cinematic", pexels: "executive dark boardroom luxury glass city night" },
+  { topic: "Lead Follow-Up",               image: "business professional making calls from premium office, golden hour light, executive workspace, cinematic", pexels: "dark premium office city view night executive" },
+  { topic: "Appointment Booking",           image: "elegant reception area of a premium business, calendar on screen, clean minimal design, photorealistic", pexels: "luxury minimal reception lobby dark architecture" },
+  { topic: "Customer Support Automation",   image: "premium customer experience environment, service desk in luxury setting, clean architecture, photorealistic", pexels: "dark luxury hotel lobby minimal elegant interior" },
+  { topic: "CRM Automation",               image: "data visualization on large screens in modern office, strategic environment, professionals analyzing insights, cinematic", pexels: "dark screens data technology abstract cinematic" },
+  { topic: "Business Intelligence",         image: "executive boardroom with data displays, sophisticated analytics environment, premium architectural interior, cinematic", pexels: "panoramic dark boardroom luxury executive night city" },
+  { topic: "Marketing Automation",          image: "creative digital studio, modern marketing workspace, clean design environment, professionals at work, photorealistic", pexels: "dark creative studio minimal premium design workspace" },
+  { topic: "Sales Automation",             image: "premium sales operations floor, executives in modern office, city view, confident and sophisticated, photorealistic", pexels: "luxury dark office high rise city view night" },
+  { topic: "Operations Automation",         image: "clean industrial operations environment, modern manufacturing or logistics facility, precision and order, cinematic", pexels: "dark industrial precision engineering cinematic dramatic" },
   // Industry-specific
-  { topic: "AI for HVAC Companies",    image: "commercial HVAC rooftop system with city skyline, technician in professional gear, industrial precision, golden hour, photorealistic" },
-  { topic: "AI for Real Estate",       image: "luxury real estate interior, premium property, architectural photography, natural light, sophisticated materials, photorealistic" },
-  { topic: "AI for Healthcare",        image: "premium medical office or clinic, clean minimal design, professional environment, natural light, photorealistic" },
-  { topic: "AI for Law Firms",         image: "sophisticated law office interior, dark wood and glass, premium materials, books and order, cinematic lighting, photorealistic" },
-  { topic: "AI for Dental Offices",    image: "modern dental clinic, pristine clean environment, premium equipment, professional setting, photorealistic" },
-  { topic: "AI for Home Services",     image: "professional home services operation, clean branded vehicles, organized team preparing for work, photorealistic" },
-  { topic: "AI for Restaurants",       image: "premium restaurant kitchen or dining environment, chefs at work, sophisticated food service operation, cinematic" },
-  { topic: "AI for Auto Repair",       image: "premium automotive workshop, clean garage with luxury vehicles, professional mechanics, industrial precision, photorealistic" },
-  { topic: "AI for Insurance Agents",  image: "professional insurance office, executive in premium workspace, client meeting, sophisticated and trustworthy, photorealistic" },
-  { topic: "AI for Property Management", image: "luxury residential building exterior at dusk, premium property, architectural photography, photorealistic" },
+  { topic: "AI for HVAC Companies",         image: "commercial HVAC rooftop system with city skyline, technician in professional gear, industrial precision, golden hour, photorealistic", pexels: "rooftop city skyline industrial dark dramatic golden hour" },
+  { topic: "AI for Real Estate",            image: "luxury real estate interior, premium property, architectural photography, natural light, sophisticated materials, photorealistic", pexels: "luxury architecture interior dark dramatic minimal" },
+  { topic: "AI for Healthcare",             image: "premium medical office or clinic, clean minimal design, professional environment, natural light, photorealistic", pexels: "minimal clean white medical architecture premium dark contrast" },
+  { topic: "AI for Law Firms",             image: "sophisticated law office interior, dark wood and glass, premium materials, books and order, cinematic lighting, photorealistic", pexels: "dark wood library legal office dramatic moody" },
+  { topic: "AI for Dental Offices",         image: "modern dental clinic, pristine clean environment, premium equipment, professional setting, photorealistic", pexels: "minimal white clinical premium design dark contrast" },
+  { topic: "AI for Home Services",          image: "professional home services operation, clean branded vehicles, organized team preparing for work, photorealistic", pexels: "professional team dark premium exterior dramatic" },
+  { topic: "AI for Restaurants",            image: "premium restaurant kitchen or dining environment, chefs at work, sophisticated food service operation, cinematic", pexels: "fine dining dark luxury restaurant cinematic moody" },
+  { topic: "AI for Auto Repair",            image: "premium automotive workshop, clean garage with luxury vehicles, professional mechanics, industrial precision, photorealistic", pexels: "luxury car dark automotive dramatic cinematic" },
+  { topic: "AI for Insurance Agents",       image: "professional insurance office, executive in premium workspace, client meeting, sophisticated and trustworthy, photorealistic", pexels: "dark premium office executive meeting luxury glass" },
+  { topic: "AI for Property Management",    image: "luxury residential building exterior at dusk, premium property, architectural photography, photorealistic", pexels: "luxury building exterior night architecture dark dramatic" },
   // Outcome-focused
-  { topic: "Never Missing a Call",     image: "professional answering a call in premium office, confident posture, modern glass workspace, cinematic lighting, photorealistic" },
-  { topic: "Faster Lead Response",     image: "executive reviewing incoming inquiries on sleek device, modern office at night, city lights, urgency and precision, photorealistic" },
-  { topic: "Scaling Without Hiring",   image: "small but highly efficient modern team in premium workspace, productivity and order, photorealistic" },
-  { topic: "After-Hours Business",     image: "office building lit at night, city skyline, business operating after dark, cinematic and premium, photorealistic" },
-  { topic: "Reducing Manual Work",     image: "clean organized desk replacing paperwork with digital system, modern minimal workspace, natural light, photorealistic" },
-  { topic: "Improving Response Times", image: "precision timing environment, executive acting decisively, premium office at golden hour, cinematic" },
-  { topic: "Creating Better Customer Journeys", image: "premium customer experience environment, luxury hospitality or service setting, elegant and sophisticated, photorealistic" },
-  { topic: "Business Systems Design",  image: "architectural blueprint or system diagram in premium context, strategic planning environment, sophisticated materials, photorealistic" },
+  { topic: "Never Missing a Call",          image: "professional answering a call in premium office, confident posture, modern glass workspace, cinematic lighting, photorealistic", pexels: "executive dark glass office night city confident" },
+  { topic: "Faster Lead Response",          image: "executive reviewing incoming inquiries on sleek device, modern office at night, city lights, urgency and precision, photorealistic", pexels: "city lights night luxury office dark dramatic speed" },
+  { topic: "Scaling Without Hiring",        image: "small but highly efficient modern team in premium workspace, productivity and order, photorealistic", pexels: "dark minimal workspace precision team luxury" },
+  { topic: "After-Hours Business",          image: "office building lit at night, city skyline, business operating after dark, cinematic and premium, photorealistic", pexels: "skyscraper night city dark dramatic architecture premium" },
+  { topic: "Reducing Manual Work",          image: "clean organized desk replacing paperwork with digital system, modern minimal workspace, natural light, photorealistic", pexels: "minimal dark desk luxury workspace precision clean" },
+  { topic: "Improving Response Times",      image: "precision timing environment, executive acting decisively, premium office at golden hour, cinematic", pexels: "dark precision engineering luxury minimal dramatic" },
+  { topic: "Creating Better Customer Journeys", image: "premium customer experience environment, luxury hospitality or service setting, elegant and sophisticated, photorealistic", pexels: "luxury hospitality dark elegant premium experience" },
+  { topic: "Business Systems Design",       image: "architectural blueprint or system diagram in premium context, strategic planning environment, sophisticated materials, photorealistic", pexels: "dark architectural design luxury precision minimal" },
 ];
 
 // ── Day-of-week content frames ─────────────────────────────────────────────────
@@ -314,8 +315,10 @@ async function fetchPexelsPhoto(query: string, landscape: boolean): Promise<stri
   try {
     const params = new URLSearchParams({
       query,
-      per_page: "15",
+      per_page: "20",
       orientation: landscape ? "landscape" : "portrait",
+      color: "black", // filters toward dark, cinematic, premium-toned results
+      size: "large",  // only high-resolution photos
     });
     const res = await fetch(`https://api.pexels.com/v1/search?${params}`, {
       headers: { Authorization: apiKey },
@@ -323,11 +326,20 @@ async function fetchPexelsPhoto(query: string, landscape: boolean): Promise<stri
     if (!res.ok) return null;
     const data = await res.json();
     const photos: any[] = data.photos ?? [];
-    if (!photos.length) return null;
-    // Pick randomly from top 8 results — these tend to be the highest quality
-    const pool = photos.slice(0, 8);
+    if (!photos.length) {
+      // Fallback: retry without color filter if no dark results found
+      const fallbackParams = new URLSearchParams({ query, per_page: "15", orientation: landscape ? "landscape" : "portrait", size: "large" });
+      const fallbackRes = await fetch(`https://api.pexels.com/v1/search?${fallbackParams}`, { headers: { Authorization: apiKey } });
+      if (!fallbackRes.ok) return null;
+      const fallbackData = await fallbackRes.json();
+      const fp: any[] = fallbackData.photos ?? [];
+      if (!fp.length) return null;
+      const pick = fp.slice(0, 8)[Math.floor(Math.random() * Math.min(8, fp.length))];
+      return pick.src?.large2x ?? pick.src?.large ?? null;
+    }
+    // Pick randomly from top 10 dark results
+    const pool = photos.slice(0, 10);
     const photo = pool[Math.floor(Math.random() * pool.length)];
-    // Use large2x (1880px wide) for maximum quality — looks premium scaled in Satori
     return photo.src?.large2x ?? photo.src?.large ?? null;
   } catch {
     return null;
@@ -384,17 +396,8 @@ export async function POST(req: NextRequest) {
     generateDalleImage(copy.dallePromptSquare, true),
     generateDalleImage(copy.dallePromptLandscape, false),
   ]);
-  // Use the first 2-3 key terms from the topic's image description for a premium Pexels search
-  // e.g. "premium commercial phone environment, executive on call in modern glass office" → "executive office professional"
-  const imageKeywords = topic.image
-    .split(",")
-    .slice(0, 3)
-    .map(s => s.trim().replace(/\b(photorealistic|cinematic|and|or|in|on|at|for|the|a|an|with)\b/gi, "").trim())
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .slice(0, 60);
-  const pexelsQuery = imageKeywords || topic.topic.replace(/^AI for /i, "").replace(/\bAI\b/gi, "business").trim();
+  // Use the curated premium Pexels query from the topic definition
+  const pexelsQuery = topic.pexels;
   const [squarePhoto, landscapePhoto] = await Promise.all([
     dalleSquare ?? fetchPexelsPhoto(pexelsQuery, false),
     dalleLandscape ?? fetchPexelsPhoto(pexelsQuery, true),
