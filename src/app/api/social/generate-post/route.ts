@@ -220,15 +220,15 @@ function parseCopyResult(raw: string): CopyResult | null {
 
 let _lastGroqRaw = "";
 
-async function callGroqModel(prompt: string, model: string): Promise<CopyResult | null> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) { console.error("[generate-post] GROQ_API_KEY not set"); return null; }
+async function callOpenAI(prompt: string): Promise<CopyResult | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) { console.error("[generate-post] OPENAI_API_KEY not set"); return null; }
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model,
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 3000,
       temperature: 0.75,
@@ -237,26 +237,17 @@ async function callGroqModel(prompt: string, model: string): Promise<CopyResult 
 
   if (!res.ok) {
     const err = await res.text();
-    console.error(`[generate-post] Groq error (${model})`, res.status, err.slice(0, 200));
+    console.error("[generate-post] OpenAI error", res.status, err.slice(0, 200));
     _lastGroqRaw = `HTTP_ERROR_${res.status}: ${err.slice(0, 200)}`;
     return null;
   }
 
   const data = await res.json();
-  const rawContent = data.choices?.[0]?.message?.content ?? "";
-  const raw = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const raw = data.choices?.[0]?.message?.content ?? "";
   _lastGroqRaw = raw;
   const result = parseCopyResult(raw);
-  if (!result) console.error(`[generate-post] JSON parse failed (${model}), raw:`, raw.slice(0, 400));
+  if (!result) console.error("[generate-post] OpenAI JSON parse failed, raw:", raw.slice(0, 400));
   return result;
-}
-
-async function callGroq(prompt: string): Promise<CopyResult | null> {
-  // Try fast model first (~1-2s), fall back to compound on failure
-  const result = await callGroqModel(prompt, "llama-3.1-8b-instant");
-  if (result) return result;
-  console.warn("[generate-post] llama-3.1-8b-instant failed, trying groq/compound");
-  return callGroqModel(prompt, "groq/compound");
 }
 
 async function callCerebras(prompt: string): Promise<CopyResult | null> {
@@ -299,7 +290,7 @@ ${customPrompt}
 
 ${COPY_FORMAT(cta)}`;
 
-  return await callGroq(prompt);
+  return await callOpenAI(prompt);
 }
 
 async function generateCopy(campaign: typeof CAMPAIGNS[0], ctaIndex: number): Promise<CopyResult | null> {
@@ -319,7 +310,7 @@ ${campaign.angle}
 
 ${COPY_FORMAT(cta)}`;
 
-  return await callGroq(prompt);
+  return await callOpenAI(prompt);
 }
 
 async function fetchPexelsPhoto(queries: string[]): Promise<string | null> {

@@ -134,7 +134,7 @@ function escapeControlCharsInStrings(str: string): string {
 }
 
 async function generatePost(keyword: string, linkSuggestions: string): Promise<{ title: string; content: string } | null> {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
   const prompt = `You are Saad Imran, founder of CyberCraft360 — a boutique AI agency serving small and mid-size businesses across the United States. You build custom voice agents, chatbots, and workflow automation. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants nationwide. You are direct, specific, and allergic to corporate fluff.
@@ -178,11 +178,11 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
   "body": "The full markdown body of the post here"
 }`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "groq/compound",
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 8000,
       temperature: 0.8,
@@ -190,7 +190,7 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
   });
 
   if (!res.ok) {
-    console.error("[blog-cron] Groq error", res.status, await res.text());
+    console.error("[blog-cron] OpenAI error", res.status, await res.text());
     return null;
   }
 
