@@ -172,40 +172,95 @@ Return ONLY valid JSON — no markdown, no explanation, no preamble:
   "photoKeyword": "..."
 }`;
 
-async function callCerebras(prompt: string): Promise<CopyResult | null> {
-  const apiKey = process.env.CEREBRAS_API_KEY;
-  if (!apiKey) return null;
+function escapeControlCharsInStrings(str: string): string {
+  let result = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (escaped) { result += c; escaped = false; }
+    else if (c === "\\") { result += c; escaped = true; }
+    else if (c === '"') { result += c; inString = !inString; }
+    else if (inString && c.charCodeAt(0) < 32) {
+      if (c === "\n") result += "\\n";
+      else if (c === "\r") result += "\\r";
+      else if (c === "\t") result += "\\t";
+      else result += `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`;
+    } else {
+      result += c;
+    }
+  }
+  return result;
+}
 
-  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+function parseCopyResult(raw: string): CopyResult | null {
+  const strip = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const clean = escapeControlCharsInStrings(strip);
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error("[generate-post] JSON.parse failed:", String(e));
+    return null;
+  }
+}
+
+let _lastGroqRaw = "";
+
+async function callGroq(prompt: string): Promise<CopyResult | null> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) { console.error("[generate-post] GROQ_API_KEY not set"); return null; }
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "zai-glm-4.7",
+      model: "openai/gpt-oss-120b",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 4096,
+      max_tokens: 1500,
       temperature: 0.75,
-      stream: false,
     }),
   });
 
   if (!res.ok) {
-    console.error("[generate-post] Cerebras error", res.status);
+    const err = await res.text();
+    console.error("[generate-post] Groq error", res.status, err);
+    _lastGroqRaw = `HTTP_ERROR_${res.status}: ${err.slice(0, 200)}`;
     return null;
   }
 
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
-  const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  _lastGroqRaw = raw;
+  const result = parseCopyResult(raw);
+  if (!result) console.error("[generate-post] Groq JSON parse failed, raw:", raw.slice(0, 400));
+  return result;
+}
 
-  try {
-    return JSON.parse(clean);
-  } catch {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (match) {
-      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+async function callCerebras(prompt: string): Promise<CopyResult | null> {
+  const apiKey = process.env.CEREBRAS_API_KEY;
+  if (!apiKey) return null;
+
+  // Try both known Cerebras model naming conventions
+  for (const model of ["llama3.3-70b", "llama-3.3-70b"]) {
+    const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 4096,
+        temperature: 0.75,
+        stream: false,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return parseCopyResult(data.choices?.[0]?.message?.content ?? "");
     }
-    return null;
+    console.error("[generate-post] Cerebras error", res.status, "model:", model);
   }
+  return null;
 }
 
 async function generateCustomCopy(customPrompt: string, ctaIndex: number): Promise<CopyResult | null> {
@@ -221,7 +276,7 @@ ${customPrompt}
 
 ${COPY_FORMAT(cta)}`;
 
-  return callCerebras(prompt);
+  return await callGroq(prompt);
 }
 
 async function generateCopy(campaign: typeof CAMPAIGNS[0], ctaIndex: number): Promise<CopyResult | null> {
@@ -241,7 +296,7 @@ ${campaign.angle}
 
 ${COPY_FORMAT(cta)}`;
 
-  return callCerebras(prompt);
+  return await callGroq(prompt);
 }
 
 async function fetchPexelsPhoto(queries: string[]): Promise<string | null> {
@@ -315,7 +370,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!copy) {
-    return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Copy generation failed", raw: _lastGroqRaw.slice(0, 3000) }, { status: 500 });
   }
 
   // Use curated Pexels queries for campaign posts, AI keyword for custom
