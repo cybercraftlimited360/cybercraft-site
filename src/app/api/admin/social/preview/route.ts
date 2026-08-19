@@ -10,9 +10,6 @@ function verifyAdmin(req: NextRequest): boolean {
   return token === makeToken(secret);
 }
 
-function pickLayout(themeIndex: number): number {
-  return (themeIndex % 4) + 1;
-}
 
 export async function POST(req: NextRequest) {
   if (!verifyAdmin(req)) {
@@ -34,30 +31,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Copy generation failed" }, { status: 500 });
   }
 
-  const { copy, photoUrl, campaignIndex, campaign, week, day } = await genRes.json();
+  const { copy, photoUrl, landscapePhotoUrl, topic, day, frame, layoutVariant } = await genRes.json();
 
-  const layout = pickLayout(campaignIndex ?? 0);
-
-  const imageParams = new URLSearchParams({
-    hl: copy.imageHeadline,
-    sl: copy.imageSubline,
-    bd: copy.imageBody,
-    layout: String(layout),
+  const lv = String(layoutVariant ?? 1);
+  const squareParams = new URLSearchParams({
+    ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+    layout: lv, aspect: "square",
     ...(photoUrl ? { photo: photoUrl } : {}),
   });
+  const landscapeParams = new URLSearchParams({
+    ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+    layout: lv, aspect: "landscape",
+    ...(landscapePhotoUrl ? { photo: landscapePhotoUrl } : photoUrl ? { photo: photoUrl } : {}),
+  });
 
-  const squareImageUrl = `${siteUrl}/social-image?${imageParams.toString()}&aspect=square`;
-  const landscapeImageUrl = `${siteUrl}/social-image?${imageParams.toString()}&aspect=landscape`;
+  const squareImageUrl = `${siteUrl}/social-image?${squareParams.toString()}`;
+  const landscapeImageUrl = `${siteUrl}/social-image?${landscapeParams.toString()}`;
 
   return NextResponse.json({
     ok: true,
-    campaignIndex,
-    campaign,
-    week,
+    topic,
     day,
-    layout,
+    frame,
+    layoutVariant,
     copy,
     photoUrl,
+    landscapePhotoUrl,
     squareImageUrl,
     landscapeImageUrl,
   });

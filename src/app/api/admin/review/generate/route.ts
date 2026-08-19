@@ -24,29 +24,31 @@ export async function POST(req: NextRequest) {
     });
     if (!genRes.ok) return NextResponse.json({ error: "Copy generation failed" }, { status: 500 });
 
-    const { copy, photoUrl, campaignIndex, campaign, week, day } = await genRes.json();
-    const layout = (campaignIndex % 4) + 1;
-
-    const imageParams = new URLSearchParams({
-      hl: copy.imageHeadline,
-      sl: copy.imageSubline,
-      bd: copy.imageBody,
-      layout: String(layout),
+    const { copy, photoUrl, landscapePhotoUrl, topic, day, frame, layoutVariant } = await genRes.json();
+    const lv = String(layoutVariant ?? 1);
+    const squareParams = new URLSearchParams({
+      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+      layout: lv, aspect: "square",
       ...(photoUrl ? { photo: photoUrl } : {}),
+    });
+    const landscapeParams = new URLSearchParams({
+      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+      layout: lv, aspect: "landscape",
+      ...(landscapePhotoUrl ? { photo: landscapePhotoUrl } : photoUrl ? { photo: photoUrl } : {}),
     });
 
     const id = `sp_${Date.now()}`;
     const entry = {
       id,
-      campaignIndex,
-      campaign,
-      week,
+      topic,
       day,
-      layout,
+      frame,
+      layoutVariant,
       copy,
       photoUrl,
-      squareImageUrl: `${siteUrl}/social-image?${imageParams.toString()}&aspect=square`,
-      landscapeImageUrl: `${siteUrl}/social-image?${imageParams.toString()}&aspect=landscape`,
+      landscapePhotoUrl,
+      squareImageUrl: `${siteUrl}/social-image?${squareParams.toString()}`,
+      landscapeImageUrl: `${siteUrl}/social-image?${landscapeParams.toString()}`,
       generatedAt: new Date().toISOString(),
     };
 
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     pending.unshift(entry);
     await redis.set("social:pending_posts", pending.slice(0, 20));
 
-    return NextResponse.json({ ok: true, id, headline: copy.imageHeadline });
+    return NextResponse.json({ ok: true, id, headline: copy.headline });
   }
 
   // Blog draft generation
