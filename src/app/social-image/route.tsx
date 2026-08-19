@@ -31,17 +31,15 @@ const HS = "0 2px 6px rgba(0,0,0,0.98), 0 6px 28px rgba(0,0,0,0.92), 0 0 60px rg
 const BS = "0 1px 4px rgba(0,0,0,0.96), 0 3px 16px rgba(0,0,0,0.85)";
 const ES = "0 1px 3px rgba(0,0,0,0.98), 0 2px 10px rgba(0,0,0,0.9)";
 
-function Logo({ size = 52, right = true }: { size?: number; right?: boolean }) {
+function Logo({ logoSrc, size = 52, right = true }: { logoSrc: string; size?: number; right?: boolean }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column",
       alignItems: right ? "flex-end" : "flex-start", gap: "4px",
     }}>
-      <img
-        src={`${SITE}/logo-mark.svg`}
-        width={size} height={Math.round(size * 0.655)}
-        style={{ objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.8))" }}
-      />
+      {logoSrc && (
+        <img src={logoSrc} width={size} height={size} style={{ objectFit: "contain" }} />
+      )}
       <span style={{
         color: "rgba(255,255,255,0.85)", fontSize: "9px", fontWeight: 600,
         letterSpacing: "0.2em", textTransform: "uppercase",
@@ -55,6 +53,7 @@ function Logo({ size = 52, right = true }: { size?: number; right?: boolean }) {
 
 interface Props {
   photoUrl: string;
+  logoSrc: string;
   eyebrow: string;
   headline: string;
   body: string;
@@ -64,7 +63,7 @@ interface Props {
 }
 
 // ── Layout 1: Bottom-left text — full bleed, text anchored lower-left ─────────
-function Layout1({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+function Layout1({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Props) {
   const isPortrait = H > W;
   const headSize = headline.length > 35 ? (isPortrait ? 52 : 44) : headline.length > 22 ? (isPortrait ? 64 : 54) : (isPortrait ? 76 : 64);
 
@@ -75,7 +74,7 @@ function Layout1({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
       )}
       {/* Logo */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
-        <Logo size={48} />
+        <Logo logoSrc={logoSrc} size={48} />
       </div>
       {/* Text block — lower left */}
       <div style={{
@@ -129,7 +128,7 @@ function Layout1({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
 }
 
 // ── Layout 2: Left-aligned center — subject right, text left-center ───────────
-function Layout2({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+function Layout2({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Props) {
   const isPortrait = H > W;
   const headSize = headline.length > 35 ? (isPortrait ? 50 : 42) : headline.length > 22 ? (isPortrait ? 62 : 52) : (isPortrait ? 74 : 62);
 
@@ -140,7 +139,7 @@ function Layout2({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
       )}
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
-        <Logo size={48} />
+        <Logo logoSrc={logoSrc} size={48} />
       </div>
       {/* Text — left column, vertically centered */}
       <div style={{
@@ -196,7 +195,7 @@ function Layout2({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
 }
 
 // ── Layout 3: Upper statement — text in clean upper zone, subject below ────────
-function Layout3({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+function Layout3({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Props) {
   const isPortrait = H > W;
   const headSize = headline.length > 35 ? (isPortrait ? 54 : 44) : headline.length > 22 ? (isPortrait ? 66 : 56) : (isPortrait ? 78 : 66);
 
@@ -207,7 +206,7 @@ function Layout3({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
       )}
       {/* Logo — top-left this time for variety */}
       <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
-        <Logo size={48} right={false} />
+        <Logo logoSrc={logoSrc} size={48} right={false} />
       </div>
       {/* Text — upper area */}
       <div style={{
@@ -262,7 +261,7 @@ function Layout3({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
 }
 
 // ── Layout 4: Centered editorial — subject framed, text centered ───────────────
-function Layout4({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+function Layout4({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Props) {
   const isPortrait = H > W;
   const headSize = headline.length > 35 ? (isPortrait ? 52 : 44) : headline.length > 22 ? (isPortrait ? 64 : 54) : (isPortrait ? 76 : 64);
 
@@ -273,7 +272,7 @@ function Layout4({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
       )}
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
-        <Logo size={48} />
+        <Logo logoSrc={logoSrc} size={48} />
       </div>
       {/* Centered text block */}
       <div style={{
@@ -331,7 +330,7 @@ function Layout4({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
 }
 
 // ── Layout 5: Right-aligned — subject left, text right-center ─────────────────
-function Layout5({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+function Layout5({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Props) {
   const isPortrait = H > W;
   const headSize = headline.length > 35 ? (isPortrait ? 50 : 42) : headline.length > 22 ? (isPortrait ? 62 : 52) : (isPortrait ? 74 : 62);
 
@@ -342,7 +341,7 @@ function Layout5({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
       )}
       {/* Logo top-left */}
       <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
-        <Logo size={48} right={false} />
+        <Logo logoSrc={logoSrc} size={48} right={false} />
       </div>
       {/* Text — right side, vertically centered */}
       <div style={{
@@ -399,7 +398,7 @@ function Layout5({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
 }
 
 // ── Layout 6: Minimal — headline + CTA only, maximum image ────────────────────
-function Layout6({ photoUrl, eyebrow, headline, cta, W, H }: Props) {
+function Layout6({ photoUrl, logoSrc, eyebrow, headline, cta, W, H }: Props) {
   const isPortrait = H > W;
   const headSize = headline.length > 25 ? (isPortrait ? 60 : 50) : headline.length > 15 ? (isPortrait ? 74 : 62) : (isPortrait ? 88 : 74);
 
@@ -410,7 +409,7 @@ function Layout6({ photoUrl, eyebrow, headline, cta, W, H }: Props) {
       )}
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
-        <Logo size={44} />
+        <Logo logoSrc={logoSrc} size={44} />
       </div>
       {/* Minimal text — just eyebrow + headline + cta, lower right */}
       <div style={{
@@ -456,6 +455,17 @@ function Layout6({ photoUrl, eyebrow, headline, cta, W, H }: Props) {
 }
 
 // ── Photo fetch ───────────────────────────────────────────────────────────────
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  // Chunked to avoid stack overflow with large images (spread limit ~65k args)
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 async function fetchPhotoAsDataUri(url: string): Promise<string> {
   if (!url) return "";
   try {
@@ -463,8 +473,7 @@ async function fetchPhotoAsDataUri(url: string): Promise<string> {
     if (!res.ok) return url;
     const buf = await res.arrayBuffer();
     const contentType = res.headers.get("content-type") ?? "image/jpeg";
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-    return `data:${contentType};base64,${b64}`;
+    return `data:${contentType};base64,${arrayBufferToBase64(buf)}`;
   } catch {
     return url;
   }
@@ -486,12 +495,13 @@ export async function GET(req: NextRequest) {
   const W = aspect === "landscape" ? 1200 : 1080;
   const H = aspect === "landscape" ? 630  : 1350; // 4:5 portrait for square request
 
-  const [photoUrl, fonts] = await Promise.all([
+  const [photoUrl, logoDataUri, fonts] = await Promise.all([
     rawPhoto ? fetchPhotoAsDataUri(rawPhoto) : Promise.resolve(""),
+    fetchPhotoAsDataUri(`${SITE}/logo.png`),
     loadFonts(),
   ]);
 
-  const props: Props = { photoUrl, eyebrow, headline, body, cta, W, H };
+  const props: Props = { photoUrl, logoSrc: logoDataUri, eyebrow, headline, body, cta, W, H };
 
   let content: React.ReactElement;
   switch (layout) {
