@@ -193,9 +193,23 @@ function escapeControlCharsInStrings(str: string): string {
   return result;
 }
 
+function extractJson(raw: string): string {
+  // Strip think blocks
+  let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  // Try to find JSON inside a code fence first
+  const fenceMatch = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenceMatch) return fenceMatch[1].trim();
+  // Strip leading/trailing fences
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  // Find the outermost {...} block
+  const start = s.indexOf("{");
+  const end = s.lastIndexOf("}");
+  if (start !== -1 && end > start) return s.slice(start, end + 1);
+  return s;
+}
+
 function parseCopyResult(raw: string): CopyResult | null {
-  const strip = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const clean = escapeControlCharsInStrings(strip);
+  const clean = escapeControlCharsInStrings(extractJson(raw));
   try {
     return JSON.parse(clean);
   } catch (e) {
@@ -214,12 +228,9 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "qwen/qwen3.6-27b",
-      messages: [
-        { role: "system", content: "/no_think" },
-        { role: "user", content: prompt },
-      ],
-      max_tokens: 2000,
+      model: "groq/compound",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 3000,
       temperature: 0.75,
     }),
   });
