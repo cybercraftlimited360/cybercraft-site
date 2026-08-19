@@ -52,21 +52,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
     }
 
-    const { copy, photoUrl, campaign, week, day, campaignIndex } = await genRes.json();
+    const { copy, photoUrl, landscapePhotoUrl, campaign, week, day, campaignIndex } = await genRes.json();
     const layout = pickLayout(campaignIndex ?? 0);
 
-    // Step 2: Build image URLs
+    // Step 2: Build image URLs — square uses square DALL-E image, landscape uses landscape DALL-E image
     const imageBase = `${siteUrl}/social-image`;
-    const imageParams = new URLSearchParams({
-      hl: copy.imageHeadline,
-      sl: copy.imageSubline,
-      bd: copy.imageBody,
-      layout: String(layout),
+    const squareParams = new URLSearchParams({
+      hl: copy.imageHeadline, sl: copy.imageSubline, bd: copy.imageBody,
+      layout: String(layout), aspect: "square",
       ...(photoUrl ? { photo: photoUrl } : {}),
     });
+    const landscapeParams = new URLSearchParams({
+      hl: copy.imageHeadline, sl: copy.imageSubline, bd: copy.imageBody,
+      layout: String(layout), aspect: "landscape",
+      ...(landscapePhotoUrl ? { photo: landscapePhotoUrl } : photoUrl ? { photo: photoUrl } : {}),
+    });
 
-    const squareImageUrl  = `${imageBase}?${imageParams.toString()}&aspect=square`;
-    const landscapeImageUrl = `${imageBase}?${imageParams.toString()}&aspect=landscape`;
+    const squareImageUrl = `${imageBase}?${squareParams.toString()}`;
+    const landscapeImageUrl = `${imageBase}?${landscapeParams.toString()}`;
 
     // Step 3: Post to all platforms directly
     const cronHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` };

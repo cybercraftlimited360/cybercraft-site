@@ -87,7 +87,7 @@ type CopyResult = {
   linkedinCaption: string;
   instagramCaption: string;
   facebookCaption: string;
-  photoKeyword: string;
+  dallePrompt: string;
 };
 
 const BRAND_SYSTEM = `You are the Chief Creative Officer of CyberCraft360 — an AI Engineering firm serving businesses across the United States. You write copy that gets mistaken for Apple, Stripe, Linear, or Porsche marketing. Your work appears on billboards, not brochures.
@@ -155,11 +155,14 @@ facebookCaption:
 • 90–130 words. Narrative. Tell a story or scenario — a business problem, a moment of clarity, a before/after. More accessible than LinkedIn, more structured than Instagram.
 • No hashtags. End exactly with: "${cta}  CyberCraft360.com"
 
-photoKeyword:
-• A precise Pexels search phrase for a cinematic, premium background image.
-• Think: what would a luxury brand use as their campaign backdrop?
-• Strong examples: "minimalist executive boardroom dark", "architectural glass facade headquarters", "warm concrete luxury office interior", "aerial city dusk premium editorial", "industrial precision machinery dark"
-• NOT: "business people working" / "happy team meeting" / "technology abstract"
+dallePrompt:
+• A DALL-E 3 image generation prompt for a cinematic, premium background photo.
+• The image will sit BEHIND dark text panels — it should be visually rich but NOT need to be readable on its own.
+• Style: dark, moody, cinematic. Think: Apple campaign backdrop, luxury car ad, high-end architectural photography.
+• NO text, NO logos, NO people looking at camera, NO computer screens with readable text.
+• Strong examples: "Dark minimal executive boardroom at dusk, single overhead light casting dramatic shadows, architectural precision, cinematic depth of field, shot on Hasselblad" / "Abstract dark concrete and glass architecture at night, city lights bokeh, editorial luxury brand photography, moody and precise" / "Close-up of precision machinery in darkness, single shaft of light, industrial minimalism, luxury brand campaign aesthetic"
+• Match the campaign theme — operational excellence = clean architecture; automation = precision machinery; human connection = warm low-light interior
+• NOT: generic office, stock photo style, bright and cheerful, people smiling
 
 Return ONLY valid JSON — no markdown, no explanation, no preamble:
 {
@@ -169,7 +172,7 @@ Return ONLY valid JSON — no markdown, no explanation, no preamble:
   "linkedinCaption": "...",
   "instagramCaption": "...",
   "facebookCaption": "...",
-  "photoKeyword": "..."
+  "dallePrompt": "..."
 }`;
 
 function escapeControlCharsInStrings(str: string): string {
@@ -313,31 +316,30 @@ ${COPY_FORMAT(cta)}`;
   return await callOpenAI(prompt);
 }
 
-async function fetchPexelsPhoto(queries: string[]): Promise<string | null> {
-  const apiKey = process.env.PEXELS_API_KEY;
+async function generateDalleImage(prompt: string, square: boolean): Promise<string | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
-  const allPhotos: Array<{ src: { large2x: string } }> = [];
+  const res = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "dall-e-3",
+      prompt: `${prompt}. Cinematic photography, no text, no logos, dark moody premium aesthetic.`,
+      n: 1,
+      size: square ? "1024x1024" : "1792x1024",
+      quality: "standard",
+      response_format: "url",
+    }),
+  });
 
-  for (const query of queries) {
-    const res = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&orientation=landscape`,
-      { headers: { Authorization: apiKey } }
-    );
-    if (!res.ok) continue;
-    const data = await res.json();
-    const photos: Array<{ src: { large2x: string } }> = data.photos ?? [];
-    allPhotos.push(...photos);
-    if (allPhotos.length >= 15) break;
+  if (!res.ok) {
+    console.error("[generate-post] DALL-E error", res.status, await res.text());
+    return null;
   }
 
-  if (allPhotos.length === 0) return null;
-
-  // Skip first 2 results (most overused), pick from 3rd onward for premium variety
-  const startIdx = Math.min(2, allPhotos.length - 1);
-  const pool = allPhotos.slice(startIdx);
-  const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 8))];
-  return pick.src.large2x;
+  const data = await res.json();
+  return data.data?.[0]?.url ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -387,14 +389,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Copy generation failed", raw: _lastGroqRaw.slice(0, 3000) }, { status: 500 });
   }
 
-  // Use curated Pexels queries for campaign posts, AI keyword for custom
-  let pexelsQueries: string[];
-  if (campaignIndex >= 0) {
-    pexelsQueries = [...CAMPAIGNS[campaignIndex].pexelsQueries, copy.photoKeyword];
-  } else {
-    pexelsQueries = [copy.photoKeyword];
-  }
-  const photoUrl = await fetchPexelsPhoto(pexelsQueries);
+  // Generate square and landscape images via DALL-E 3
+  const [squarePhoto, landscapePhoto] = await Promise.all([
+    generateDalleImage(copy.dallePrompt, true),
+    generateDalleImage(copy.dallePrompt, false),
+  ]);
+  const photoUrl = squarePhoto;
 
   return NextResponse.json({
     ok: true,
@@ -403,7 +403,8 @@ export async function POST(req: NextRequest) {
     week,
     day,
     copy,
-    photoUrl,
+    photoUrl: squarePhoto,
+    landscapePhotoUrl: landscapePhoto,
   });
 }
 
