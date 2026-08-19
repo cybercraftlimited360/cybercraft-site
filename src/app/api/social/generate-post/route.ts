@@ -220,7 +220,7 @@ function parseCopyResult(raw: string): CopyResult | null {
 
 let _lastGroqRaw = "";
 
-async function callGroq(prompt: string): Promise<CopyResult | null> {
+async function callGroqModel(prompt: string, model: string): Promise<CopyResult | null> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) { console.error("[generate-post] GROQ_API_KEY not set"); return null; }
 
@@ -228,7 +228,7 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "groq/compound",
+      model,
       messages: [{ role: "user", content: prompt }],
       max_tokens: 3000,
       temperature: 0.75,
@@ -237,7 +237,7 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("[generate-post] Groq error", res.status, err);
+    console.error(`[generate-post] Groq error (${model})`, res.status, err.slice(0, 200));
     _lastGroqRaw = `HTTP_ERROR_${res.status}: ${err.slice(0, 200)}`;
     return null;
   }
@@ -247,8 +247,16 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
   const raw = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   _lastGroqRaw = raw;
   const result = parseCopyResult(raw);
-  if (!result) console.error("[generate-post] Groq JSON parse failed, raw:", raw.slice(0, 400));
+  if (!result) console.error(`[generate-post] JSON parse failed (${model}), raw:`, raw.slice(0, 400));
   return result;
+}
+
+async function callGroq(prompt: string): Promise<CopyResult | null> {
+  // Try fast model first (~1-2s), fall back to compound on failure
+  const result = await callGroqModel(prompt, "llama-3.1-8b-instant");
+  if (result) return result;
+  console.warn("[generate-post] llama-3.1-8b-instant failed, trying groq/compound");
+  return callGroqModel(prompt, "groq/compound");
 }
 
 async function callCerebras(prompt: string): Promise<CopyResult | null> {
