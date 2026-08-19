@@ -95,14 +95,6 @@ export async function GET(req: NextRequest) {
     const results = { instagram: igData, facebook: fbData, linkedin: liData };
     const anySuccess = [igData, fbData, liData].some((r: any) => !r?.error && (r?.ok || r?.results));
 
-    // Step 4: Mark campaign as used and log (only on at least partial success)
-    if (anySuccess) {
-      const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
-      if (!used.includes(campaignIndex)) {
-        used.push(campaignIndex);
-        await redis.set("social:used_campaign_indexes", used);
-      }
-    }
 
     if (anySuccess) {
       const log = await redis.get<any[]>("social:auto_posts") ?? [];
