@@ -70,7 +70,7 @@ function Layout1({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
   return (
     <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
       )}
       {/* Logo */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
@@ -135,7 +135,7 @@ function Layout2({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
   return (
     <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center" }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center" }} />
       )}
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
@@ -202,7 +202,7 @@ function Layout3({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
   return (
     <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center bottom" }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center bottom" }} />
       )}
       {/* Logo — top-left this time for variety */}
       <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
@@ -268,7 +268,7 @@ function Layout4({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
   return (
     <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       )}
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
@@ -337,7 +337,7 @@ function Layout5({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
   return (
     <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "left center" }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "left center" }} />
       )}
       {/* Logo top-left */}
       <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
@@ -405,7 +405,7 @@ function Layout6({ photoUrl, logoSrc, eyebrow, headline, cta, W, H }: Props) {
   return (
     <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       )}
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
