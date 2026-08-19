@@ -4,258 +4,458 @@ import { NextRequest } from "next/server";
 export const runtime = "edge";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-const DOMAIN = "cybercraft360.com";
-const ACCENT = "#a78bfa";
-const DARK = "#080808";
-const DARK2 = "#111111";
+const DOMAIN = "CyberCraft360.com";
+const ACCENT = "#8B9CF4";
 
-function LogoMark({ size = 64 }: { size?: number }) {
-  const logoUrl = `${SITE}/logo-mark.svg`;
+// ── Font loader ───────────────────────────────────────────────────────────────
+async function loadFonts() {
+  try {
+    const [bold, semibold, regular] = await Promise.all([
+      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-800-normal.woff2").then(r => r.arrayBuffer()),
+      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-600-normal.woff2").then(r => r.arrayBuffer()),
+      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-400-normal.woff2").then(r => r.arrayBuffer()),
+    ]);
+    return [
+      { name: "Manrope", data: bold,     weight: 800 as const },
+      { name: "Manrope", data: semibold, weight: 600 as const },
+      { name: "Manrope", data: regular,  weight: 400 as const },
+    ];
+  } catch {
+    return [];
+  }
+}
+
+// ── Text shadow tokens ────────────────────────────────────────────────────────
+// Layered shadows ensure readability without visible panels
+const HS = "0 2px 6px rgba(0,0,0,0.98), 0 6px 28px rgba(0,0,0,0.92), 0 0 60px rgba(0,0,0,0.7)";
+const BS = "0 1px 4px rgba(0,0,0,0.96), 0 3px 16px rgba(0,0,0,0.85)";
+const ES = "0 1px 3px rgba(0,0,0,0.98), 0 2px 10px rgba(0,0,0,0.9)";
+
+function Logo({ size = 52, right = true }: { size?: number; right?: boolean }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px" }}>
-      <img src={logoUrl} width={size} height={Math.round(size * 0.655)} style={{ objectFit: "contain" }} />
-      <span style={{ color: "#ffffff", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", lineHeight: 1 }}>
+    <div style={{
+      display: "flex", flexDirection: "column",
+      alignItems: right ? "flex-end" : "flex-start", gap: "4px",
+    }}>
+      <img
+        src={`${SITE}/logo-mark.svg`}
+        width={size} height={Math.round(size * 0.655)}
+        style={{ objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.8))" }}
+      />
+      <span style={{
+        color: "rgba(255,255,255,0.85)", fontSize: "9px", fontWeight: 600,
+        letterSpacing: "0.2em", textTransform: "uppercase",
+        textShadow: "0 1px 4px rgba(0,0,0,0.9)",
+      }}>
         CyberCraft360
       </span>
     </div>
   );
 }
 
-interface LayoutProps {
+interface Props {
   photoUrl: string;
+  eyebrow: string;
   headline: string;
-  subline: string;
   body: string;
+  cta: string;
   W: number;
   H: number;
 }
 
-// ── Layout 1: Photo Top / Dark Text Panel Bottom ──────────────────────────────
-// Photo fills top 58%, solid dark panel bottom 42%. Apple-clean split.
-function Layout1({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const isSquare = W === H;
-  const photoH = Math.round(H * (isSquare ? 0.56 : 0.52));
-  const panelH = H - photoH;
-  const headSize = headline.length > 28 ? (isSquare ? 56 : 44) : headline.length > 18 ? (isSquare ? 66 : 52) : (isSquare ? 76 : 60);
-  const bodySize = isSquare ? 17 : 15;
-  const pad = isSquare ? 48 : 52;
+// ── Layout 1: Bottom-left text — full bleed, text anchored lower-left ─────────
+function Layout1({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+  const isPortrait = H > W;
+  const headSize = headline.length > 35 ? (isPortrait ? 52 : 44) : headline.length > 22 ? (isPortrait ? 64 : 54) : (isPortrait ? 76 : 64);
 
   return (
-    <div style={{ width: W, height: H, display: "flex", flexDirection: "column", background: DARK }}>
-      {/* Photo section */}
-      <div style={{ width: W, height: photoH, display: "flex", position: "relative", overflow: "hidden", background: "#111" }}>
-        {photoUrl && (
-          <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
-        )}
-        {/* Logo top-right */}
-        <div style={{ position: "absolute", top: 28, right: 32, display: "flex" }}>
-          <LogoMark size={56} />
-        </div>
-        {/* Subtle bottom fade into panel */}
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: "80px", display: "flex",
-          background: `linear-gradient(to bottom, rgba(8,8,8,0) 0%, rgba(8,8,8,0.9) 100%)`,
-        }} />
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
+      {photoUrl && (
+        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+      )}
+      {/* Logo */}
+      <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
+        <Logo size={48} />
       </div>
-      {/* Dark text panel */}
+      {/* Text block — lower left */}
       <div style={{
-        width: W, height: panelH, display: "flex", flexDirection: "column",
-        background: DARK, padding: `${isSquare ? 28 : 22}px ${pad}px ${isSquare ? 32 : 26}px`,
+        position: "absolute",
+        bottom: isPortrait ? 56 : 48,
+        left: isPortrait ? 52 : 60,
+        right: isPortrait ? 52 : "38%",
+        display: "flex", flexDirection: "column", gap: "0px",
       }}>
-        {subline && (
-          <span style={{ color: ACCENT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.28em", textTransform: "uppercase", marginBottom: "10px" }}>
-            {subline}
+        {eyebrow && (
+          <span style={{
+            color: ACCENT, fontSize: "11px", fontWeight: 600,
+            letterSpacing: "0.24em", textTransform: "uppercase",
+            marginBottom: "14px", textShadow: ES,
+          }}>
+            {eyebrow}
           </span>
         )}
-        <span style={{ color: "#ffffff", fontSize: headSize, fontWeight: 900, lineHeight: 1.03, letterSpacing: "-0.028em", marginBottom: "12px" }}>
+        <span style={{
+          color: "#ffffff", fontSize: headSize, fontWeight: 800,
+          lineHeight: 1.06, letterSpacing: "-0.02em",
+          marginBottom: "16px", textShadow: HS,
+          whiteSpace: "pre-wrap",
+        }}>
           {headline}
         </span>
         {body && (
-          <span style={{ color: "rgba(255,255,255,0.62)", fontSize: bodySize, lineHeight: 1.58, flex: 1 }}>
+          <span style={{
+            color: "rgba(255,255,255,0.82)", fontSize: isPortrait ? 16 : 15,
+            fontWeight: 400, lineHeight: 1.65,
+            marginBottom: "22px", textShadow: BS,
+          }}>
             {body}
           </span>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "14px" }}>
-          <span style={{ color: "rgba(255,255,255,0.28)", fontSize: "11px", letterSpacing: "0.08em" }}>{DOMAIN}</span>
-          <div style={{
-            background: "#ffffff", color: DARK, fontSize: "11px", fontWeight: 800,
-            letterSpacing: "0.13em", textTransform: "uppercase", padding: "11px 24px", display: "flex",
+        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+          <span style={{
+            color: "#ffffff", fontSize: "12px", fontWeight: 600,
+            letterSpacing: "0.14em", textTransform: "uppercase",
+            textShadow: ES,
           }}>
-            BOOK A FREE CALL →
-          </div>
+            {cta}
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", letterSpacing: "0.06em", textShadow: ES }}>
+            {DOMAIN}
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Layout 2: Full Bleed Dark — photo dimmed, centered white text ─────────────
-// Photo fills entire frame at low opacity, all text centered on dark ground.
-function Layout2({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const isSquare = W === H;
-  const headSize = headline.length > 28 ? (isSquare ? 64 : 50) : headline.length > 18 ? (isSquare ? 76 : 60) : (isSquare ? 88 : 70);
-  const bodySize = isSquare ? 18 : 15;
+// ── Layout 2: Left-aligned center — subject right, text left-center ───────────
+function Layout2({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+  const isPortrait = H > W;
+  const headSize = headline.length > 35 ? (isPortrait ? 50 : 42) : headline.length > 22 ? (isPortrait ? 62 : 52) : (isPortrait ? 74 : 62);
 
   return (
-    <div style={{ width: W, height: H, display: "flex", position: "relative", background: DARK }}>
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
       {photoUrl && (
-        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.22 }} />
+        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center" }} />
       )}
       {/* Logo top-right */}
-      <div style={{ position: "absolute", top: 36, right: 40, display: "flex" }}>
-        <LogoMark size={60} />
+      <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
+        <Logo size={48} />
       </div>
-      {/* Domain bottom-left */}
-      <div style={{ position: "absolute", bottom: 36, left: 48, display: "flex" }}>
-        <span style={{ color: "rgba(255,255,255,0.25)", fontSize: "11px", letterSpacing: "0.08em" }}>{DOMAIN}</span>
-      </div>
-      {/* CTA bottom-right */}
-      <div style={{ position: "absolute", bottom: 32, right: 40, display: "flex" }}>
-        <div style={{
-          background: "#ffffff", color: DARK, fontSize: "11px", fontWeight: 800,
-          letterSpacing: "0.13em", textTransform: "uppercase", padding: "11px 24px", display: "flex",
-        }}>
-          BOOK A FREE CALL →
-        </div>
-      </div>
-      {/* Centered content */}
+      {/* Text — left column, vertically centered */}
       <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, bottom: 80,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: isSquare ? "0 72px" : "0 96px",
+        position: "absolute",
+        top: "50%",
+        left: isPortrait ? 52 : 60,
+        right: isPortrait ? "44%" : "48%",
+        transform: "translateY(-50%)",
+        display: "flex", flexDirection: "column",
       }}>
-        {/* Accent rule */}
-        <div style={{ width: "40px", height: "1px", background: ACCENT, marginBottom: "28px", display: "flex" }} />
-        {subline && (
-          <span style={{ color: ACCENT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", textAlign: "center", marginBottom: "20px" }}>
-            {subline}
+        {eyebrow && (
+          <span style={{
+            color: ACCENT, fontSize: "11px", fontWeight: 600,
+            letterSpacing: "0.24em", textTransform: "uppercase",
+            marginBottom: "14px", textShadow: ES,
+          }}>
+            {eyebrow}
           </span>
         )}
-        <span style={{ color: "#ffffff", fontSize: headSize, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.03em", textAlign: "center" }}>
+        <span style={{
+          color: "#ffffff", fontSize: headSize, fontWeight: 800,
+          lineHeight: 1.06, letterSpacing: "-0.02em",
+          marginBottom: "18px", textShadow: HS,
+          whiteSpace: "pre-wrap",
+        }}>
           {headline}
         </span>
         {body && (
-          <span style={{ color: "rgba(255,255,255,0.60)", fontSize: bodySize, lineHeight: 1.65, textAlign: "center", maxWidth: isSquare ? "680px" : "820px", marginTop: "22px" }}>
+          <span style={{
+            color: "rgba(255,255,255,0.80)", fontSize: isPortrait ? 16 : 14,
+            fontWeight: 400, lineHeight: 1.65,
+            marginBottom: "24px", textShadow: BS,
+          }}>
             {body}
           </span>
         )}
+        <span style={{
+          color: "#ffffff", fontSize: "12px", fontWeight: 600,
+          letterSpacing: "0.14em", textTransform: "uppercase",
+          textShadow: ES,
+        }}>
+          {cta}
+        </span>
+      </div>
+      {/* Domain — bottom left */}
+      <div style={{ position: "absolute", bottom: 36, left: isPortrait ? 52 : 60, display: "flex" }}>
+        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", letterSpacing: "0.06em", textShadow: ES }}>
+          {DOMAIN}
+        </span>
       </div>
     </div>
   );
 }
 
-// ── Layout 3: Dark Left / Photo Right split ───────────────────────────────────
-// Left 46% solid dark with text. Right 54% full-bleed photo.
-function Layout3({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const isSquare = W === H;
-  const splitW = Math.round(W * (isSquare ? 0.47 : 0.44));
-  const headSize = headline.length > 28 ? (isSquare ? 52 : 42) : headline.length > 18 ? (isSquare ? 62 : 50) : (isSquare ? 72 : 58);
-  const bodySize = isSquare ? 16 : 14;
+// ── Layout 3: Upper statement — text in clean upper zone, subject below ────────
+function Layout3({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+  const isPortrait = H > W;
+  const headSize = headline.length > 35 ? (isPortrait ? 54 : 44) : headline.length > 22 ? (isPortrait ? 66 : 56) : (isPortrait ? 78 : 66);
 
   return (
-    <div style={{ width: W, height: H, display: "flex", background: DARK }}>
-      {/* Left dark text panel */}
-      <div style={{
-        width: splitW, height: H, display: "flex", flexDirection: "column",
-        background: DARK2, padding: isSquare ? "44px 44px 40px" : "36px 40px 34px",
-      }}>
-        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ width: "32px", height: "1px", background: ACCENT, marginBottom: "24px", display: "flex" }} />
-          {subline && (
-            <span style={{ color: ACCENT, fontSize: "10px", fontWeight: 700, letterSpacing: "0.28em", textTransform: "uppercase", marginBottom: "16px" }}>
-              {subline}
-            </span>
-          )}
-          <span style={{ color: "#ffffff", fontSize: headSize, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.025em" }}>
-            {headline}
-          </span>
-          {body && (
-            <span style={{ color: "rgba(255,255,255,0.58)", fontSize: bodySize, lineHeight: 1.6, marginTop: "18px" }}>
-              {body}
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{
-            background: "#ffffff", color: DARK, fontSize: "10px", fontWeight: 800,
-            letterSpacing: "0.13em", textTransform: "uppercase", padding: "11px 20px",
-            display: "flex", alignSelf: "flex-start",
-          }}>
-            BOOK A FREE CALL →
-          </div>
-          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", letterSpacing: "0.07em" }}>{DOMAIN}</span>
-        </div>
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
+      {photoUrl && (
+        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center bottom" }} />
+      )}
+      {/* Logo — top-left this time for variety */}
+      <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
+        <Logo size={48} right={false} />
       </div>
-      {/* Right photo panel */}
-      <div style={{ flex: 1, height: H, display: "flex", position: "relative", overflow: "hidden" }}>
-        {photoUrl && (
-          <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      {/* Text — upper area */}
+      <div style={{
+        position: "absolute",
+        top: isPortrait ? 120 : 100,
+        left: isPortrait ? 52 : 60,
+        right: isPortrait ? 52 : "32%",
+        display: "flex", flexDirection: "column",
+      }}>
+        {eyebrow && (
+          <span style={{
+            color: ACCENT, fontSize: "11px", fontWeight: 600,
+            letterSpacing: "0.24em", textTransform: "uppercase",
+            marginBottom: "14px", textShadow: ES,
+          }}>
+            {eyebrow}
+          </span>
         )}
-        <div style={{ position: "absolute", top: 28, right: 28, display: "flex" }}>
-          <LogoMark size={52} />
-        </div>
+        <span style={{
+          color: "#ffffff", fontSize: headSize, fontWeight: 800,
+          lineHeight: 1.06, letterSpacing: "-0.02em",
+          marginBottom: "18px", textShadow: HS,
+          whiteSpace: "pre-wrap",
+        }}>
+          {headline}
+        </span>
+        {body && (
+          <span style={{
+            color: "rgba(255,255,255,0.80)", fontSize: isPortrait ? 16 : 14,
+            fontWeight: 400, lineHeight: 1.65,
+            marginBottom: "24px", textShadow: BS,
+          }}>
+            {body}
+          </span>
+        )}
+        <span style={{
+          color: "#ffffff", fontSize: "12px", fontWeight: 600,
+          letterSpacing: "0.14em", textTransform: "uppercase",
+          textShadow: ES,
+        }}>
+          {cta}
+        </span>
+      </div>
+      {/* Domain — bottom right */}
+      <div style={{ position: "absolute", bottom: 36, right: 48, display: "flex" }}>
+        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", letterSpacing: "0.06em", textShadow: ES }}>
+          {DOMAIN}
+        </span>
       </div>
     </div>
   );
 }
 
-// ── Layout 4: Photo Left / Dark Right split ───────────────────────────────────
-// Left 52% photo, right 48% solid dark text panel.
-function Layout4({ photoUrl, headline, subline, body, W, H }: LayoutProps) {
-  const isSquare = W === H;
-  const photoW = Math.round(W * (isSquare ? 0.52 : 0.50));
-  const headSize = headline.length > 28 ? (isSquare ? 52 : 42) : headline.length > 18 ? (isSquare ? 62 : 50) : (isSquare ? 72 : 58);
-  const bodySize = isSquare ? 16 : 14;
+// ── Layout 4: Centered editorial — subject framed, text centered ───────────────
+function Layout4({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+  const isPortrait = H > W;
+  const headSize = headline.length > 35 ? (isPortrait ? 52 : 44) : headline.length > 22 ? (isPortrait ? 64 : 54) : (isPortrait ? 76 : 64);
 
   return (
-    <div style={{ width: W, height: H, display: "flex", background: DARK }}>
-      {/* Left photo panel */}
-      <div style={{ width: photoW, height: H, display: "flex", position: "relative", overflow: "hidden" }}>
-        {photoUrl && (
-          <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-        )}
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
+      {photoUrl && (
+        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      )}
+      {/* Logo top-right */}
+      <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
+        <Logo size={48} />
       </div>
-      {/* Right dark text panel */}
+      {/* Centered text block */}
       <div style={{
-        flex: 1, height: H, display: "flex", flexDirection: "column",
-        background: DARK2, padding: isSquare ? "44px 44px 40px" : "36px 44px 34px",
+        position: "absolute",
+        top: 0, left: 0, right: 0, bottom: 0,
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        padding: isPortrait ? "0 64px" : "0 100px",
       }}>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <LogoMark size={52} />
-        </div>
-        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ width: "32px", height: "1px", background: ACCENT, marginBottom: "24px", display: "flex" }} />
-          {subline && (
-            <span style={{ color: ACCENT, fontSize: "10px", fontWeight: 700, letterSpacing: "0.28em", textTransform: "uppercase", marginBottom: "16px" }}>
-              {subline}
-            </span>
-          )}
-          <span style={{ color: "#ffffff", fontSize: headSize, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.025em" }}>
-            {headline}
-          </span>
-          {body && (
-            <span style={{ color: "rgba(255,255,255,0.58)", fontSize: bodySize, lineHeight: 1.6, marginTop: "18px" }}>
-              {body}
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{
-            background: "#ffffff", color: DARK, fontSize: "10px", fontWeight: 800,
-            letterSpacing: "0.13em", textTransform: "uppercase", padding: "11px 20px",
-            display: "flex", alignSelf: "flex-start",
+        {/* Thin accent rule */}
+        <div style={{ width: "36px", height: "1px", background: ACCENT, marginBottom: "24px", display: "flex" }} />
+        {eyebrow && (
+          <span style={{
+            color: ACCENT, fontSize: "11px", fontWeight: 600,
+            letterSpacing: "0.26em", textTransform: "uppercase",
+            textAlign: "center", marginBottom: "16px", textShadow: ES,
           }}>
-            BOOK A FREE CALL →
-          </div>
-          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px", letterSpacing: "0.07em" }}>{DOMAIN}</span>
-        </div>
+            {eyebrow}
+          </span>
+        )}
+        <span style={{
+          color: "#ffffff", fontSize: headSize, fontWeight: 800,
+          lineHeight: 1.06, letterSpacing: "-0.02em",
+          textAlign: "center", marginBottom: "20px",
+          textShadow: HS, whiteSpace: "pre-wrap",
+        }}>
+          {headline}
+        </span>
+        {body && (
+          <span style={{
+            color: "rgba(255,255,255,0.78)", fontSize: isPortrait ? 16 : 14,
+            fontWeight: 400, lineHeight: 1.65,
+            textAlign: "center", maxWidth: isPortrait ? "640px" : "760px",
+            marginBottom: "24px", textShadow: BS,
+          }}>
+            {body}
+          </span>
+        )}
+        <span style={{
+          color: "#ffffff", fontSize: "12px", fontWeight: 600,
+          letterSpacing: "0.14em", textTransform: "uppercase",
+          textShadow: ES, textAlign: "center",
+        }}>
+          {cta}
+        </span>
+      </div>
+      {/* Domain bottom center */}
+      <div style={{ position: "absolute", bottom: 36, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+        <span style={{ color: "rgba(255,255,255,0.30)", fontSize: "11px", letterSpacing: "0.06em", textShadow: ES }}>
+          {DOMAIN}
+        </span>
       </div>
     </div>
   );
 }
 
-// ── Route handler ─────────────────────────────────────────────────────────────
+// ── Layout 5: Right-aligned — subject left, text right-center ─────────────────
+function Layout5({ photoUrl, eyebrow, headline, body, cta, W, H }: Props) {
+  const isPortrait = H > W;
+  const headSize = headline.length > 35 ? (isPortrait ? 50 : 42) : headline.length > 22 ? (isPortrait ? 62 : 52) : (isPortrait ? 74 : 62);
 
+  return (
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
+      {photoUrl && (
+        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "left center" }} />
+      )}
+      {/* Logo top-left */}
+      <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
+        <Logo size={48} right={false} />
+      </div>
+      {/* Text — right side, vertically centered */}
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        right: isPortrait ? 52 : 60,
+        left: isPortrait ? "44%" : "48%",
+        transform: "translateY(-50%)",
+        display: "flex", flexDirection: "column",
+        alignItems: "flex-end",
+      }}>
+        {eyebrow && (
+          <span style={{
+            color: ACCENT, fontSize: "11px", fontWeight: 600,
+            letterSpacing: "0.24em", textTransform: "uppercase",
+            marginBottom: "14px", textShadow: ES, textAlign: "right",
+          }}>
+            {eyebrow}
+          </span>
+        )}
+        <span style={{
+          color: "#ffffff", fontSize: headSize, fontWeight: 800,
+          lineHeight: 1.06, letterSpacing: "-0.02em",
+          marginBottom: "18px", textShadow: HS,
+          textAlign: "right", whiteSpace: "pre-wrap",
+        }}>
+          {headline}
+        </span>
+        {body && (
+          <span style={{
+            color: "rgba(255,255,255,0.80)", fontSize: isPortrait ? 16 : 14,
+            fontWeight: 400, lineHeight: 1.65,
+            marginBottom: "24px", textShadow: BS, textAlign: "right",
+          }}>
+            {body}
+          </span>
+        )}
+        <span style={{
+          color: "#ffffff", fontSize: "12px", fontWeight: 600,
+          letterSpacing: "0.14em", textTransform: "uppercase",
+          textShadow: ES, textAlign: "right",
+        }}>
+          {cta}
+        </span>
+      </div>
+      {/* Domain — bottom right */}
+      <div style={{ position: "absolute", bottom: 36, right: isPortrait ? 52 : 60, display: "flex" }}>
+        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", letterSpacing: "0.06em", textShadow: ES }}>
+          {DOMAIN}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Layout 6: Minimal — headline + CTA only, maximum image ────────────────────
+function Layout6({ photoUrl, eyebrow, headline, cta, W, H }: Props) {
+  const isPortrait = H > W;
+  const headSize = headline.length > 25 ? (isPortrait ? 60 : 50) : headline.length > 15 ? (isPortrait ? 74 : 62) : (isPortrait ? 88 : 74);
+
+  return (
+    <div style={{ width: W, height: H, display: "flex", position: "relative", background: "#0a0a0a", overflow: "hidden" }}>
+      {photoUrl && (
+        <img src={photoUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      )}
+      {/* Logo top-right */}
+      <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
+        <Logo size={44} />
+      </div>
+      {/* Minimal text — just eyebrow + headline + cta, lower right */}
+      <div style={{
+        position: "absolute",
+        bottom: isPortrait ? 60 : 52,
+        right: isPortrait ? 52 : 60,
+        display: "flex", flexDirection: "column",
+        alignItems: "flex-end", maxWidth: isPortrait ? "68%" : "56%",
+      }}>
+        {eyebrow && (
+          <span style={{
+            color: ACCENT, fontSize: "10px", fontWeight: 600,
+            letterSpacing: "0.26em", textTransform: "uppercase",
+            marginBottom: "12px", textShadow: ES, textAlign: "right",
+          }}>
+            {eyebrow}
+          </span>
+        )}
+        <span style={{
+          color: "#ffffff", fontSize: headSize, fontWeight: 800,
+          lineHeight: 1.06, letterSpacing: "-0.025em",
+          marginBottom: "20px", textShadow: HS,
+          textAlign: "right", whiteSpace: "pre-wrap",
+        }}>
+          {headline}
+        </span>
+        <span style={{
+          color: "rgba(255,255,255,0.85)", fontSize: "12px", fontWeight: 600,
+          letterSpacing: "0.16em", textTransform: "uppercase",
+          textShadow: ES,
+        }}>
+          {cta}
+        </span>
+      </div>
+      {/* Domain — bottom left */}
+      <div style={{ position: "absolute", bottom: 36, left: isPortrait ? 52 : 60, display: "flex" }}>
+        <span style={{ color: "rgba(255,255,255,0.30)", fontSize: "11px", letterSpacing: "0.06em", textShadow: ES }}>
+          {DOMAIN}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Photo fetch ───────────────────────────────────────────────────────────────
 async function fetchPhotoAsDataUri(url: string): Promise<string> {
   if (!url) return "";
   try {
@@ -270,30 +470,42 @@ async function fetchPhotoAsDataUri(url: string): Promise<string> {
   }
 }
 
+// ── Route ─────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
 
-  const headline = searchParams.get("hl") ?? "AUTOMATE\nEVERYTHING.";
-  const subline = searchParams.get("sl") ?? "AI Engineering · USA";
-  const body = searchParams.get("bd") ?? "";
-  const rawPhotoUrl = searchParams.get("photo") ?? "";
-  const layout = parseInt(searchParams.get("layout") ?? "1");
-  const aspect = searchParams.get("aspect") ?? "square";
+  const eyebrow  = searchParams.get("ey") ?? "";
+  const headline = searchParams.get("hl") ?? "PRECISION\nRUNS THE BUSINESS.";
+  const body     = searchParams.get("bd") ?? "";
+  const cta      = searchParams.get("ct") ?? "EXPLORE MORE →";
+  const rawPhoto = searchParams.get("photo") ?? "";
+  const layout   = parseInt(searchParams.get("layout") ?? "1");
+  const aspect   = searchParams.get("aspect") ?? "square";
 
+  // Instagram: 4:5 portrait, Facebook/LinkedIn: 4:5 or 1.91:1 landscape
   const W = aspect === "landscape" ? 1200 : 1080;
-  const H = aspect === "landscape" ? 630 : 1080;
+  const H = aspect === "landscape" ? 630  : 1350; // 4:5 portrait for square request
 
-  const photoUrl = rawPhotoUrl ? await fetchPhotoAsDataUri(rawPhotoUrl) : "";
+  const [photoUrl, fonts] = await Promise.all([
+    rawPhoto ? fetchPhotoAsDataUri(rawPhoto) : Promise.resolve(""),
+    loadFonts(),
+  ]);
 
-  const props: LayoutProps = { photoUrl, headline, subline, body, W, H };
+  const props: Props = { photoUrl, eyebrow, headline, body, cta, W, H };
 
   let content: React.ReactElement;
   switch (layout) {
     case 2: content = <Layout2 {...props} />; break;
     case 3: content = <Layout3 {...props} />; break;
     case 4: content = <Layout4 {...props} />; break;
+    case 5: content = <Layout5 {...props} />; break;
+    case 6: content = <Layout6 {...props} />; break;
     default: content = <Layout1 {...props} />;
   }
 
-  return new ImageResponse(content, { width: W, height: H });
+  return new ImageResponse(content, {
+    width: W,
+    height: H,
+    fonts: fonts.length > 0 ? fonts : undefined,
+  });
 }

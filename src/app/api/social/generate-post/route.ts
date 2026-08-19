@@ -1,180 +1,211 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
-// ── 12-Week Campaign Structure (36 posts: Mon/Wed/Fri) ────────────────────────
-const CAMPAIGNS = [
-  // WEEK 1 — We Don't Build Software
-  { week: 1, day: "Monday",    campaign: "We Don't Build Software",              angle: "CyberCraft360 doesn't sell software. We design intelligent systems. The distinction matters because software creates dependency — systems create capability. Position this as a philosophy, not a feature.",                                                    pexelsQueries: ["luxury executive boardroom minimal", "dark concrete architecture office", "modern glass headquarters interior"],          industry: null },
-  { week: 1, day: "Wednesday", campaign: "We Don't Build Software",              angle: "Most businesses buy tools hoping for transformation. Tools don't transform — architecture does. A CRM is a tool. A connected intelligence system is infrastructure. Teach the difference.",                                                                    pexelsQueries: ["minimal architectural workspace", "premium concrete office lighting", "editorial corporate interior dark"],               industry: null },
-  { week: 1, day: "Friday",    campaign: "We Don't Build Software",              angle: "Engineering a business means understanding its operations first. CyberCraft360 starts with operations, not technology. The technology is the last decision, not the first.",                                                                                   pexelsQueries: ["glass steel commercial office", "luxury business interior minimal", "architectural office editorial"],                    industry: null },
-
-  // WEEK 2 — Every Great Business Runs On Great Systems
-  { week: 2, day: "Monday",    campaign: "Every Great Business Runs On Great Systems", angle: "Behind every great business is a system no one sees. Tesla has manufacturing precision. Apple has supply chain engineering. The best businesses are built on invisible operational excellence.",                                                           pexelsQueries: ["executive boardroom strategy", "architectural blueprint office", "premium planning workspace minimal"],                    industry: null },
-  { week: 2, day: "Wednesday", campaign: "Every Great Business Runs On Great Systems", angle: "A business that grows faster than its systems collapse. Most small businesses hit a ceiling not because of market — because of internal chaos. Systems are the foundation growth is built on.",                                                             pexelsQueries: ["modern commercial office interior", "executive workspace architectural", "premium business interior editorial"],           industry: null },
-  { week: 2, day: "Friday",    campaign: "Every Great Business Runs On Great Systems", angle: "Operational excellence is not a startup problem. It's the difference between a business that scales and one that survives. CyberCraft360 engineers the systems that make scaling possible.",                                                              pexelsQueries: ["corporate architecture glass", "luxury office minimal design", "editorial executive interior"],                           industry: null },
-
-  // WEEK 3 — The Best Systems Are Invisible
-  { week: 3, day: "Monday",    campaign: "The Best Systems Are Invisible",       angle: "The mark of great engineering is that no one notices it. Appointments are booked. Inquiries are answered. Follow-ups are sent. The customer experiences seamlessness. The owner experiences freedom.",                                                          pexelsQueries: ["luxury hotel lobby architecture", "golden hour executive office", "architectural interior warm lighting"],                 industry: null },
-  { week: 3, day: "Wednesday", campaign: "The Best Systems Are Invisible",       angle: "AI that announces itself has failed. The best automation works in silence — answering calls at 2am, routing leads in milliseconds, sending follow-ups at the perfect moment. Invisible by design.",                                                              pexelsQueries: ["architectural boardroom editorial", "premium office natural light", "minimal executive workspace warm"],                   industry: null },
-  { week: 3, day: "Friday",    campaign: "The Best Systems Are Invisible",       angle: "Your customers should never know automation exists. They should only know that your business responds faster, communicates better, and delivers more consistently than any competitor.",                                                                         pexelsQueries: ["luxury architectural interior editorial", "executive meeting room premium", "dark minimal corporate interior"],            industry: null },
-
-  // WEEK 4 — Automation Should Feel Human
-  { week: 4, day: "Monday",    campaign: "Automation Should Feel Human",         angle: "The failure of most chatbots is that they feel like chatbots. CyberCraft360 engineers conversational systems that feel like your best employee — informed, professional, and always available.",                                                                 pexelsQueries: ["premium hospitality interior warm", "luxury hotel reception minimal", "warm natural business interaction"],               industry: null },
-  { week: 4, day: "Wednesday", campaign: "Automation Should Feel Human",         angle: "A customer calling after hours deserves a real response — not a voicemail. AI voice systems built by CyberCraft360 handle calls, book appointments, and answer questions with the precision of a trained team member.",                                         pexelsQueries: ["warm office lighting minimal", "premium customer service interior", "natural light architectural workspace"],             industry: null },
-  { week: 4, day: "Friday",    campaign: "Automation Should Feel Human",         angle: "Technology should amplify human connection, not replace it. When automation handles repetitive communication, your team is free to focus on relationships that actually require human judgment.",                                                                 pexelsQueries: ["executive consultation warm light", "premium business meeting natural", "architectural interior warm hospitality"],        industry: null },
-
-  // WEEK 5 — Designed For Your Industry (rotating industries)
-  { week: 5, day: "Monday",    campaign: "Designed For Your Industry — HVAC",    angle: "An HVAC company missing calls during peak season isn't a staffing problem — it's a systems problem. AI voice agents answer every call, qualify every lead, and schedule every appointment. Revenue stops leaking.",                                             pexelsQueries: ["commercial HVAC rooftop system", "mechanical room industrial", "building automation commercial"],                         industry: "HVAC" },
-  { week: 5, day: "Wednesday", campaign: "Designed For Your Industry — Real Estate", angle: "In real estate, speed is everything. The agent who responds first wins the client. AI follow-up systems built for real estate ensure every inquiry receives an intelligent response within 60 seconds — 24 hours a day.",                                  pexelsQueries: ["luxury real estate architecture", "premium property development", "modern commercial building architectural"],             industry: "Real Estate" },
-  { week: 5, day: "Friday",    campaign: "Designed For Your Industry — Healthcare", angle: "Healthcare practices lose thousands monthly to missed appointments and slow follow-up. CyberCraft360 engineers patient communication systems that reduce no-shows, automate reminders, and ensure every patient feels heard.",                               pexelsQueries: ["premium medical office minimal", "modern clinic interior architectural", "healthcare administration clean"],               industry: "Healthcare" },
-
-  // WEEK 6 — Remove The Friction
-  { week: 6, day: "Monday",    campaign: "Remove The Friction",                  angle: "Every manual process in your business is a tax on your time. Repetitive data entry, follow-up emails, appointment confirmations — these are not your job. They are engineering problems. CyberCraft360 solves them.",                                         pexelsQueries: ["minimal concrete office dark", "architectural interior precision", "executive workspace clean editorial"],                 industry: null },
-  { week: 6, day: "Wednesday", campaign: "Remove The Friction",                  angle: "The businesses that win aren't the ones working hardest. They're the ones that have engineered friction out of their operations. Less friction means faster decisions, better customers, and higher margins.",                                                  pexelsQueries: ["modern glass architecture commercial", "premium workspace editorial", "dark architectural office minimal"],               industry: null },
-  { week: 6, day: "Friday",    campaign: "Remove The Friction",                  angle: "Operational friction is invisible until it costs you a client. A missed follow-up. A slow response. An unanswered call. CyberCraft360 removes these failure points before they become revenue problems.",                                                     pexelsQueries: ["luxury editorial office lighting", "architectural minimal corporate", "premium interior dark concrete"],                  industry: null },
-
-  // WEEK 7 — Every Minute Matters
-  { week: 7, day: "Monday",    campaign: "Every Minute Matters",                 angle: "Time is the only resource that cannot be recovered. Businesses that automate intelligently gain back hours every week — hours that compound into competitive advantage over months and years.",                                                                  pexelsQueries: ["executive boardroom precision", "luxury minimal office editorial", "architectural corporate interior clean"],              industry: null },
-  { week: 7, day: "Wednesday", campaign: "Every Minute Matters",                 angle: "The average service business spends 30% of its time on administrative work that could be automated. That is not a small number. For a 10-person team, it represents three full-time positions worth of capacity.",                                            pexelsQueries: ["modern architectural office glass", "premium workspace natural light", "executive interior minimal warm"],                industry: null },
-  { week: 7, day: "Friday",    campaign: "Every Minute Matters",                 angle: "Speed is a competitive moat. The business that books appointments in seconds, responds to leads instantly, and follows up without delay doesn't just win more clients — it wins better clients.",                                                               pexelsQueries: ["dark editorial corporate architecture", "luxury office interior precise", "minimal concrete workspace premium"],           industry: null },
-
-  // WEEK 8 — From Chaos To Clarity
-  { week: 8, day: "Monday",    campaign: "From Chaos To Clarity",                angle: "Disconnected systems create invisible chaos. Your CRM doesn't talk to your scheduling software. Your phone system doesn't connect to your follow-up. CyberCraft360 engineers the connection layer that makes everything work as one.",                        pexelsQueries: ["architectural planning office premium", "executive strategy workspace", "blueprint architectural editorial minimal"],      industry: null },
-  { week: 8, day: "Wednesday", campaign: "From Chaos To Clarity",                angle: "Clarity is not a feeling — it's a system. When your operations are designed correctly, every team member knows what to do, every customer gets the right response, and every process runs without supervision.",                                               pexelsQueries: ["modern glass corporate interior", "premium architectural office design", "editorial executive workspace minimal"],         industry: null },
-  { week: 8, day: "Friday",    campaign: "From Chaos To Clarity",                angle: "The first sign of business maturity is when operations stop depending on the founder. CyberCraft360 engineers the systems that remove you from the day-to-day — so you can focus on the decade-to-decade.",                                                   pexelsQueries: ["luxury concrete architecture dark", "minimal executive office editorial", "architectural interior warm precision"],        industry: null },
-
-  // WEEK 9 — Intelligence That Learns
-  { week: 9, day: "Monday",    campaign: "Intelligence That Learns",             angle: "Static automation is a ceiling. Adaptive AI systems improve with every interaction — learning what your customers ask, how your team responds, and where the gaps are. The system gets smarter so your business gets better.",                                  pexelsQueries: ["dark architectural minimal office", "premium corporate interior glass", "executive boardroom editorial precise"],         industry: null },
-  { week: 9, day: "Wednesday", campaign: "Intelligence That Learns",             angle: "A well-engineered AI system doesn't just answer questions — it understands context. Industry-specific, company-specific, customer-specific. This is the difference between a chatbot and an intelligent system.",                                               pexelsQueries: ["luxury editorial interior design", "architectural workspace premium clean", "modern corporate office minimal"],           industry: null },
-  { week: 9, day: "Friday",    campaign: "Intelligence That Learns",             angle: "The businesses that will lead their industries in five years are building adaptive AI infrastructure today. Not because it's trendy. Because intelligence compounds — and compound advantage is insurmountable.",                                                pexelsQueries: ["premium architectural dark interior", "glass headquarters modern minimal", "executive office natural light editorial"],   industry: null },
-
-  // WEEK 10 — Your Business. One System.
-  { week: 10, day: "Monday",   campaign: "Your Business. One System.",           angle: "Most businesses run on ten tools that don't speak to each other. CyberCraft360 builds the unified intelligence layer — one system that connects your operations, your communication, and your customer experience.",                                          pexelsQueries: ["architectural blueprint planning", "executive workspace unified minimal", "premium corporate interior precision"],         industry: null },
-  { week: 10, day: "Wednesday",campaign: "Your Business. One System.",           angle: "Integration is not a technical problem — it's a design problem. The best AI systems are designed around business outcomes, not technology constraints. CyberCraft360 designs from the outcome backward.",                                                    pexelsQueries: ["modern glass architecture office", "luxury minimal corporate interior", "architectural editorial workspace dark"],         industry: null },
-  { week: 10, day: "Friday",   campaign: "Your Business. One System.",           angle: "One connected system means one source of truth. Every lead, every customer interaction, every appointment — visible, traceable, and intelligent. This is what operational clarity looks like.",                                                                pexelsQueries: ["premium editorial executive boardroom", "concrete architectural office warm", "glass corporate headquarters minimal"],     industry: null },
-
-  // WEEK 11 — Built To Scale
-  { week: 11, day: "Monday",   campaign: "Built To Scale",                       angle: "Scaling a business with broken systems means scaling the chaos. CyberCraft360 builds infrastructure designed for the business you are becoming — not just the business you are today.",                                                                         pexelsQueries: ["luxury architectural commercial building", "premium modern headquarters glass", "editorial executive office dark"],       industry: null },
-  { week: 11, day: "Wednesday",campaign: "Built To Scale",                       angle: "Enterprise operations don't require enterprise headcount. The right AI infrastructure allows a 10-person team to operate with the responsiveness, consistency, and professionalism of a 50-person organization.",                                               pexelsQueries: ["minimal concrete corporate interior", "architectural office premium design", "executive workspace editorial clean"],      industry: null },
-  { week: 11, day: "Friday",   campaign: "Built To Scale",                       angle: "The ceiling of most businesses is not market size — it's operational capacity. CyberCraft360 removes the ceiling. When operations scale automatically, growth becomes a design feature, not a crisis.",                                                         pexelsQueries: ["dark architectural premium office", "luxury glass headquarters modern", "editorial corporate interior architectural"],    industry: null },
-
-  // WEEK 12 — The Future Is Already Working
-  { week: 12, day: "Monday",   campaign: "The Future Is Already Working",        angle: "The future of business operations is not coming — it's already deployed inside the companies that will define their industries. CyberCraft360 builds that infrastructure for businesses that are ready to lead.",                                              pexelsQueries: ["luxury executive boardroom editorial", "architectural interior premium dark", "minimal glass corporate modern"],          industry: null },
-  { week: 12, day: "Wednesday",campaign: "The Future Is Already Working",        angle: "AI is not a competitive advantage anymore — it's a competitive requirement. The question is not whether to build intelligent systems. The question is whether you build them before or after your competitors.",                                                 pexelsQueries: ["premium architectural concrete office", "executive workspace warm editorial", "modern corporate interior glass"],         industry: null },
-  { week: 12, day: "Friday",   campaign: "The Future Is Already Working",        angle: "CyberCraft360 exists for one reason: to give ambitious businesses the operational intelligence that was previously available only to enterprises with hundreds of engineers. That gap is now closed.",                                                           pexelsQueries: ["architectural editorial interior luxury", "dark corporate headquarters minimal", "premium office warm concrete glass"],   industry: null },
+// ── Service / Topic Rotation ───────────────────────────────────────────────────
+// GPT rotates through these. Tracks used topics in Redis.
+const TOPICS = [
+  // Core AI services
+  { topic: "AI Voice Agents",          image: "premium commercial phone environment, executive on call in modern glass office, cinematic lighting, photorealistic" },
+  { topic: "AI Chatbots",              image: "sleek digital interface on high-end device, luxury hospitality setting, professional service environment, photorealistic" },
+  { topic: "Workflow Automation",      image: "modern operations center, multiple screens showing dashboards, clean industrial workspace, professionals at work, photorealistic" },
+  { topic: "Lead Qualification",       image: "premium sales environment, executive reviewing reports, sophisticated office, confident professional, cinematic" },
+  { topic: "Lead Follow-Up",           image: "business professional making calls from premium office, golden hour light, executive workspace, cinematic" },
+  { topic: "Appointment Booking",      image: "elegant reception area of a premium business, calendar on screen, clean minimal design, photorealistic" },
+  { topic: "Customer Support Automation", image: "premium customer experience environment, service desk in luxury setting, clean architecture, photorealistic" },
+  { topic: "CRM Automation",           image: "data visualization on large screens in modern office, strategic environment, professionals analyzing insights, cinematic" },
+  { topic: "Business Intelligence",    image: "executive boardroom with data displays, sophisticated analytics environment, premium architectural interior, cinematic" },
+  { topic: "Marketing Automation",     image: "creative digital studio, modern marketing workspace, clean design environment, professionals at work, photorealistic" },
+  { topic: "Sales Automation",         image: "premium sales operations floor, executives in modern office, city view, confident and sophisticated, photorealistic" },
+  { topic: "Operations Automation",    image: "clean industrial operations environment, modern manufacturing or logistics facility, precision and order, cinematic" },
+  // Industry-specific
+  { topic: "AI for HVAC Companies",    image: "commercial HVAC rooftop system with city skyline, technician in professional gear, industrial precision, golden hour, photorealistic" },
+  { topic: "AI for Real Estate",       image: "luxury real estate interior, premium property, architectural photography, natural light, sophisticated materials, photorealistic" },
+  { topic: "AI for Healthcare",        image: "premium medical office or clinic, clean minimal design, professional environment, natural light, photorealistic" },
+  { topic: "AI for Law Firms",         image: "sophisticated law office interior, dark wood and glass, premium materials, books and order, cinematic lighting, photorealistic" },
+  { topic: "AI for Dental Offices",    image: "modern dental clinic, pristine clean environment, premium equipment, professional setting, photorealistic" },
+  { topic: "AI for Home Services",     image: "professional home services operation, clean branded vehicles, organized team preparing for work, photorealistic" },
+  { topic: "AI for Restaurants",       image: "premium restaurant kitchen or dining environment, chefs at work, sophisticated food service operation, cinematic" },
+  { topic: "AI for Auto Repair",       image: "premium automotive workshop, clean garage with luxury vehicles, professional mechanics, industrial precision, photorealistic" },
+  { topic: "AI for Insurance Agents",  image: "professional insurance office, executive in premium workspace, client meeting, sophisticated and trustworthy, photorealistic" },
+  { topic: "AI for Property Management", image: "luxury residential building exterior at dusk, premium property, architectural photography, photorealistic" },
+  // Outcome-focused
+  { topic: "Never Missing a Call",     image: "professional answering a call in premium office, confident posture, modern glass workspace, cinematic lighting, photorealistic" },
+  { topic: "Faster Lead Response",     image: "executive reviewing incoming inquiries on sleek device, modern office at night, city lights, urgency and precision, photorealistic" },
+  { topic: "Scaling Without Hiring",   image: "small but highly efficient modern team in premium workspace, productivity and order, photorealistic" },
+  { topic: "After-Hours Business",     image: "office building lit at night, city skyline, business operating after dark, cinematic and premium, photorealistic" },
+  { topic: "Reducing Manual Work",     image: "clean organized desk replacing paperwork with digital system, modern minimal workspace, natural light, photorealistic" },
+  { topic: "Improving Response Times", image: "precision timing environment, executive acting decisively, premium office at golden hour, cinematic" },
+  { topic: "Creating Better Customer Journeys", image: "premium customer experience environment, luxury hospitality or service setting, elegant and sophisticated, photorealistic" },
+  { topic: "Business Systems Design",  image: "architectural blueprint or system diagram in premium context, strategic planning environment, sophisticated materials, photorealistic" },
 ];
 
-const CTA_OPTIONS = [
-  "Explore More →",
-  "Discover More →",
-  "See How We Build →",
-  "Book A Strategy Call →",
-  "Request A Demo →",
-  "Build Smarter →",
-  "Schedule Discovery →",
-  "See What's Possible →",
-  "Create Your System →",
+// ── Day-of-week content frames ─────────────────────────────────────────────────
+const DAY_FRAMES: Record<string, { frame: string; goalDescription: string }> = {
+  Monday: {
+    frame: "AWARENESS",
+    goalDescription: "Make someone stop scrolling. Introduce a business problem or opportunity. The hook is everything. Headline must create immediate recognition of a problem the viewer has. Do NOT explain the solution yet — just make the problem real.",
+  },
+  Wednesday: {
+    frame: "EDUCATION",
+    goalDescription: "Explain how AI or automation solves the problem. Focus on practical mechanics, real business outcomes, and dispelling misconceptions. Inform and build credibility. The viewer should finish understanding something they did not before.",
+  },
+  Friday: {
+    frame: "CONVERSION",
+    goalDescription: "Move the viewer toward CyberCraft360. Combine the problem awareness from Monday with the solution clarity from Wednesday and make a compelling case for action. CTA should feel like a natural next step, not a hard sell.",
+  },
+};
+
+// ── Layout system ──────────────────────────────────────────────────────────────
+// Layout variant tells DALL-E where to place negative space AND tells social-image route which layout to render
+const LAYOUT_CONFIGS = [
+  { variant: 1, name: "bottom-left text",   spaceNote: "natural dark negative space in the lower third and lower-left area suitable for typography, main subject positioned in upper or upper-right portion" },
+  { variant: 2, name: "left-center text",   spaceNote: "subject positioned naturally in the right half of the frame, leaving the left third as natural dark or clean negative space for text overlay" },
+  { variant: 3, name: "upper-left text",    spaceNote: "main subject positioned in the lower portion or lower-right of the frame, upper area and upper-left naturally clear and dark for typography" },
+  { variant: 4, name: "centered text",      spaceNote: "dramatic centered composition, subject can be anywhere, overall dark moody aesthetic with enough shadow around the frame for text legibility" },
+  { variant: 5, name: "right-center text",  spaceNote: "subject positioned naturally in the left half of the frame, right third naturally dark or clean for text overlay" },
+  { variant: 6, name: "minimal corner text",spaceNote: "subject fills most of the frame dramatically, lower-right corner naturally darker for minimal typography" },
 ];
 
-const INSTAGRAM_BASE_TAGS = "#AIEngineering #BusinessAutomation #AIAgency #WorkflowAutomation #IntelligentSystems #BusinessInfrastructure #AIArchitecture #SmallBusiness #OperationalExcellence #BusinessSystems #AutomationDesign #CyberCraft360 #EnterpriseAI #BusinessGrowth #AIForBusiness";
-
-const LINKEDIN_BASE_TAGS = "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #BusinessInfrastructure #AIArchitecture #SmallBusiness #CyberCraft360";
-
+// ── Copy type ──────────────────────────────────────────────────────────────────
 type CopyResult = {
-  imageHeadline: string;
-  imageSubline: string;
-  imageBody: string;
+  eyebrow: string;
+  headline: string;
+  body: string;
+  cta: string;
+  dallePromptSquare: string;
+  dallePromptLandscape: string;
+  layoutVariant: number;
   linkedinCaption: string;
   instagramCaption: string;
   facebookCaption: string;
-  dallePrompt: string;
 };
 
-const BRAND_SYSTEM = `You are the Chief Creative Officer of CyberCraft360 — an AI Engineering firm serving businesses across the United States. You write copy that gets mistaken for Apple, Stripe, Linear, or Porsche marketing. Your work appears on billboards, not brochures.
+// ── Brand system prompt ────────────────────────────────────────────────────────
+const BRAND_SYSTEM = `You are the Chief Creative Officer of CyberCraft360 — a premium AI engineering and business automation company serving ambitious businesses across the United States.
 
-WHO WE ARE:
-CyberCraft360 engineers intelligent business infrastructure for ambitious small and mid-size companies. We are NOT a software vendor, chatbot company, or automation tool. We are an AI Engineering Company — the operational backbone behind businesses that outperform their size.
+BRAND POSITIONING:
+CyberCraft360 communicates: intelligence, precision, engineering excellence, trust, sophistication, modern technology, and business transformation.
 
-VOICE & TONE — STUDY THESE BRANDS:
-• Apple: declarative, present tense, no adjectives that don't earn their place. "The best camera is the one that's always with you." Not "our innovative camera solution empowers users."
-• Stripe: precise, confident, never breathless. "Payments infrastructure for the internet." Not "a revolutionary payment platform that transforms businesses."
-• Linear: dry wit, intelligence assumed, zero fluff. "Built for the ones who care." Not "designed for passionate teams who want to make a difference."
-• Porsche: restraint as a power move. One fact. Silence does the rest. "0–60 in 2.9 seconds." Not "an exhilarating driving experience that excites every sense."
-• McLaren: technical authority, earned swagger. "Every component questioned." Not "cutting-edge engineering innovations."
+The content must feel like it belongs to a major global technology company — clean, confident, restrained. NOT a generic AI agency.
 
-THE VOICE IS:
-Intelligent. Calm. Precise. Declarative. Confident without arrogance. Strategic without jargon. Editorial without pretension.
+VOICE & TONE:
+Intelligent. Calm. Precise. Declarative. Confident without arrogance.
+Every sentence earns its place. No padding. No hype.
 
-ABSOLUTE PROHIBITIONS — any of these is a failure:
-• Banned words: leverage, revolutionize, game-changer, seamlessly, cutting-edge, dive in, unlock, empower, harness, transform, disrupt, innovative, solution, ecosystem, synergy, streamline, robust, scalable (as a lazy adjective), paradigm, holistic, world-class, best-in-class, state-of-the-art, next-level, skyrocket, unprecedented
+Reference the quality level of: Stripe, Linear, Vercel, AWS — technology companies that communicate with authority and restraint.
+
+ABSOLUTE PROHIBITIONS:
+• Banned words: leverage, revolutionize, game-changer, seamlessly, cutting-edge, dive in, unlock, empower, harness, transform, disrupt, innovative, solution, ecosystem, synergy, streamline, robust, scalable (as a lazy adjective), paradigm, holistic, world-class, best-in-class, state-of-the-art, unprecedented
 • No exclamation marks
-• No rhetorical questions (especially to open a caption)
-• No "in today's fast-paced world" or similar throat-clearing
-• No emoji in captions (they cheapen the brand)
-• No passive voice unless intentional
-• Never describe CyberCraft360 as a tool, platform, software, or chatbot company
-• Never say "we help you" — say what we do, not how it helps
-• Never pad word count — every word must justify its existence`;
+• No rhetorical questions to open anything
+• No emoji in any copy
+• No passive voice
+• Never call CyberCraft360 a tool, platform, software, or chatbot company
+• Never say "we help you" — say what we do, not that we help
+• Every word must justify its existence`;
 
-const COPY_FORMAT = (cta: string) => `
-IMAGE TEXT RULES (these appear large on a visual — they must be elegant at scale):
+function buildPrompt(
+  topic: typeof TOPICS[0],
+  dayFrame: { frame: string; goalDescription: string },
+  layout: typeof LAYOUT_CONFIGS[0],
+  recentTopics: string[],
+  recentLayouts: number[]
+): string {
+  const recentNote = recentTopics.length > 0
+    ? `\nANTI-REPETITION: Recent posts covered [${recentTopics.join(", ")}] and used layouts [${recentLayouts.join(", ")}]. This post must feel visually and conceptually distinct.`
+    : "";
 
-imageHeadline:
-• Maximum 8 words. Ideally 3–6.
-• Statement, not a question. Present tense. No punctuation except a period at the end if it reads as a complete thought.
-• Think: billboard at 90mph. It must land in 1 second.
-• STRONG examples: "The System Runs. You Lead." / "Complexity Is a Design Problem." / "Infrastructure That Disappears." / "Precision Runs the Business." / "Built Once. Runs Forever."
-• WEAK examples (reject these): "Transform Your Business With AI" / "Unlock Your Potential Today" / "Revolutionize How You Work"
+  return `${BRAND_SYSTEM}
 
-imageSubline:
-• 3–5 words. Calm category label or location anchor.
-• Examples: "AI Engineering · USA" / "Intelligent Systems Design" / "Business Infrastructure" / "Operational Intelligence"
-• Not a sentence. Not a pitch. A quiet label.
+ASSIGNMENT:
+Topic: ${topic.topic}
+Content Frame: ${dayFrame.frame} — ${dayFrame.goalDescription}
+Layout: ${layout.name} (variant ${layout.variant})${recentNote}
 
-imageBody:
-• 2–3 sentences. 35–60 words total. This is the paragraph clients read and share.
-• Opens with a sharp, earned insight. Builds with one specific truth. Closes with the consequence or the implication — something that makes the reader pause.
-• Editorial in register. Precise nouns. Active verbs. No hedging, no qualifying, no pitching.
-• Think: the kind of copy that gets screenshotted and texted to a business partner.
-• Strong example: "Most businesses confuse tools with infrastructure. A CRM is a tool. A connected intelligence system that routes leads, answers calls, and triggers follow-ups without human input — that is infrastructure. The distinction is what separates businesses that scale from businesses that survive."
-• NOT: "CyberCraft360 helps your business grow with powerful automation solutions designed for success."
+==================================================
+GRAPHIC TEXT (what appears ON the image)
+==================================================
 
-CAPTION RULES:
+eyebrow (2–5 words max):
+- Small category label. Calm. E.g.: "AI ENGINEERING · VOICE AI" or "BUSINESS AUTOMATION" or "HVAC INDUSTRY"
+- ALL CAPS. Do NOT make it a sentence.
 
-linkedinCaption:
-• 130–180 words. Executive register. Reads like a memo from a senior partner, not a marketing post.
-• Structure: open with a sharp observation or counterintuitive truth (not a question). Build the idea for 3–4 sentences. Land CyberCraft360 once, naturally, as the punchline — never upfront. Close with a single direct sentence.
-• End exactly with: "${cta}  CyberCraft360.com" then one blank line then exactly: "${LINKEDIN_BASE_TAGS}"
+headline (4–10 words):
+- The single most important statement. Billboard-level clarity.
+- Present tense. Declarative. Lands in under 2 seconds.
+- Strong examples: "YOUR BUSINESS SHOULD NEVER MISS A CALL." / "MANUAL WORK DOES NOT SCALE." / "THE CALL IS ANSWERED. ALWAYS." / "PRECISION RUNS THE BUSINESS."
+- Use line breaks (\\n) to create intentional rhythm — never leave an awkward orphan word on its own line.
+- Avoid: questions, hype words, generic AI clichés
 
-instagramCaption:
-• 70–100 words. First line must be the strongest — it's the preview text. No fluff opener.
-• Tone: confident editorial. More personal than LinkedIn but still precise. Like a thoughtful industry insider sharing an observation, not a brand shouting.
-• End exactly with: "${cta}  CyberCraft360.com" then one blank line then exactly: "${INSTAGRAM_BASE_TAGS}"
+body (25–45 words exactly):
+- Sharp insight that expands the headline. Specific. Earned.
+- Opens with a concrete truth, not a definition.
+- No hedging, no pitching, no filler.
+- Every sentence must change what the reader thinks, not restate what they already know.
 
-facebookCaption:
-• 90–130 words. Narrative. Tell a story or scenario — a business problem, a moment of clarity, a before/after. More accessible than LinkedIn, more structured than Instagram.
-• No hashtags. End exactly with: "${cta}  CyberCraft360.com"
+cta (3–6 words):
+- Action-oriented, premium, specific to the topic.
+- Examples: "EXPLORE AI VOICE →" / "SEE HOW IT WORKS →" / "BUILD YOUR SYSTEM →" / "BOOK A STRATEGY CALL →"
+- NOT: "LEARN MORE" / "CLICK HERE" / "VISIT WEBSITE"
 
-dallePrompt:
-• A DALL-E 3 image generation prompt for a cinematic, premium background photo.
-• The image will sit BEHIND dark text panels — it should be visually rich but NOT need to be readable on its own.
-• Style: dark, moody, cinematic. Think: Apple campaign backdrop, luxury car ad, high-end architectural photography.
-• NO text, NO logos, NO people looking at camera, NO computer screens with readable text.
-• Strong examples: "Dark minimal executive boardroom at dusk, single overhead light casting dramatic shadows, architectural precision, cinematic depth of field, shot on Hasselblad" / "Abstract dark concrete and glass architecture at night, city lights bokeh, editorial luxury brand photography, moody and precise" / "Close-up of precision machinery in darkness, single shaft of light, industrial minimalism, luxury brand campaign aesthetic"
-• Match the campaign theme — operational excellence = clean architecture; automation = precision machinery; human connection = warm low-light interior
-• NOT: generic office, stock photo style, bright and cheerful, people smiling
+==================================================
+DALL-E IMAGE PROMPTS
+==================================================
 
-Return ONLY valid JSON — no markdown, no explanation, no preamble:
+Generate two DALL-E 3 prompts for the background photography.
+
+The image must:
+- Be DIRECTLY related to: ${topic.topic}
+- Image direction: ${topic.image}
+- Composition requirement: ${layout.spaceNote}
+- Style: cinematic, photorealistic, premium, editorial — as if shot by a professional commercial photographer for a Fortune 500 brand campaign
+- Lighting: dramatic but natural — directional light, realistic shadows, no studio-flash look
+- Color: restrained — dark charcoals, warm whites, natural tones. No neon, no glowing blue tech, no holograms
+- NO text in the image. NO logos. NO floating UI elements. NO people looking directly at camera in a posed way.
+- The image must look expensive BEFORE any typography is added.
+
+dallePromptSquare: for 1024x1024 Instagram square/portrait post
+dallePromptLandscape: for 1792x1024 Facebook/LinkedIn horizontal post
+
+==================================================
+CAPTIONS (what appears in the post caption, NOT on the image)
+==================================================
+
+linkedinCaption (130–180 words):
+- Executive register. Reads like a memo from a senior operator, not a marketing post.
+- Opens with a counterintuitive observation or specific business truth — NOT the headline repeated.
+- Builds the idea over 3–4 sentences. Lands CyberCraft360 once, naturally.
+- End with: "Book a strategy call at CyberCraft360.com" then a blank line then: "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360"
+
+instagramCaption (60–90 words):
+- First line is the hook — must be strong enough to stop the scroll.
+- Confident, editorial, precise.
+- End with: "CyberCraft360.com" then a blank line then: "#AIEngineering #BusinessAutomation #AIAgency #IntelligentSystems #OperationalExcellence #CyberCraft360 #SmallBusiness #AIForBusiness"
+
+facebookCaption (90–130 words):
+- Narrative. A business scenario, problem moment, or before/after. Accessible and business-focused.
+- No hashtags. End with: "CyberCraft360.com"
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+Return ONLY valid JSON — no markdown fences, no explanation:
 {
-  "imageHeadline": "...",
-  "imageSubline": "...",
-  "imageBody": "...",
+  "eyebrow": "...",
+  "headline": "...",
+  "body": "...",
+  "cta": "...",
+  "dallePromptSquare": "...",
+  "dallePromptLandscape": "...",
+  "layoutVariant": ${layout.variant},
   "linkedinCaption": "...",
   "instagramCaption": "...",
-  "facebookCaption": "...",
-  "dallePrompt": "..."
+  "facebookCaption": "..."
 }`;
+}
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function escapeControlCharsInStrings(str: string): string {
   let result = "";
   let inString = false;
@@ -197,31 +228,16 @@ function escapeControlCharsInStrings(str: string): string {
 }
 
 function extractJson(raw: string): string {
-  // Strip think blocks
   let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-  // Try to find JSON inside a code fence first
   const fenceMatch = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenceMatch) return fenceMatch[1].trim();
-  // Strip leading/trailing fences
   s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  // Find the outermost {...} block
-  const start = s.indexOf("{");
-  const end = s.lastIndexOf("}");
+  const start = s.indexOf("{"), end = s.lastIndexOf("}");
   if (start !== -1 && end > start) return s.slice(start, end + 1);
   return s;
 }
 
-function parseCopyResult(raw: string): CopyResult | null {
-  const clean = escapeControlCharsInStrings(extractJson(raw));
-  try {
-    return JSON.parse(clean);
-  } catch (e) {
-    console.error("[generate-post] JSON.parse failed:", String(e));
-    return null;
-  }
-}
-
-let _lastGroqRaw = "";
+let _lastRaw = "";
 
 async function callOpenAI(prompt: string): Promise<CopyResult | null> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -234,86 +250,27 @@ async function callOpenAI(prompt: string): Promise<CopyResult | null> {
       model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 3000,
-      temperature: 0.75,
+      temperature: 0.78,
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
     console.error("[generate-post] OpenAI error", res.status, err.slice(0, 200));
-    _lastGroqRaw = `HTTP_ERROR_${res.status}: ${err.slice(0, 200)}`;
+    _lastRaw = `HTTP_ERROR_${res.status}: ${err.slice(0, 200)}`;
     return null;
   }
 
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
-  _lastGroqRaw = raw;
-  const result = parseCopyResult(raw);
-  if (!result) console.error("[generate-post] OpenAI JSON parse failed, raw:", raw.slice(0, 400));
-  return result;
-}
-
-async function callCerebras(prompt: string): Promise<CopyResult | null> {
-  const apiKey = process.env.CEREBRAS_API_KEY;
-  if (!apiKey) return null;
-
-  // Try both known Cerebras model naming conventions
-  for (const model of ["llama3.3-70b", "llama-3.3-70b"]) {
-    const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 4096,
-        temperature: 0.75,
-        stream: false,
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      return parseCopyResult(data.choices?.[0]?.message?.content ?? "");
-    }
-    console.error("[generate-post] Cerebras error", res.status, "model:", model);
+  _lastRaw = raw;
+  const clean = escapeControlCharsInStrings(extractJson(raw));
+  try {
+    return JSON.parse(clean) as CopyResult;
+  } catch (e) {
+    console.error("[generate-post] JSON parse failed:", String(e), "raw:", raw.slice(0, 300));
+    return null;
   }
-  return null;
-}
-
-async function generateCustomCopy(customPrompt: string, ctaIndex: number): Promise<CopyResult | null> {
-  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
-
-  const prompt = `${BRAND_SYSTEM}
-
-ASSIGNMENT — CUSTOM POST:
-The owner has given you specific direction. Execute it with full brand discipline — the direction tells you the topic and angle, but the voice, quality bar, and rules above are non-negotiable.
-
-OWNER'S DIRECTION:
-${customPrompt}
-
-${COPY_FORMAT(cta)}`;
-
-  return await callOpenAI(prompt);
-}
-
-async function generateCopy(campaign: typeof CAMPAIGNS[0], ctaIndex: number): Promise<CopyResult | null> {
-  const cta = CTA_OPTIONS[ctaIndex % CTA_OPTIONS.length];
-  const industryLine = campaign.industry
-    ? `\nINDUSTRY FOCUS: Every word must be directly relevant to ${campaign.industry} businesses. Speak their language, reference their reality.`
-    : "";
-
-  const prompt = `${BRAND_SYSTEM}
-
-ASSIGNMENT — CAMPAIGN POST:
-Campaign: "${campaign.campaign}"
-Week ${campaign.week} · ${campaign.day}${industryLine}
-
-STRATEGIC ANGLE (use this as your creative brief — don't copy it, interpret it):
-${campaign.angle}
-
-${COPY_FORMAT(cta)}`;
-
-  return await callOpenAI(prompt);
 }
 
 async function generateDalleImage(prompt: string, square: boolean): Promise<string | null> {
@@ -325,7 +282,7 @@ async function generateDalleImage(prompt: string, square: boolean): Promise<stri
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: "dall-e-3",
-      prompt: `${prompt}. Cinematic photography, no text, no logos, dark moody premium aesthetic.`,
+      prompt: `${prompt} Photorealistic, cinematic, no text, no logos, no watermarks. Shot on high-end camera, professional editorial photography.`,
       n: 1,
       size: square ? "1024x1024" : "1792x1024",
       quality: "standard",
@@ -337,11 +294,11 @@ async function generateDalleImage(prompt: string, square: boolean): Promise<stri
     console.error("[generate-post] DALL-E error", res.status, await res.text());
     return null;
   }
-
   const data = await res.json();
   return data.data?.[0]?.url ?? null;
 }
 
+// ── Route handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -351,61 +308,71 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const customPrompt: string | undefined = body.customPrompt?.trim() || undefined;
 
-  let copy: Awaited<ReturnType<typeof generateCopy>>;
-  let campaignIndex: number;
-  let campaignLabel: string;
-  let week: number | null;
-  let day: string | null;
+  // Get anti-repetition state from Redis
+  const recentTopics = await redis.get<string[]>("social:recent_topics") ?? [];
+  const recentLayouts = await redis.get<number[]>("social:recent_layouts") ?? [];
+  const usedTopicIndexes = await redis.get<number[]>("social:used_topic_indexes") ?? [];
 
-  if (customPrompt) {
-    // Custom prompt mode — skip campaign rotation, generate freely
-    campaignIndex = -1;
-    campaignLabel = "Custom";
-    week = null;
-    day = null;
-    copy = await generateCustomCopy(customPrompt, Math.floor(Math.random() * CTA_OPTIONS.length));
+  // Pick topic — rotate through, avoid recent
+  let topicIndex: number;
+  if (typeof body.topicIndex === "number") {
+    topicIndex = body.topicIndex % TOPICS.length;
   } else {
-    // Campaign rotation mode
-    if (typeof body.campaignIndex === "number") {
-      campaignIndex = body.campaignIndex % CAMPAIGNS.length;
-    } else {
-      const used = await redis.get<number[]>("social:used_campaign_indexes") ?? [];
-      const unused = CAMPAIGNS.map((_, i) => i).filter(i => !used.includes(i));
-      if (unused.length === 0) {
-        await redis.set("social:used_campaign_indexes", []);
-        campaignIndex = 0;
-      } else {
-        campaignIndex = unused[0];
-      }
-    }
-    const campaign = CAMPAIGNS[campaignIndex];
-    campaignLabel = campaign.campaign;
-    week = campaign.week;
-    day = campaign.day;
-    copy = await generateCopy(campaign, campaignIndex % CTA_OPTIONS.length);
+    const unused = TOPICS.map((_, i) => i).filter(i => !usedTopicIndexes.includes(i));
+    const pool = unused.length > 0 ? unused : TOPICS.map((_, i) => i);
+    topicIndex = pool[Math.floor(Math.random() * pool.length)];
   }
+  const topic = TOPICS[topicIndex];
 
+  // Pick layout — avoid recent two
+  const availableLayouts = LAYOUT_CONFIGS.filter(l => !recentLayouts.slice(-2).includes(l.variant));
+  const layout = availableLayouts[Math.floor(Math.random() * availableLayouts.length)] ?? LAYOUT_CONFIGS[0];
+
+  // Determine day frame based on actual day of week
+  const dayName = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Chicago" });
+  const dayFrame = DAY_FRAMES[dayName] ?? DAY_FRAMES["Wednesday"];
+
+  // Build prompt and generate copy
+  const prompt = customPrompt
+    ? `${BRAND_SYSTEM}\n\nASSIGNMENT — CUSTOM POST:\n${customPrompt}\n\nGenerate the same JSON output format as a standard post (eyebrow, headline, body, cta, dallePromptSquare, dallePromptLandscape, layoutVariant, linkedinCaption, instagramCaption, facebookCaption). Choose layout variant ${layout.variant}.`
+    : buildPrompt(topic, dayFrame, layout, recentTopics.slice(-4), recentLayouts.slice(-4));
+
+  const copy = await callOpenAI(prompt);
   if (!copy) {
-    return NextResponse.json({ ok: false, error: "Copy generation failed", raw: _lastGroqRaw.slice(0, 3000) }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Copy generation failed", raw: _lastRaw.slice(0, 2000) }, { status: 500 });
   }
 
-  // Generate square and landscape images via DALL-E 3
+  // Generate DALL-E images (square for Instagram, landscape for Facebook/LinkedIn)
   const [squarePhoto, landscapePhoto] = await Promise.all([
-    generateDalleImage(copy.dallePrompt, true),
-    generateDalleImage(copy.dallePrompt, false),
+    generateDalleImage(copy.dallePromptSquare, true),
+    generateDalleImage(copy.dallePromptLandscape, false),
   ]);
-  const photoUrl = squarePhoto;
+
+  // Update anti-repetition state
+  const newTopics = [...recentTopics, topic.topic].slice(-8);
+  const newLayouts = [...recentLayouts, copy.layoutVariant ?? layout.variant].slice(-8);
+  const newUsed = [...usedTopicIndexes, topicIndex];
+  if (newUsed.length >= TOPICS.length) {
+    await redis.set("social:used_topic_indexes", []);
+  } else {
+    await redis.set("social:used_topic_indexes", newUsed);
+  }
+  await Promise.all([
+    redis.set("social:recent_topics", newTopics),
+    redis.set("social:recent_layouts", newLayouts),
+  ]);
 
   return NextResponse.json({
     ok: true,
-    campaignIndex,
-    campaign: campaignLabel,
-    week,
-    day,
+    topicIndex,
+    topic: topic.topic,
+    day: dayName,
+    frame: dayFrame.frame,
+    layoutVariant: copy.layoutVariant ?? layout.variant,
     copy,
     photoUrl: squarePhoto,
     landscapePhotoUrl: landscapePhoto,
   });
 }
 
-export { CAMPAIGNS };
+export { TOPICS };

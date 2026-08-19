@@ -10,9 +10,6 @@ async function notifyFailure(step: string, detail: string) {
   }).catch(() => {});
 }
 
-function pickLayout(campaignIndex: number): number {
-  return (campaignIndex % 4) + 1;
-}
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
@@ -52,23 +49,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
     }
 
-    const { copy, photoUrl, landscapePhotoUrl, campaign, week, day, campaignIndex } = await genRes.json();
-    const layout = pickLayout(campaignIndex ?? 0);
+    const { copy, photoUrl, landscapePhotoUrl, topic, day, frame, layoutVariant } = await genRes.json();
 
-    // Step 2: Build image URLs — square uses square DALL-E image, landscape uses landscape DALL-E image
+    // Step 2: Build image URLs using new param names (ey=eyebrow, hl=headline, bd=body, ct=cta, layout, aspect, photo)
     const imageBase = `${siteUrl}/social-image`;
+    const lv = String(layoutVariant ?? 1);
     const squareParams = new URLSearchParams({
-      hl: copy.imageHeadline, sl: copy.imageSubline, bd: copy.imageBody,
-      layout: String(layout), aspect: "square",
+      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+      layout: lv, aspect: "square",
       ...(photoUrl ? { photo: photoUrl } : {}),
     });
     const landscapeParams = new URLSearchParams({
-      hl: copy.imageHeadline, sl: copy.imageSubline, bd: copy.imageBody,
-      layout: String(layout), aspect: "landscape",
+      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+      layout: lv, aspect: "landscape",
       ...(landscapePhotoUrl ? { photo: landscapePhotoUrl } : photoUrl ? { photo: photoUrl } : {}),
     });
 
-    const squareImageUrl = `${imageBase}?${squareParams.toString()}`;
+    const squareImageUrl   = `${imageBase}?${squareParams.toString()}`;
     const landscapeImageUrl = `${imageBase}?${landscapeParams.toString()}`;
 
     // Step 3: Post to all platforms directly
@@ -110,24 +107,17 @@ export async function GET(req: NextRequest) {
     if (anySuccess) {
       const log = await redis.get<any[]>("social:auto_posts") ?? [];
       log.unshift({
-        campaignIndex,
-        campaign,
-        week,
-        day,
-        layout,
-        headline: copy.imageHeadline,
-        photoUrl,
-        squareImageUrl,
-        landscapeImageUrl,
+        topic, day, frame: frame ?? "", layoutVariant,
+        headline: copy.headline,
+        photoUrl, squareImageUrl, landscapeImageUrl,
         postedAt: new Date().toISOString(),
-        results,
-        source: "auto",
+        results, source: "auto",
       });
       await redis.set("social:auto_posts", log.slice(0, 50));
-      console.log(`[social-cron] Posted: ${copy.imageHeadline} — IG:${igData?.ok} FB:${fbData?.ok} LI:${liData?.ok}`);
+      console.log(`[social-cron] Posted: ${copy.headline} — IG:${igData?.ok} FB:${fbData?.ok} LI:${liData?.ok}`);
     }
 
-    return NextResponse.json({ ok: anySuccess, headline: copy.imageHeadline, campaign, week, day, results });
+    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results });
 
   } catch (err) {
     console.error("[social-cron] error:", err);
