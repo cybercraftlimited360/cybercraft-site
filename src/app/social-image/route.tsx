@@ -11,9 +11,9 @@ const ACCENT = "#8B9CF4";
 async function loadFonts() {
   try {
     const [bold, semibold, regular] = await Promise.all([
-      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-800-normal.woff2").then(r => r.arrayBuffer()),
-      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-600-normal.woff2").then(r => r.arrayBuffer()),
-      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-400-normal.woff2").then(r => r.arrayBuffer()),
+      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-800-normal.woff").then(r => r.arrayBuffer()),
+      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-600-normal.woff").then(r => r.arrayBuffer()),
+      fetch("https://fonts.bunny.net/manrope/files/manrope-latin-400-normal.woff").then(r => r.arrayBuffer()),
     ]);
     return [
       { name: "Manrope", data: bold,     weight: 800 as const },
