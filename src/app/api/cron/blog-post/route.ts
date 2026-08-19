@@ -183,7 +183,10 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: "qwen/qwen3.6-27b",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "/no_think" },
+        { role: "user", content: prompt },
+      ],
       max_tokens: 6000,
       temperature: 0.8,
     }),

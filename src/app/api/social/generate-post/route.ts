@@ -215,7 +215,10 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: "qwen/qwen3.6-27b",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "/no_think" },
+        { role: "user", content: prompt },
+      ],
       max_tokens: 2000,
       temperature: 0.75,
     }),
