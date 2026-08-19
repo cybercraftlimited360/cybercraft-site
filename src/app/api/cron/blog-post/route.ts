@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
+import { sendEmail } from "@/lib/mailer";
+
+async function notifyFailure(step: string, detail: string) {
+  await sendEmail({
+    to: "cybercraftlimited@gmail.com",
+    subject: `⚠️ Blog Post FAILED — ${step}`,
+    html: `<div style="font-family:sans-serif;padding:24px;"><h2 style="color:#dc2626;">Blog Post Cron Failed</h2><p><strong>Step:</strong> ${step}</p><p><strong>Detail:</strong> ${detail}</p><p style="color:#6b7280;font-size:12px;">${new Date().toISOString()}</p></div>`,
+  }).catch(() => {});
+}
 
 const GITHUB_REPO = "cybercraftlimited360/cybercraft-site";
 const GITHUB_BRANCH = "main";
@@ -270,6 +279,7 @@ export async function GET(req: NextRequest) {
     // Generate post
     const post = await generatePost(keyword, linkSuggestions);
     if (!post) {
+      await notifyFailure("Content generation", `Keyword: ${keyword} — Groq returned null`);
       return NextResponse.json({ ok: false, error: "Generation failed" }, { status: 500 });
     }
 
@@ -278,6 +288,7 @@ export async function GET(req: NextRequest) {
     // Commit directly to GitHub — no review queue
     const committed = await commitToGitHub(slug, post.content);
     if (!committed) {
+      await notifyFailure("GitHub commit", `slug: ${slug}`);
       return NextResponse.json({ ok: false, error: "GitHub commit failed" }, { status: 500 });
     }
 

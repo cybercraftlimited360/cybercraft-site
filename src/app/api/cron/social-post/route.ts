@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
+import { sendEmail } from "@/lib/mailer";
+
+async function notifyFailure(step: string, detail: string) {
+  await sendEmail({
+    to: "cybercraftlimited@gmail.com",
+    subject: `⚠️ Social Post FAILED — ${step}`,
+    html: `<div style="font-family:sans-serif;padding:24px;"><h2 style="color:#dc2626;">Social Post Cron Failed</h2><p><strong>Step:</strong> ${step}</p><p><strong>Detail:</strong> ${detail}</p><p style="color:#6b7280;font-size:12px;">${new Date().toISOString()}</p></div>`,
+  }).catch(() => {});
+}
 
 function pickLayout(campaignIndex: number): number {
   return (campaignIndex % 4) + 1;
@@ -39,6 +48,7 @@ export async function GET(req: NextRequest) {
     if (!genRes.ok) {
       const err = await genRes.text();
       console.error("[social-cron] Generate failed:", err);
+      await notifyFailure("Copy generation", err.slice(0, 300));
       return NextResponse.json({ ok: false, error: "Copy generation failed" }, { status: 500 });
     }
 
