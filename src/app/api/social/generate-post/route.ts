@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import { redis } from "@/lib/redis";
+
+export const runtime = "edge";
 
 // ── Service / Topic Rotation ───────────────────────────────────────────────────
 // GPT rotates through these. Tracks used topics in Redis.
@@ -348,6 +351,32 @@ export async function POST(req: NextRequest) {
     generateDalleImage(copy.dallePromptLandscape, false),
   ]);
 
+  // Upload DALL-E images to Vercel Blob for permanent, short URLs
+  // DALL-E URLs expire in ~1h and are very long (600+ chars), breaking Meta's API.
+  // Blob URLs are ~80 chars and permanent.
+  async function uploadToBlob(dalleUrl: string | null, name: string): Promise<string | null> {
+    if (!dalleUrl) return null;
+    try {
+      const res = await fetch(dalleUrl);
+      if (!res.ok) return dalleUrl;
+      const buf = await res.arrayBuffer();
+      const ct = res.headers.get("content-type") ?? "image/png";
+      const ext = ct.includes("jpeg") || ct.includes("jpg") ? "jpg" : "png";
+      const { url } = await put(`social/${name}-${Date.now()}.${ext}`, buf, {
+        access: "public",
+        contentType: ct,
+      });
+      return url;
+    } catch {
+      return dalleUrl; // fallback to original if blob upload fails
+    }
+  }
+
+  const [photoUrl, landscapePhotoUrl] = await Promise.all([
+    uploadToBlob(squarePhoto, "square"),
+    uploadToBlob(landscapePhoto, "landscape"),
+  ]);
+
   // Update anti-repetition state
   const newTopics = [...recentTopics, topic.topic].slice(-8);
   const newLayouts = [...recentLayouts, copy.layoutVariant ?? layout.variant].slice(-8);
@@ -370,8 +399,8 @@ export async function POST(req: NextRequest) {
     frame: dayFrame.frame,
     layoutVariant: copy.layoutVariant ?? layout.variant,
     copy,
-    photoUrl: squarePhoto,
-    landscapePhotoUrl: landscapePhoto,
+    photoUrl,
+    landscapePhotoUrl,
   });
 }
 

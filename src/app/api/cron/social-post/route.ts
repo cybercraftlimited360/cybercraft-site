@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
@@ -68,21 +69,44 @@ export async function GET(req: NextRequest) {
     const squareImageUrl   = `${imageBase}?${squareParams.toString()}`;
     const landscapeImageUrl = `${imageBase}?${landscapeParams.toString()}`;
 
-    // Step 3: Post to all platforms directly
+    // Step 3: Pre-render social images and upload to Blob.
+    // Gives Meta and LinkedIn a direct static PNG URL instead of a dynamic route,
+    // which is required for reliable image pickup by Meta's crawlers.
+    async function renderAndStore(url: string, name: string): Promise<string> {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return url;
+        const buf = await res.arrayBuffer();
+        const { url: blobUrl } = await put(`posts/${name}-${Date.now()}.png`, buf, {
+          access: "public",
+          contentType: "image/png",
+        });
+        return blobUrl;
+      } catch {
+        return url; // fall back to original URL if blob upload fails
+      }
+    }
+
+    const [squareFinalUrl, landscapeFinalUrl] = await Promise.all([
+      renderAndStore(squareImageUrl, "ig-square"),
+      renderAndStore(landscapeImageUrl, "fb-li-landscape"),
+    ]);
+
+    // Step 4: Post to all platforms directly
     const cronHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` };
 
     const [igRes, fbRes, liRes] = await Promise.all([
       fetch(`${siteUrl}/api/social/post`, {
         method: "POST", headers: cronHeaders,
-        body: JSON.stringify({ message: copy.instagramCaption, imageUrl: squareImageUrl, platforms: ["instagram"] }),
+        body: JSON.stringify({ message: copy.instagramCaption, imageUrl: squareFinalUrl, platforms: ["instagram"] }),
       }),
       fetch(`${siteUrl}/api/social/post`, {
         method: "POST", headers: cronHeaders,
-        body: JSON.stringify({ message: copy.facebookCaption, imageUrl: landscapeImageUrl, platforms: ["facebook"] }),
+        body: JSON.stringify({ message: copy.facebookCaption, imageUrl: landscapeFinalUrl, platforms: ["facebook"] }),
       }),
       fetch(`${siteUrl}/api/social/linkedin`, {
         method: "POST", headers: cronHeaders,
-        body: JSON.stringify({ text: copy.linkedinCaption, imageUrl: landscapeImageUrl }),
+        body: JSON.stringify({ text: copy.linkedinCaption, imageUrl: landscapeFinalUrl }),
       }),
     ]);
 
@@ -101,7 +125,7 @@ export async function GET(req: NextRequest) {
       log.unshift({
         topic, day, frame: frame ?? "", layoutVariant,
         headline: copy.headline,
-        photoUrl, squareImageUrl, landscapeImageUrl,
+        photoUrl, squareImageUrl: squareFinalUrl, landscapeImageUrl: landscapeFinalUrl,
         postedAt: new Date().toISOString(),
         results, source: "auto",
       });
