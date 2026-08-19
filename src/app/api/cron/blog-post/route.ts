@@ -355,16 +355,17 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
       let photoUrl: string | null = null;
       const pexelsKey = process.env.PEXELS_API_KEY;
       if (pexelsKey) {
-        const pexelsQuery = keyword.replace(/^(how to|what is|why|how|best|ai for) /i, "").slice(0, 40);
-        const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(pexelsQuery)}&per_page=5&orientation=landscape`, {
+        const pexelsQuery = keyword.replace(/^(how to|what is|why|how|best|ai for) /i, "").replace(/\bai\b/gi, "business").slice(0, 50);
+        const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(pexelsQuery)}&per_page=15&orientation=landscape`, {
           headers: { Authorization: pexelsKey },
         });
         if (pexelsRes.ok) {
           const pexelsData = await pexelsRes.json();
           const photos = pexelsData.photos ?? [];
           if (photos.length) {
-            const pick = photos[Math.floor(Math.random() * photos.length)];
-            photoUrl = pick.src?.landscape ?? pick.src?.large2x ?? null;
+            const pool = photos.slice(0, 8);
+            const pick = pool[Math.floor(Math.random() * pool.length)];
+            photoUrl = pick.src?.large2x ?? pick.src?.large ?? null;
           }
         }
       }

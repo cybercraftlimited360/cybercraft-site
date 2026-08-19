@@ -314,8 +314,8 @@ async function fetchPexelsPhoto(query: string, landscape: boolean): Promise<stri
   try {
     const params = new URLSearchParams({
       query,
-      per_page: "5",
-      orientation: landscape ? "landscape" : "square",
+      per_page: "15",
+      orientation: landscape ? "landscape" : "portrait",
     });
     const res = await fetch(`https://api.pexels.com/v1/search?${params}`, {
       headers: { Authorization: apiKey },
@@ -324,8 +324,11 @@ async function fetchPexelsPhoto(query: string, landscape: boolean): Promise<stri
     const data = await res.json();
     const photos: any[] = data.photos ?? [];
     if (!photos.length) return null;
-    const photo = photos[Math.floor(Math.random() * photos.length)];
-    return landscape ? (photo.src?.landscape ?? photo.src?.large2x ?? null) : (photo.src?.large2x ?? photo.src?.large ?? null);
+    // Pick randomly from top 8 results — these tend to be the highest quality
+    const pool = photos.slice(0, 8);
+    const photo = pool[Math.floor(Math.random() * pool.length)];
+    // Use large2x (1880px wide) for maximum quality — looks premium scaled in Satori
+    return photo.src?.large2x ?? photo.src?.large ?? null;
   } catch {
     return null;
   }
@@ -381,7 +384,17 @@ export async function POST(req: NextRequest) {
     generateDalleImage(copy.dallePromptSquare, true),
     generateDalleImage(copy.dallePromptLandscape, false),
   ]);
-  const pexelsQuery = topic.topic.replace(/^AI for /, "").replace(/AI /gi, "").trim();
+  // Use the first 2-3 key terms from the topic's image description for a premium Pexels search
+  // e.g. "premium commercial phone environment, executive on call in modern glass office" → "executive office professional"
+  const imageKeywords = topic.image
+    .split(",")
+    .slice(0, 3)
+    .map(s => s.trim().replace(/\b(photorealistic|cinematic|and|or|in|on|at|for|the|a|an|with)\b/gi, "").trim())
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .slice(0, 60);
+  const pexelsQuery = imageKeywords || topic.topic.replace(/^AI for /i, "").replace(/\bAI\b/gi, "business").trim();
   const [squarePhoto, landscapePhoto] = await Promise.all([
     dalleSquare ?? fetchPexelsPhoto(pexelsQuery, false),
     dalleLandscape ?? fetchPexelsPhoto(pexelsQuery, true),

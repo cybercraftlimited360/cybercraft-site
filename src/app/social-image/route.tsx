@@ -26,10 +26,17 @@ async function loadFonts() {
 }
 
 // ── Text shadow tokens ────────────────────────────────────────────────────────
-// Layered shadows ensure readability without visible panels
-const HS = "0 2px 6px rgba(0,0,0,0.98), 0 6px 28px rgba(0,0,0,0.92), 0 0 60px rgba(0,0,0,0.7)";
-const BS = "0 1px 4px rgba(0,0,0,0.96), 0 3px 16px rgba(0,0,0,0.85)";
-const ES = "0 1px 3px rgba(0,0,0,0.98), 0 2px 10px rgba(0,0,0,0.9)";
+// Deep layered shadows for maximum readability over any photo
+const HS = "0 2px 4px rgba(0,0,0,1), 0 4px 16px rgba(0,0,0,0.98), 0 8px 40px rgba(0,0,0,0.95), 0 0 80px rgba(0,0,0,0.8)";
+const BS = "0 1px 3px rgba(0,0,0,1), 0 3px 12px rgba(0,0,0,0.98), 0 6px 24px rgba(0,0,0,0.9)";
+const ES = "0 1px 2px rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,0.98), 0 4px 16px rgba(0,0,0,0.9)";
+
+// ── Scrim overlays — directional dark gradients to anchor text legibility ─────
+const SCRIM_BOTTOM = "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.78) 70%, rgba(0,0,0,0.92) 100%)";
+const SCRIM_LEFT   = "linear-gradient(to right,  rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.0) 100%)";
+const SCRIM_TOP    = "linear-gradient(to top,    rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.78) 70%, rgba(0,0,0,0.92) 100%)";
+const SCRIM_RIGHT  = "linear-gradient(to left,   rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.0) 100%)";
+const SCRIM_CENTER = "radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.30) 50%, rgba(0,0,0,0.65) 100%)";
 
 function Logo({ logoSrc, size = 52, right = true }: { logoSrc: string; size?: number; right?: boolean }) {
   return (
@@ -72,6 +79,7 @@ function Layout1({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
       {photoUrl && (
         <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
       )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: SCRIM_BOTTOM, display: "flex" }} />
       {/* Logo */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
         <Logo logoSrc={logoSrc} size={48} />
@@ -137,6 +145,7 @@ function Layout2({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
       {photoUrl && (
         <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center" }} />
       )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: SCRIM_LEFT, display: "flex" }} />
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
         <Logo logoSrc={logoSrc} size={48} />
@@ -204,6 +213,7 @@ function Layout3({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
       {photoUrl && (
         <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center bottom" }} />
       )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: SCRIM_TOP, display: "flex" }} />
       {/* Logo — top-left this time for variety */}
       <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
         <Logo logoSrc={logoSrc} size={48} right={false} />
@@ -270,6 +280,7 @@ function Layout4({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
       {photoUrl && (
         <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: SCRIM_CENTER, display: "flex" }} />
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
         <Logo logoSrc={logoSrc} size={48} />
@@ -339,6 +350,7 @@ function Layout5({ photoUrl, logoSrc, eyebrow, headline, body, cta, W, H }: Prop
       {photoUrl && (
         <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "left center" }} />
       )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: SCRIM_RIGHT, display: "flex" }} />
       {/* Logo top-left */}
       <div style={{ position: "absolute", top: 32, left: 48, display: "flex" }}>
         <Logo logoSrc={logoSrc} size={48} right={false} />
@@ -407,6 +419,7 @@ function Layout6({ photoUrl, logoSrc, eyebrow, headline, cta, W, H }: Props) {
       {photoUrl && (
         <img src={photoUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: SCRIM_BOTTOM, display: "flex" }} />
       {/* Logo top-right */}
       <div style={{ position: "absolute", top: 32, right: 36, display: "flex" }}>
         <Logo logoSrc={logoSrc} size={44} />
