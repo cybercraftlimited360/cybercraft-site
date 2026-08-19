@@ -74,18 +74,31 @@ export async function GET(req: NextRequest) {
     // Step 3: Pre-render social images and upload to Blob.
     // Gives Meta and LinkedIn a direct static PNG URL instead of a dynamic route,
     // which is required for reliable image pickup by Meta's crawlers.
+    const blobDiag: Record<string, string> = {};
+
     async function renderAndStore(url: string, name: string): Promise<string> {
       try {
-        const res = await fetch(url);
+        const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
+        blobDiag[`${name}_token`] = hasBlobToken ? "present" : "MISSING";
+        if (!hasBlobToken) return url;
+
+        const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+        blobDiag[`${name}_fetch`] = `${res.status} ${res.statusText}`;
         if (!res.ok) return url;
+
         const buf = await res.arrayBuffer();
+        blobDiag[`${name}_bytes`] = String(buf.byteLength);
+        if (buf.byteLength === 0) return url;
+
         const { url: blobUrl } = await put(`posts/${name}-${Date.now()}.png`, buf, {
           access: "public",
           contentType: "image/png",
         });
+        blobDiag[`${name}_blob`] = "ok";
         return blobUrl;
-      } catch {
-        return url; // fall back to original URL if blob upload fails
+      } catch (e) {
+        blobDiag[`${name}_error`] = String(e).slice(0, 200);
+        return url;
       }
     }
 
@@ -157,7 +170,7 @@ export async function GET(req: NextRequest) {
       await notifyFailure("All platforms", `IG: ${igData?.error ?? "ok"} | FB: ${fbData?.error ?? "ok"} | LI: ${liData?.error ?? "ok"}`);
     }
 
-    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results, debug: { photoUrl, squareFinalUrl: squareFinalUrl.slice(0, 120), landscapeFinalUrl: landscapeFinalUrl.slice(0, 120) } });
+    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results, debug: { photoUrl, squareFinalUrl: squareFinalUrl.slice(0, 120), landscapeFinalUrl: landscapeFinalUrl.slice(0, 120), blobDiag } });
 
   } catch (err) {
     console.error("[social-cron] error:", err);
