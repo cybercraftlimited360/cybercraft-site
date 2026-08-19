@@ -228,7 +228,7 @@ async function callOpenAI(prompt: string): Promise<CopyResult | null> {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 3000,
       temperature: 0.75,
