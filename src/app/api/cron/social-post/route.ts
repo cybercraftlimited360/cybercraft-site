@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
       console.log(`[social-cron] Posted: ${copy.headline} — IG:${igData?.ok} FB:${fbData?.ok} LI:${liData?.ok}`);
     }
 
-    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results });
+    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results, debug: { photoUrl, squareFinalUrl: squareFinalUrl.slice(0, 120), landscapeFinalUrl: landscapeFinalUrl.slice(0, 120) } });
 
   } catch (err) {
     console.error("[social-cron] error:", err);

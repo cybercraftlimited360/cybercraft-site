@@ -2,64 +2,65 @@ import { NextRequest, NextResponse } from "next/server";
 
 const FB_API = "https://graph.facebook.com/v20.0";
 
-async function postToFacebook(message: string, imageUrl?: string, link?: string): Promise<{ id?: string; error?: string }> {
+async function postToFacebook(message: string, imageUrl?: string, link?: string): Promise<{ id?: string; error?: string; debug?: unknown }> {
   const pageId = process.env.FB_PAGE_ID;
   const token = process.env.FB_PAGE_TOKEN;
   if (!pageId || !token) return { error: "FB_PAGE_ID or FB_PAGE_TOKEN not set" };
 
   if (imageUrl) {
-    // Post with image via /photos endpoint for rich visual post
-    const body: Record<string, string> = {
+    // Post with image — use form-urlencoded (most reliable for Graph API /photos)
+    const params = new URLSearchParams({
       caption: link ? `${message}\n\n${link}` : message,
       url: imageUrl,
       access_token: token,
-    };
+    });
     const res = await fetch(`${FB_API}/${pageId}/photos`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
     });
     const data = await res.json();
-    if (!res.ok) return { error: data.error?.message ?? "Facebook photo post failed" };
+    if (!res.ok) return { error: data.error?.message ?? "Facebook photo post failed", debug: { status: res.status, body: data, imageUrl } };
     return { id: data.id };
   }
 
   // Text-only post
-  const body: Record<string, string> = { message, access_token: token };
-  if (link) body.link = link;
-
+  const params = new URLSearchParams({ message, access_token: token });
+  if (link) params.set("link", link);
   const res = await fetch(`${FB_API}/${pageId}/feed`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
   });
   const data = await res.json();
-  if (!res.ok) return { error: data.error?.message ?? "Facebook post failed" };
+  if (!res.ok) return { error: data.error?.message ?? "Facebook post failed", debug: data };
   return { id: data.id };
 }
 
-async function postToInstagram(imageUrl: string, caption: string): Promise<{ id?: string; error?: string }> {
+async function postToInstagram(imageUrl: string, caption: string): Promise<{ id?: string; error?: string; debug?: unknown }> {
   const igUserId = process.env.IG_USER_ID;
   const token = process.env.IG_ACCESS_TOKEN;
   if (!igUserId || !token) return { error: "IG_USER_ID or IG_ACCESS_TOKEN not set" };
 
+  const containerParams = new URLSearchParams({ image_url: imageUrl, caption, access_token: token });
   const containerRes = await fetch(`${FB_API}/${igUserId}/media`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: imageUrl, caption, access_token: token }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: containerParams.toString(),
   });
   const container = await containerRes.json();
   if (!containerRes.ok || !container.id) {
-    return { error: container.error?.message ?? "Instagram container creation failed" };
+    return { error: container.error?.message ?? "Instagram container creation failed", debug: { status: containerRes.status, body: container, imageUrl } };
   }
 
+  const publishParams = new URLSearchParams({ creation_id: container.id, access_token: token });
   const publishRes = await fetch(`${FB_API}/${igUserId}/media_publish`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ creation_id: container.id, access_token: token }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: publishParams.toString(),
   });
   const published = await publishRes.json();
-  if (!publishRes.ok) return { error: published.error?.message ?? "Instagram publish failed" };
+  if (!publishRes.ok) return { error: published.error?.message ?? "Instagram publish failed", debug: published };
   return { id: published.id };
 }
 

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 const LI_API = "https://api.linkedin.com/v2";
 
-async function uploadImageToLinkedIn(imageUrl: string, token: string, authorUrn: string): Promise<string | null> {
+async function uploadImageToLinkedIn(imageUrl: string, token: string, authorUrn: string): Promise<{ asset: string | null; debugSteps: string[] }> {
+  const steps: string[] = [];
+
   const registerRes = await fetch(`${LI_API}/assets?action=registerUpload`, {
     method: "POST",
     headers: {
@@ -19,24 +21,31 @@ async function uploadImageToLinkedIn(imageUrl: string, token: string, authorUrn:
     }),
   });
 
-  if (!registerRes.ok) return null;
+  if (!registerRes.ok) {
+    const body = await registerRes.text();
+    steps.push(`registerUpload FAILED ${registerRes.status}: ${body.slice(0, 200)}`);
+    return { asset: null, debugSteps: steps };
+  }
   const registerData = await registerRes.json();
   const uploadUrl = registerData.value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl;
   const asset = registerData.value?.asset;
-  if (!uploadUrl || !asset) return null;
+  steps.push(`registerUpload OK — asset=${asset} uploadUrl=${uploadUrl ? "present" : "MISSING"}`);
+  if (!uploadUrl || !asset) return { asset: null, debugSteps: steps };
 
   const imgRes = await fetch(imageUrl);
-  if (!imgRes.ok) return null;
+  steps.push(`imageFetch ${imgRes.status} for ${imageUrl.slice(0, 80)}`);
+  if (!imgRes.ok) return { asset: null, debugSteps: steps };
   const imgBuffer = await imgRes.arrayBuffer();
+  steps.push(`imageBuffer ${imgBuffer.byteLength} bytes`);
 
   const uploadRes = await fetch(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": "image/png" },
     body: imgBuffer,
   });
-
-  if (!uploadRes.ok) return null;
-  return asset;
+  steps.push(`blobUpload ${uploadRes.status}`);
+  if (!uploadRes.ok) return { asset: null, debugSteps: steps };
+  return { asset, debugSteps: steps };
 }
 
 export async function POST(req: NextRequest) {
@@ -60,8 +69,11 @@ export async function POST(req: NextRequest) {
   const commentary = link ? `${text}\n\n${link}` : text;
 
   let asset: string | null = null;
+  let liDebug: string[] = [];
   if (imageUrl) {
-    asset = await uploadImageToLinkedIn(imageUrl, token, authorUrn);
+    const result = await uploadImageToLinkedIn(imageUrl, token, authorUrn);
+    asset = result.asset;
+    liDebug = result.debugSteps;
   }
 
   const body = asset
@@ -102,8 +114,8 @@ export async function POST(req: NextRequest) {
 
   const data = await res.json();
   if (!res.ok) {
-    return NextResponse.json({ ok: false, error: data.message ?? "LinkedIn post failed", data }, { status: 500 });
+    return NextResponse.json({ ok: false, error: data.message ?? "LinkedIn post failed", data, liDebug }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, id: data.id });
+  return NextResponse.json({ ok: true, id: data.id, hasImage: !!asset, liDebug });
 }
