@@ -103,8 +103,29 @@ const EXISTING_SLUGS = [
   { slug: "ai-chatbot-houston-texas",                                     title: "AI Chatbot for Businesses: What's Working in 2026" },
 ];
 
+function escapeControlCharsInStrings(str: string): string {
+  let result = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (escaped) { result += c; escaped = false; }
+    else if (c === "\\") { result += c; escaped = true; }
+    else if (c === '"') { result += c; inString = !inString; }
+    else if (inString && c.charCodeAt(0) < 32) {
+      if (c === "\n") result += "\\n";
+      else if (c === "\r") result += "\\r";
+      else if (c === "\t") result += "\\t";
+      else result += `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`;
+    } else {
+      result += c;
+    }
+  }
+  return result;
+}
+
 async function generatePost(keyword: string, linkSuggestions: string): Promise<{ title: string; content: string } | null> {
-  const apiKey = process.env.CEREBRAS_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
   const prompt = `You are Saad Imran, founder of CyberCraft360 — a boutique AI agency serving small and mid-size businesses across the United States. You build custom voice agents, chatbots, and workflow automation. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants nationwide. You are direct, specific, and allergic to corporate fluff.
@@ -148,21 +169,26 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
   "body": "The full markdown body of the post here"
 }`;
 
-  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "gpt-oss-120b",
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 4000,
       temperature: 0.8,
-      stream: false,
     }),
   });
 
+  if (!res.ok) {
+    console.error("[blog-cron] Groq error", res.status, await res.text());
+    return null;
+  }
+
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
-  const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const clean = escapeControlCharsInStrings(stripped);
 
   try {
     const parsed = JSON.parse(clean);
@@ -176,14 +202,15 @@ tags: [${parsed.tags.map((t: string) => `"${t}"`).join(", ")}]
 
 ${parsed.body}`;
     return { title: parsed.title, content: mdx };
-  } catch {
+  } catch (e) {
+    console.error("[blog-cron] JSON parse failed:", String(e), "raw start:", raw.slice(0, 200));
     return null;
   }
 }
 
 async function commitToGitHub(slug: string, content: string): Promise<boolean> {
   const token = process.env.GITHUB_TOKEN;
-  if (!token) return false;
+  if (!token) { console.error("[blog-cron] GITHUB_TOKEN not set"); return false; }
 
   const filePath = `${POSTS_PATH}/${slug}.mdx`;
   const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
@@ -204,13 +231,17 @@ async function commitToGitHub(slug: string, content: string): Promise<boolean> {
     }),
   });
 
+  if (!res.ok) {
+    console.error("[blog-cron] GitHub commit failed", res.status, await res.text());
+  }
   return res.ok;
 }
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
   const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const querySecret = req.nextUrl?.searchParams?.get("secret");
+  const secret = process.env.CRON_SECRET;
+  if (auth !== `Bearer ${secret}` && querySecret !== secret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -231,7 +262,7 @@ export async function GET(req: NextRequest) {
     // Pick next keyword (rotate through pool)
     const usedRaw = await redis.get<string[]>("blog:used_keywords") ?? [];
     const available = KEYWORD_POOL.filter(k => !usedRaw.includes(k));
-    const pool = available.length > 0 ? available : KEYWORD_POOL; // reset when exhausted
+    const pool = available.length > 0 ? available : KEYWORD_POOL;
     const keyword = pool[Math.floor(Math.random() * pool.length)];
 
     // Generate post
@@ -242,30 +273,23 @@ export async function GET(req: NextRequest) {
 
     const slug = slugify(post.title);
 
-    // Save to review queue — do NOT commit to GitHub yet
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-    const firstTag = post.content.match(/^tags:\s*\["?([^",\]]+)/m)?.[1]?.trim() ?? "AI Agency · USA";
-    const ogImageUrl = `${siteUrl}/og?title=${encodeURIComponent(post.title)}&tag=${encodeURIComponent(firstTag)}`;
-    const pending = await redis.get<any[]>("blog:pending_posts") ?? [];
-    const entry = {
-      id: `bp_${Date.now()}`,
-      slug,
-      keyword,
-      title: post.title,
-      content: post.content,
-      ogImageUrl,
-      generatedAt: new Date().toISOString(),
-      status: "pending",
-    };
-    pending.unshift(entry);
-    await redis.set("blog:pending_posts", pending.slice(0, 20));
+    // Commit directly to GitHub — no review queue
+    const committed = await commitToGitHub(slug, post.content);
+    if (!committed) {
+      return NextResponse.json({ ok: false, error: "GitHub commit failed" }, { status: 500 });
+    }
 
-    // Mark keyword as used so it isn't picked again before approval
+    // Mark keyword as used
     usedRaw.push(keyword);
     await redis.set("blog:used_keywords", usedRaw);
 
-    console.log(`[blog-cron] Queued for review: ${slug}`);
-    return NextResponse.json({ ok: true, queued: true, id: entry.id, slug, keyword, title: post.title });
+    // Log to Redis for tracking
+    const log = await redis.get<any[]>("blog:auto_posts") ?? [];
+    log.unshift({ slug, title: post.title, keyword, publishedAt: new Date().toISOString() });
+    await redis.set("blog:auto_posts", log.slice(0, 100));
+
+    console.log(`[blog-cron] Published: ${slug}`);
+    return NextResponse.json({ ok: true, slug, keyword, title: post.title });
 
   } catch (err) {
     console.error("[blog-cron] error:", err);
