@@ -214,9 +214,9 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "openai/gpt-oss-120b",
+      model: "qwen/qwen3.6-27b",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 1500,
+      max_tokens: 2000,
       temperature: 0.75,
     }),
   });
@@ -229,7 +229,8 @@ async function callGroq(prompt: string): Promise<CopyResult | null> {
   }
 
   const data = await res.json();
-  const raw = data.choices?.[0]?.message?.content ?? "";
+  const rawContent = data.choices?.[0]?.message?.content ?? "";
+  const raw = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   _lastGroqRaw = raw;
   const result = parseCopyResult(raw);
   if (!result) console.error("[generate-post] Groq JSON parse failed, raw:", raw.slice(0, 400));

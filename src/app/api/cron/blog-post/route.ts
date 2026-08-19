@@ -173,9 +173,9 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "openai/gpt-oss-120b",
+      model: "qwen/qwen3.6-27b",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 4000,
+      max_tokens: 6000,
       temperature: 0.8,
     }),
   });
@@ -187,7 +187,9 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
 
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content ?? "";
-  const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  // Strip <think>...</think> blocks from reasoning models before parsing
+  const noThink = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const stripped = noThink.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   const clean = escapeControlCharsInStrings(stripped);
 
   try {
