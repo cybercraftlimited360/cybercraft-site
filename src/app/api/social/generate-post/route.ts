@@ -140,11 +140,13 @@ headline (4–10 words):
 - Use line breaks (\\n) to create intentional rhythm — never leave an awkward orphan word on its own line.
 - Avoid: questions, hype words, generic AI clichés
 
-body (25–45 words exactly):
+body (50–70 words exactly):
 - Sharp insight that expands the headline. Specific. Earned.
 - Opens with a concrete truth, not a definition.
 - No hedging, no pitching, no filler.
-- Every sentence must change what the reader thinks, not restate what they already know.
+- 2–3 sentences that build on each other — not a list, not bullet points.
+- Every sentence must change what the reader thinks or reveal something specific about how the system works.
+- Close with one line that makes the CTA feel inevitable.
 
 cta (3–6 words):
 - Action-oriented, premium, specific to the topic.
@@ -174,19 +176,24 @@ dallePromptLandscape: for 1792x1024 Facebook/LinkedIn horizontal post
 CAPTIONS (what appears in the post caption, NOT on the image)
 ==================================================
 
-linkedinCaption (130–180 words):
+linkedinCaption (200–260 words):
 - Executive register. Reads like a memo from a senior operator, not a marketing post.
 - Opens with a counterintuitive observation or specific business truth — NOT the headline repeated.
-- Builds the idea over 3–4 sentences. Lands CyberCraft360 once, naturally.
+- Paragraph 1 (3–4 sentences): Set up the problem or observation with a real business scenario and specific detail.
+- Paragraph 2 (3–4 sentences): Explain the mechanism — how AI or automation actually changes the outcome. Be specific about what changes and why.
+- Paragraph 3 (2–3 sentences): Land the insight with a concrete result or implication. Name CyberCraft360 once, naturally.
 - End with: "Book a strategy call at CyberCraft360.com" then a blank line then: "#AIEngineering #BusinessAutomation #IntelligentSystems #OperationalExcellence #CyberCraft360"
 
-instagramCaption (60–90 words):
-- First line is the hook — must be strong enough to stop the scroll.
-- Confident, editorial, precise.
+instagramCaption (100–140 words):
+- First line is the hook — must be strong enough to stop the scroll on its own.
+- 2–3 sentences that unpack the idea with a specific example or outcome a business owner would recognize.
+- One sentence that connects it to CyberCraft360's work.
 - End with: "CyberCraft360.com" then a blank line then: "#AIEngineering #BusinessAutomation #AIAgency #IntelligentSystems #OperationalExcellence #CyberCraft360 #SmallBusiness #AIForBusiness"
 
-facebookCaption (90–130 words):
-- Narrative. A business scenario, problem moment, or before/after. Accessible and business-focused.
+facebookCaption (150–200 words):
+- Narrative. Open with a specific business scenario — a real moment a business owner would recognize.
+- Walk through the problem and what changes with AI in place. Use specific numbers or time savings where natural.
+- Close with a clear, unsalesy CTA to book a call or learn more.
 - No hashtags. End with: "CyberCraft360.com"
 
 ==================================================

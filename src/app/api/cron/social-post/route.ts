@@ -3,6 +3,8 @@ import { put } from "@vercel/blob";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
+export const maxDuration = 300; // 5 minutes — covers DALL-E + Pexels + Instagram polling
+
 async function notifyFailure(step: string, detail: string) {
   await sendEmail({
     to: "cybercraftlimited@gmail.com",
@@ -131,6 +133,28 @@ export async function GET(req: NextRequest) {
       });
       await redis.set("social:auto_posts", log.slice(0, 50));
       console.log(`[social-cron] Posted: ${copy.headline} — IG:${igData?.ok} FB:${fbData?.ok} LI:${liData?.ok}`);
+
+      const platformLines = [
+        `<tr><td style="padding:8px 12px;font-weight:600;">Instagram</td><td style="padding:8px 12px;color:${igData?.ok ? "#16a34a" : "#dc2626"};">${igData?.ok ? "✅ Posted" : `❌ ${igData?.error ?? "Failed"}`}</td></tr>`,
+        `<tr><td style="padding:8px 12px;font-weight:600;">Facebook</td><td style="padding:8px 12px;color:${fbData?.ok ? "#16a34a" : "#dc2626"};">${fbData?.ok ? "✅ Posted" : `❌ ${fbData?.error ?? "Failed"}`}</td></tr>`,
+        `<tr><td style="padding:8px 12px;font-weight:600;">LinkedIn</td><td style="padding:8px 12px;color:${liData?.ok ? "#16a34a" : "#dc2626"};">${liData?.ok ? "✅ Posted" : `❌ ${liData?.error ?? "Failed"}`}</td></tr>`,
+      ].join("");
+      await sendEmail({
+        to: "cybercraftlimited@gmail.com",
+        subject: `✅ Social Post Live — ${copy.headline.replace(/\n/g, " ")}`,
+        html: `<div style="font-family:sans-serif;padding:24px;max-width:600px;">
+          <h2 style="color:#111;">Social Post Published</h2>
+          <p><strong>Topic:</strong> ${topic}</p>
+          <p><strong>Headline:</strong> ${copy.headline.replace(/\n/g, " ")}</p>
+          <table style="border-collapse:collapse;width:100%;margin-top:16px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            <thead><tr style="background:#f9fafb;"><th style="padding:8px 12px;text-align:left;">Platform</th><th style="padding:8px 12px;text-align:left;">Result</th></tr></thead>
+            <tbody>${platformLines}</tbody>
+          </table>
+          <p style="color:#6b7280;font-size:12px;margin-top:16px;">${new Date().toISOString()}</p>
+        </div>`,
+      }).catch(() => {});
+    } else {
+      await notifyFailure("All platforms", `IG: ${igData?.error ?? "ok"} | FB: ${fbData?.error ?? "ok"} | LI: ${liData?.error ?? "ok"}`);
     }
 
     return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results, debug: { photoUrl, squareFinalUrl: squareFinalUrl.slice(0, 120), landscapeFinalUrl: landscapeFinalUrl.slice(0, 120) } });

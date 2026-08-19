@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
+export const maxDuration = 300; // 5 minutes — blog gen + GitHub commit + social posting
+
 async function notifyFailure(step: string, detail: string) {
   await sendEmail({
     to: "cybercraftlimited@gmail.com",
@@ -309,7 +311,136 @@ export async function GET(req: NextRequest) {
     await redis.set("blog:auto_posts", log.slice(0, 100));
 
     console.log(`[blog-cron] Published: ${slug}`);
-    return NextResponse.json({ ok: true, slug, keyword, title: post.title });
+
+    const blogUrl = `https://cybercraft360.com/blog/${slug}`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
+
+    // Share blog post on social media
+    let socialResults: Record<string, any> = {};
+    try {
+      // Generate social captions for the blog post
+      const captionRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [{
+            role: "user",
+            content: `You are the social media voice of CyberCraft360 — a premium AI engineering company for small businesses.
+
+A new blog post was just published. Write social media captions to drive traffic to it.
+
+Blog Title: "${post.title}"
+Blog URL: ${blogUrl}
+Topic Keyword: "${keyword}"
+
+Write 3 captions. Return ONLY valid JSON, no markdown fences:
+{
+  "linkedin": "200-250 word LinkedIn caption. Executive, insightful, references the blog naturally. End with: Read the full breakdown at ${blogUrl}\\n\\n#AIEngineering #BusinessAutomation #IntelligentSystems #CyberCraft360",
+  "instagram": "100-130 word Instagram caption. Hook first line. Conversational but precise. End with: Full post at cybercraft360.com/blog\\n\\n#AIEngineering #BusinessAutomation #AIForBusiness #SmallBusiness #CyberCraft360",
+  "facebook": "150-190 word Facebook caption. Story-driven, accessible. Reference the blog topic with a real business scenario. End with: Read the full guide at ${blogUrl}"
+}`,
+          }],
+          max_tokens: 2000,
+          temperature: 0.75,
+        }),
+      });
+      const captionData = await captionRes.json();
+      const captionRaw = captionData.choices?.[0]?.message?.content ?? "{}";
+      const captionClean = captionRaw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim()
+        .replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      const captions = JSON.parse(captionClean);
+
+      // Fetch Pexels photo for the blog topic
+      let photoUrl: string | null = null;
+      const pexelsKey = process.env.PEXELS_API_KEY;
+      if (pexelsKey) {
+        const pexelsQuery = keyword.replace(/^(how to|what is|why|how|best|ai for) /i, "").slice(0, 40);
+        const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(pexelsQuery)}&per_page=5&orientation=landscape`, {
+          headers: { Authorization: pexelsKey },
+        });
+        if (pexelsRes.ok) {
+          const pexelsData = await pexelsRes.json();
+          const photos = pexelsData.photos ?? [];
+          if (photos.length) {
+            const pick = photos[Math.floor(Math.random() * photos.length)];
+            photoUrl = pick.src?.landscape ?? pick.src?.large2x ?? null;
+          }
+        }
+      }
+
+      // Build social image URL for blog post
+      const imageParams = new URLSearchParams({
+        ey: "NEW BLOG POST",
+        hl: post.title.toUpperCase().slice(0, 50),
+        ct: "READ ON THE BLOG →",
+        layout: "1",
+        aspect: "square",
+        ...(photoUrl ? { photo: photoUrl } : {}),
+      });
+      const squareImageUrl = `${siteUrl}/social-image?${imageParams}`;
+      const landscapeParams = new URLSearchParams({
+        ey: "NEW BLOG POST",
+        hl: post.title.toUpperCase().slice(0, 50),
+        ct: "READ ON THE BLOG →",
+        layout: "1",
+        aspect: "landscape",
+        ...(photoUrl ? { photo: photoUrl } : {}),
+      });
+      const landscapeImageUrl = `${siteUrl}/social-image?${landscapeParams}`;
+
+      const cronHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` };
+      const [igRes, fbRes, liRes] = await Promise.all([
+        fetch(`${siteUrl}/api/social/post`, {
+          method: "POST", headers: cronHeaders,
+          body: JSON.stringify({ message: captions.instagram, imageUrl: squareImageUrl, platforms: ["instagram"] }),
+        }),
+        fetch(`${siteUrl}/api/social/post`, {
+          method: "POST", headers: cronHeaders,
+          body: JSON.stringify({ message: captions.facebook, imageUrl: landscapeImageUrl, platforms: ["facebook"] }),
+        }),
+        fetch(`${siteUrl}/api/social/linkedin`, {
+          method: "POST", headers: cronHeaders,
+          body: JSON.stringify({ text: captions.linkedin, imageUrl: landscapeImageUrl, link: blogUrl }),
+        }),
+      ]);
+      const [igData, fbData, liData] = await Promise.all([
+        igRes.json().catch(() => ({ error: "parse failed" })),
+        fbRes.json().catch(() => ({ error: "parse failed" })),
+        liRes.json().catch(() => ({ error: "parse failed" })),
+      ]);
+      socialResults = { instagram: igData, facebook: fbData, linkedin: liData };
+    } catch (socialErr) {
+      console.error("[blog-cron] social posting failed:", socialErr);
+      socialResults = { error: String(socialErr) };
+    }
+
+    // Send success notification email
+    const igOk = (socialResults.instagram as any)?.ok;
+    const fbOk = (socialResults.facebook as any)?.ok;
+    const liOk = (socialResults.linkedin as any)?.ok;
+    await sendEmail({
+      to: "cybercraftlimited@gmail.com",
+      subject: `✅ Blog Post Published — ${post.title}`,
+      html: `<div style="font-family:sans-serif;padding:24px;max-width:600px;">
+        <h2 style="color:#111;">New Blog Post Live</h2>
+        <p><strong>Title:</strong> ${post.title}</p>
+        <p><strong>Keyword:</strong> ${keyword}</p>
+        <p><strong>URL:</strong> <a href="${blogUrl}">${blogUrl}</a></p>
+        <h3 style="margin-top:20px;">Social Media Shares</h3>
+        <table style="border-collapse:collapse;width:100%;border:1px solid #e5e7eb;">
+          <thead><tr style="background:#f9fafb;"><th style="padding:8px 12px;text-align:left;">Platform</th><th style="padding:8px 12px;text-align:left;">Result</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:8px 12px;font-weight:600;">Instagram</td><td style="padding:8px 12px;color:${igOk ? "#16a34a" : "#dc2626"};">${igOk ? "✅ Posted" : `❌ ${(socialResults.instagram as any)?.error ?? "Failed"}`}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;">Facebook</td><td style="padding:8px 12px;color:${fbOk ? "#16a34a" : "#dc2626"};">${fbOk ? "✅ Posted" : `❌ ${(socialResults.facebook as any)?.error ?? "Failed"}`}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;">LinkedIn</td><td style="padding:8px 12px;color:${liOk ? "#16a34a" : "#dc2626"};">${liOk ? "✅ Posted" : `❌ ${(socialResults.linkedin as any)?.error ?? "Failed"}`}</td></tr>
+          </tbody>
+        </table>
+        <p style="color:#6b7280;font-size:12px;margin-top:16px;">${new Date().toISOString()}</p>
+      </div>`,
+    }).catch(() => {});
+
+    return NextResponse.json({ ok: true, slug, keyword, title: post.title, blogUrl, socialResults });
 
   } catch (err) {
     console.error("[blog-cron] error:", err);
