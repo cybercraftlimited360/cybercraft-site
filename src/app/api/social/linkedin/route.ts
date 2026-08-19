@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 const LI_API = "https://api.linkedin.com/v2";
 
 async function uploadImageToLinkedIn(imageUrl: string, token: string, authorUrn: string): Promise<{ asset: string | null; debugSteps: string[] }> {

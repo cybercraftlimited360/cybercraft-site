@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 const FB_API = "https://graph.facebook.com/v20.0";
 
 async function postToFacebook(message: string, imageUrl?: string, link?: string): Promise<{ id?: string; error?: string; debug?: unknown }> {
@@ -51,6 +53,21 @@ async function postToInstagram(imageUrl: string, caption: string): Promise<{ id?
   const container = await containerRes.json();
   if (!containerRes.ok || !container.id) {
     return { error: container.error?.message ?? "Instagram container creation failed", debug: { status: containerRes.status, body: container, imageUrl } };
+  }
+
+  // Poll until container status is FINISHED (Instagram needs time to download/process the image)
+  let statusCode = "IN_PROGRESS";
+  for (let attempt = 0; attempt < 8 && statusCode !== "FINISHED"; attempt++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const statusRes = await fetch(`${FB_API}/${container.id}?fields=status_code&access_token=${token}`);
+    if (statusRes.ok) {
+      const statusData = await statusRes.json();
+      statusCode = statusData.status_code ?? "IN_PROGRESS";
+      if (statusCode === "ERROR") return { error: "Instagram container processing failed", debug: statusData };
+    }
+  }
+  if (statusCode !== "FINISHED") {
+    return { error: `Instagram container not ready after polling (status: ${statusCode})`, debug: { containerId: container.id } };
   }
 
   const publishParams = new URLSearchParams({ creation_id: container.id, access_token: token });
