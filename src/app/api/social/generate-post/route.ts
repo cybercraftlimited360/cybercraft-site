@@ -301,6 +301,29 @@ async function generateDalleImage(prompt: string, square: boolean): Promise<stri
   return data.data?.[0]?.url ?? null;
 }
 
+async function fetchPexelsPhoto(query: string, landscape: boolean): Promise<string | null> {
+  const apiKey = process.env.PEXELS_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const params = new URLSearchParams({
+      query,
+      per_page: "5",
+      orientation: landscape ? "landscape" : "square",
+    });
+    const res = await fetch(`https://api.pexels.com/v1/search?${params}`, {
+      headers: { Authorization: apiKey },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const photos: any[] = data.photos ?? [];
+    if (!photos.length) return null;
+    const photo = photos[Math.floor(Math.random() * photos.length)];
+    return landscape ? (photo.src?.landscape ?? photo.src?.large2x ?? null) : (photo.src?.large2x ?? photo.src?.large ?? null);
+  } catch {
+    return null;
+  }
+}
+
 // ── Route handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization");
@@ -346,9 +369,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Generate DALL-E images (square for Instagram, landscape for Facebook/LinkedIn)
-  const [squarePhoto, landscapePhoto] = await Promise.all([
+  // Falls back to Pexels if DALL-E fails (rate limit, timeout, no key, etc.)
+  const [dalleSquare, dalleLandscape] = await Promise.all([
     generateDalleImage(copy.dallePromptSquare, true),
     generateDalleImage(copy.dallePromptLandscape, false),
+  ]);
+  const pexelsQuery = topic.topic.replace(/^AI for /, "").replace(/AI /gi, "").trim();
+  const [squarePhoto, landscapePhoto] = await Promise.all([
+    dalleSquare ?? fetchPexelsPhoto(pexelsQuery, false),
+    dalleLandscape ?? fetchPexelsPhoto(pexelsQuery, true),
   ]);
 
   // Upload DALL-E images to Vercel Blob for permanent, short URLs
