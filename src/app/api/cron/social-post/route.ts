@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
@@ -57,8 +56,9 @@ export async function GET(req: NextRequest) {
     // Step 2: Build image URLs using new param names (ey=eyebrow, hl=headline, bd=body, ct=cta, layout, aspect, photo)
     const imageBase = `${siteUrl}/social-image`;
     const lv = String(layoutVariant ?? 1);
+    // Instagram square: omit bd (body) to keep URL short — Meta's crawler rejects long URLs
     const squareParams = new URLSearchParams({
-      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", bd: copy.body ?? "", ct: copy.cta ?? "",
+      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", ct: copy.cta ?? "",
       layout: lv, aspect: "square",
       ...(photoUrl ? { photo: photoUrl } : {}),
     });
@@ -71,41 +71,8 @@ export async function GET(req: NextRequest) {
     const squareImageUrl   = `${imageBase}?${squareParams.toString()}`;
     const landscapeImageUrl = `${imageBase}?${landscapeParams.toString()}`;
 
-    // Step 3: Pre-render social images and upload to Blob.
-    // Gives Meta and LinkedIn a direct static PNG URL instead of a dynamic route,
-    // which is required for reliable image pickup by Meta's crawlers.
-    const blobDiag: Record<string, string> = {};
-
-    async function renderAndStore(url: string, name: string): Promise<string> {
-      try {
-        const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
-        blobDiag[`${name}_token`] = hasBlobToken ? "present" : "MISSING";
-        if (!hasBlobToken) return url;
-
-        const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
-        blobDiag[`${name}_fetch`] = `${res.status} ${res.statusText}`;
-        if (!res.ok) return url;
-
-        const buf = await res.arrayBuffer();
-        blobDiag[`${name}_bytes`] = String(buf.byteLength);
-        if (buf.byteLength === 0) return url;
-
-        const { url: blobUrl } = await put(`posts/${name}-${Date.now()}.png`, buf, {
-          access: "public",
-          contentType: "image/png",
-        });
-        blobDiag[`${name}_blob`] = "ok";
-        return blobUrl;
-      } catch (e) {
-        blobDiag[`${name}_error`] = String(e).slice(0, 200);
-        return url;
-      }
-    }
-
-    const [squareFinalUrl, landscapeFinalUrl] = await Promise.all([
-      renderAndStore(squareImageUrl, "ig-square"),
-      renderAndStore(landscapeImageUrl, "fb-li-landscape"),
-    ]);
+    const squareFinalUrl = squareImageUrl;
+    const landscapeFinalUrl = landscapeImageUrl;
 
     // Step 4: Post to all platforms directly
     const cronHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` };
@@ -170,7 +137,7 @@ export async function GET(req: NextRequest) {
       await notifyFailure("All platforms", `IG: ${igData?.error ?? "ok"} | FB: ${fbData?.error ?? "ok"} | LI: ${liData?.error ?? "ok"}`);
     }
 
-    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results, debug: { photoUrl, squareFinalUrl: squareFinalUrl.slice(0, 120), landscapeFinalUrl: landscapeFinalUrl.slice(0, 120), blobDiag } });
+    return NextResponse.json({ ok: anySuccess, headline: copy.headline, topic, day, frame, results, debug: { photoUrl, squareFinalUrl: squareFinalUrl.slice(0, 200), landscapeFinalUrl: landscapeFinalUrl.slice(0, 200) } });
 
   } catch (err) {
     console.error("[social-cron] error:", err);
