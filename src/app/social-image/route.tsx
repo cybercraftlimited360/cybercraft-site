@@ -510,7 +510,7 @@ export async function GET(req: NextRequest) {
 
   const [photoUrl, logoDataUri, fonts] = await Promise.all([
     rawPhoto ? fetchPhotoAsDataUri(rawPhoto) : Promise.resolve(""),
-    fetchPhotoAsDataUri(`${SITE}/logo.png`),
+    fetchPhotoAsDataUri(`${SITE}/logo-icon.png`),
     loadFonts(),
   ]);
 
