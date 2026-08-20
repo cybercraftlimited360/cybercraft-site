@@ -73,8 +73,27 @@ export async function GET(req: NextRequest) {
     const squareImageUrl   = `${imageBase}?${squareParams.toString()}`;
     const landscapeImageUrl = `${imageBase}?${landscapeParams.toString()}`;
 
-    const squareFinalUrl = squareImageUrl;
-    const landscapeFinalUrl = landscapeImageUrl;
+    // Pre-render images and cache in Redis so Meta's crawler gets instant response
+    // (the dynamic social-image route takes 3-8s; Meta's crawler times out)
+    async function renderAndCache(url: string): Promise<string> {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(25000) });
+        if (!res.ok) return url;
+        const buf = await res.arrayBuffer();
+        if (buf.byteLength === 0) return url;
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+        await redis.set(`img:${id}`, b64, { ex: 86400 });
+        return `${siteUrl}/api/img/${id}`;
+      } catch {
+        return url;
+      }
+    }
+
+    const [squareFinalUrl, landscapeFinalUrl] = await Promise.all([
+      renderAndCache(squareImageUrl),
+      renderAndCache(landscapeImageUrl),
+    ]);
 
     // Step 4: Post to all platforms directly
     const cronHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` };
