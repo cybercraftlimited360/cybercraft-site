@@ -390,19 +390,43 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
       });
       const landscapeImageUrl = `${siteUrl}/social-image?${landscapeParams}`;
 
+      // Pre-render and cache images in Redis so Meta's crawler gets instant response
+      async function renderAndCache(url: string): Promise<string> {
+        try {
+          const res = await fetch(url, { signal: AbortSignal.timeout(25000) });
+          if (!res.ok) return url;
+          const buf = await res.arrayBuffer();
+          if (buf.byteLength === 0) return url;
+          const bytes = new Uint8Array(buf);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+          const b64 = btoa(binary);
+          const id = Math.random().toString(36).slice(2, 18);
+          await redis.set(`img:${id}`, b64, { ex: 86400 });
+          return `${siteUrl}/api/img/${id}`;
+        } catch {
+          return url;
+        }
+      }
+
+      const [squareFinalUrl, landscapeFinalUrl] = await Promise.all([
+        renderAndCache(squareImageUrl),
+        renderAndCache(landscapeImageUrl),
+      ]);
+
       const cronHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CRON_SECRET}` };
       const [igRes, fbRes, liRes] = await Promise.all([
         fetch(`${siteUrl}/api/social/post`, {
           method: "POST", headers: cronHeaders,
-          body: JSON.stringify({ message: captions.instagram, imageUrl: squareImageUrl, platforms: ["instagram"] }),
+          body: JSON.stringify({ message: captions.instagram, imageUrl: squareFinalUrl, platforms: ["instagram"] }),
         }),
         fetch(`${siteUrl}/api/social/post`, {
           method: "POST", headers: cronHeaders,
-          body: JSON.stringify({ message: captions.facebook, imageUrl: landscapeImageUrl, platforms: ["facebook"] }),
+          body: JSON.stringify({ message: captions.facebook, imageUrl: landscapeFinalUrl, platforms: ["facebook"] }),
         }),
         fetch(`${siteUrl}/api/social/linkedin`, {
           method: "POST", headers: cronHeaders,
-          body: JSON.stringify({ text: captions.linkedin, imageUrl: landscapeImageUrl, link: blogUrl }),
+          body: JSON.stringify({ text: captions.linkedin, imageUrl: landscapeFinalUrl, link: blogUrl }),
         }),
       ]);
       const [igData, fbData, liData] = await Promise.all([
