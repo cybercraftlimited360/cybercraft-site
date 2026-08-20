@@ -373,7 +373,7 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
       // Build social image URL for blog post
       const imageParams = new URLSearchParams({
         ey: "NEW BLOG POST",
-        hl: post.title.toUpperCase().slice(0, 50),
+        hl: post.title.toUpperCase().slice(0, 50).replace(/\n/g, " "),
         ct: "READ ON THE BLOG →",
         layout: "1",
         aspect: "square",
@@ -382,7 +382,7 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
       const squareImageUrl = `${siteUrl}/social-image?${imageParams}`;
       const landscapeParams = new URLSearchParams({
         ey: "NEW BLOG POST",
-        hl: post.title.toUpperCase().slice(0, 50),
+        hl: post.title.toUpperCase().slice(0, 50).replace(/\n/g, " "),
         ct: "READ ON THE BLOG →",
         layout: "1",
         aspect: "landscape",

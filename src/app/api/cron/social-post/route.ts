@@ -56,9 +56,11 @@ export async function GET(req: NextRequest) {
     // Step 2: Build image URLs using new param names (ey=eyebrow, hl=headline, bd=body, ct=cta, layout, aspect, photo)
     const imageBase = `${siteUrl}/social-image`;
     const lv = String(layoutVariant ?? 1);
+    // Newlines in hl cause %0A in the URL which Meta's crawler rejects
+    const safeHl = (copy.headline ?? "").replace(/\n/g, " ");
     // Instagram square: omit bd (body) to keep URL short — Meta's crawler rejects long URLs
     const squareParams = new URLSearchParams({
-      ey: copy.eyebrow ?? "", hl: copy.headline ?? "", ct: copy.cta ?? "",
+      ey: copy.eyebrow ?? "", hl: safeHl, ct: copy.cta ?? "",
       layout: lv, aspect: "square",
       ...(photoUrl ? { photo: photoUrl } : {}),
     });
