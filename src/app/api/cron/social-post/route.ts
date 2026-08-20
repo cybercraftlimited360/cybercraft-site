@@ -75,17 +75,29 @@ export async function GET(req: NextRequest) {
 
     // Pre-render images and cache in Redis so Meta's crawler gets instant response
     // (the dynamic social-image route takes 3-8s; Meta's crawler times out)
+    function bufToBase64(buf: ArrayBuffer): string {
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      // Chunk to avoid "Maximum call stack size exceeded" on large arrays
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      return btoa(binary);
+    }
+
     async function renderAndCache(url: string): Promise<string> {
       try {
         const res = await fetch(url, { signal: AbortSignal.timeout(25000) });
-        if (!res.ok) return url;
+        if (!res.ok) { console.error("[renderAndCache] fetch failed", res.status, url.slice(0, 80)); return url; }
         const buf = await res.arrayBuffer();
-        if (buf.byteLength === 0) return url;
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-        const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+        if (buf.byteLength === 0) { console.error("[renderAndCache] 0 bytes"); return url; }
+        const b64 = bufToBase64(buf);
+        const id = Math.random().toString(36).slice(2, 18);
         await redis.set(`img:${id}`, b64, { ex: 86400 });
+        console.log(`[renderAndCache] cached ${buf.byteLength}b → /api/img/${id}`);
         return `${siteUrl}/api/img/${id}`;
-      } catch {
+      } catch (e) {
+        console.error("[renderAndCache] error:", String(e).slice(0, 200));
         return url;
       }
     }
