@@ -2115,9 +2115,9 @@ export default function Home() {
             {/* Social links */}
             <div className="flex gap-3 mt-1">
               {[
-                { label: "LinkedIn", href: "https://linkedin.com/company/cybercraft360", icon: <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z M2 9h4v12H2z M4 6a2 2 0 100-4 2 2 0 000 4z" /> },
-                { label: "X / Twitter", href: "https://x.com/cybercraft360", icon: <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.766l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /> },
-                { label: "Instagram", href: "https://instagram.com/cybercraft360", icon: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></> },
+                { label: "LinkedIn", href: "https://www.linkedin.com/in/saadi7/", icon: <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z M2 9h4v12H2z M4 6a2 2 0 100-4 2 2 0 000 4z" /> },
+                { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61591803136245", icon: <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" /> },
+                { label: "Instagram", href: "https://www.instagram.com/cybercraft.360/", icon: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></> },
               ].map(({ label, href, icon }) => (
                 <motion.a
                   key={label}
