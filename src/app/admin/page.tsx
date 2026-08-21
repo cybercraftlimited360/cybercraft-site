@@ -3783,9 +3783,73 @@ const US_CITIES = [
   "Memphis, TN","Louisville, KY","Portland, OR","Baltimore, MD","Milwaukee, WI",
 ];
 
+function EnrollmentsList({token}:{token:string}) {
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(()=>{
+    setLoading(true);
+    fetch("/api/admin/outreach/email/enroll",{headers:{"x-admin-token":token}})
+      .then(r=>r.json()).then(d=>setEnrollments(d.enrollments??[])).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+
+  async function updateStatus(id:string, status:string) {
+    await fetch("/api/admin/outreach/email/enroll",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json","x-admin-token":token},
+      body:JSON.stringify({id,status})
+    });
+    setEnrollments(prev=>prev.map(e=>e.id===id?{...e,status}:e));
+  }
+
+  const statusColor: Record<string,string> = {active:"#22c55e",paused:"#f59e0b",replied:"#00d4ff",completed:"rgba(255,255,255,0.4)",unsubscribed:"#ef4444"};
+  if(loading) return <p style={{fontSize:12,color:"rgba(255,255,255,0.35)"}}>Loading enrollments…</p>;
+  if(!enrollments.length) return <p style={{fontSize:12,color:"rgba(255,255,255,0.35)"}}>No enrollments yet.</p>;
+
+  return (
+    <div style={{marginTop:16}}>
+      <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 12px"}}>All Enrollments ({enrollments.length})</p>
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead>
+            <tr>
+              {["Lead","Email","Sequence","Step","Status","Actions"].map(h=>(
+                <th key={h} style={{textAlign:"left",padding:"8px 10px",color:"rgba(255,255,255,0.35)",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,0.06)",whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {enrollments.map(e=>(
+              <tr key={e.id} style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.8)"}}>{e.leadName}</td>
+                <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.4)"}}>{e.leadEmail}</td>
+                <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.5)"}}>{e.sequenceId}</td>
+                <td style={{padding:"8px 10px",color:"#00d4ff",textAlign:"center"}}>{e.currentStep+1}</td>
+                <td style={{padding:"8px 10px"}}>
+                  <span style={{padding:"3px 8px",borderRadius:6,background:`${statusColor[e.status]??"rgba(255,255,255,0.1)"}22`,color:statusColor[e.status]??"rgba(255,255,255,0.5)",fontSize:10,fontWeight:700}}>
+                    {e.status}
+                  </span>
+                </td>
+                <td style={{padding:"8px 10px"}}>
+                  <div style={{display:"flex",gap:6}}>
+                    {e.status==="active" && <button onClick={()=>updateStatus(e.id,"paused")} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(245,158,11,0.3)",background:"transparent",color:"#f59e0b",fontSize:10,cursor:"pointer"}}>Pause</button>}
+                    {e.status==="paused" && <button onClick={()=>updateStatus(e.id,"active")} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(34,197,94,0.3)",background:"transparent",color:"#22c55e",fontSize:10,cursor:"pointer"}}>Resume</button>}
+                    {(e.status==="active"||e.status==="paused") && <button onClick={()=>updateStatus(e.id,"replied")} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(0,212,255,0.3)",background:"transparent",color:"#00d4ff",fontSize:10,cursor:"pointer"}}>Replied</button>}
+                    {e.status!=="unsubscribed" && <button onClick={()=>updateStatus(e.id,"unsubscribed")} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(239,68,68,0.3)",background:"transparent",color:"#ef4444",fontSize:10,cursor:"pointer"}}>Unsub</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function OutreachTab({token}:{token:string}) {
   const h = {"x-admin-token":token};
-  const [section, setSection] = useState<"leads"|"groups"|"monitor">("leads");
+  const [section, setSection] = useState<"leads"|"groups"|"monitor"|"sequences"|"stats">("leads");
 
   // Lead scraper state
   const [industry, setIndustry] = useState("HVAC");
@@ -3813,8 +3877,29 @@ function OutreachTab({token}:{token:string}) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [copiedId, setCopiedId] = useState<string|null>(null);
 
+  // Email sequence state
+  const [sequences, setSequences] = useState<any[]>([]);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [emailStats, setEmailStats] = useState<any>(null);
+  const [selectedSeqId, setSelectedSeqId] = useState<string>("");
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollResult, setEnrollResult] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [outreachEmail, setOutreachEmail] = useState("");
+  const [outreachPassword, setOutreachPassword] = useState("");
+  const [outreachName, setOutreachName] = useState("Saad");
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
   const s = (v:string) => ({ padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box" as const });
   const btn = (col="#00d4ff") => ({ padding:"10px 18px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${col},${col}cc)`,color:"#000",fontSize:13,fontWeight:700,cursor:"pointer" });
+
+  useEffect(()=>{
+    if(section==="sequences" && sequences.length===0) {
+      fetch("/api/admin/outreach/email/sequences",{headers:h}).then(r=>r.json()).then(d=>{
+        if(d.sequences) setSequences(d.sequences);
+      }).catch(()=>{});
+    }
+  },[section]);
 
   async function scrapeLeads() {
     setScraping(true); setScrapeResult(null);
@@ -3897,10 +3982,16 @@ function OutreachTab({token}:{token:string}) {
 
       {/* Section tabs */}
       <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
-        {(["leads","groups","monitor"] as const).map(s=>(
-          <button key={s} onClick={()=>setSection(s)}
-            style={{padding:"8px 18px",borderRadius:20,border:`1px solid ${section===s?"#00d4ff":"rgba(255,255,255,0.1)"}`,background:section===s?"rgba(0,212,255,0.1)":"none",color:section===s?"#00d4ff":"rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>
-            {s==="leads"?"🗺 Lead Scraper":s==="groups"?"👥 Groups & LinkedIn":"👁 Post Monitor"}
+        {([
+          {id:"leads",label:"🗺 Lead Scraper"},
+          {id:"sequences",label:"✉️ Email Sequences"},
+          {id:"stats",label:"📊 Stats & Sent"},
+          {id:"groups",label:"👥 Groups & LinkedIn"},
+          {id:"monitor",label:"👁 Post Monitor"},
+        ] as const).map(({id,label})=>(
+          <button key={id} onClick={()=>setSection(id as any)}
+            style={{padding:"8px 18px",borderRadius:20,border:`1px solid ${section===id?"#00d4ff":"rgba(255,255,255,0.1)"}`,background:section===id?"rgba(0,212,255,0.1)":"none",color:section===id?"#00d4ff":"rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            {label}
           </button>
         ))}
       </div>
@@ -4161,6 +4252,165 @@ function OutreachTab({token}:{token:string}) {
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Email Sequences ── */}
+      {section==="sequences" && (
+        <div>
+          <div style={card}>
+            <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 14px"}}>Outreach Email Settings</p>
+            <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:"0 0 14px"}}>Set these as environment variables in Vercel: OUTREACH_EMAIL, OUTREACH_EMAIL_PASSWORD, OUTREACH_NAME, OUTREACH_SMTP_HOST (default: smtp.gmail.com), OUTREACH_SMTP_PORT (default: 465).</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
+              <input value={outreachEmail} onChange={e=>setOutreachEmail(e.target.value)} placeholder="Sender email" style={s("")}/>
+              <input value={outreachPassword} onChange={e=>setOutreachPassword(e.target.value)} placeholder="App password" type="password" style={s("")}/>
+              <input value={outreachName} onChange={e=>setOutreachName(e.target.value)} placeholder="Sender name" style={s("")}/>
+            </div>
+            <p style={{fontSize:11,color:"rgba(255,255,255,0.25)",margin:0}}>💡 Use an app-specific password with Gmail. Max 45 emails/day with 30–90s random delays. Cron runs hourly.</p>
+          </div>
+
+          <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"20px 0 12px"}}>Email Sequences ({sequences.length})</p>
+          {sequences.length === 0 && (
+            <div style={{...card,textAlign:"center",padding:32}}>
+              <p style={{fontSize:13,color:"rgba(255,255,255,0.35)",margin:0}}>Loading sequences…</p>
+            </div>
+          )}
+          {sequences.map((seq: any) => (
+            <div key={seq.id} style={{...card,marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:12}}>
+                <div>
+                  <p style={{fontSize:14,fontWeight:700,color:"#fff",margin:"0 0 4px"}}>{seq.name}</p>
+                  <p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:0}}>{seq.steps?.length ?? 0} steps · Industry: {seq.industry ?? "General"}</p>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <select value={selectedSeqId===seq.id?seq.id:""} onChange={()=>setSelectedSeqId(seq.id)}
+                    style={{...s(""),fontSize:11,padding:"5px 8px"}}>
+                    <option value="">Select to enroll</option>
+                    <option value={seq.id}>Use this sequence</option>
+                  </select>
+                  {selectedSeqId===seq.id && (
+                    <button disabled={enrolling} onClick={async()=>{
+                      setEnrolling(true); setEnrollResult(null);
+                      try {
+                        const lr = await fetch("/api/leads",{headers:{"x-admin-token":token}});
+                        const ld = await lr.json();
+                        const withEmail = (ld.leads??[]).filter((l:any)=>l.email);
+                        if(!withEmail.length){setEnrollResult({error:"No leads with email addresses found."});return;}
+                        const r = await fetch("/api/admin/outreach/email/enroll",{
+                          method:"POST",
+                          headers:{"Content-Type":"application/json","x-admin-token":token},
+                          body:JSON.stringify({
+                            leads:withEmail.map((l:any)=>({id:l.id,name:l.name,email:l.email,industry:l.industry??l.category??"General",city:l.city??"",ownerName:l.ownerName??l.contactName})),
+                            sequenceId:seq.id
+                          })
+                        });
+                        const d=await r.json();
+                        setEnrollResult(d);
+                      } catch(e){setEnrollResult({error:String(e)});}
+                      finally{setEnrolling(false);}
+                    }} style={{...btn(),fontSize:11,padding:"6px 14px",opacity:enrolling?0.5:1}}>
+                      {enrolling?"Enrolling…":"Enroll Leads"}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {seq.steps?.map((step: any, i: number) => (
+                <div key={i} style={{padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:9,marginBottom:6,borderLeft:"2px solid rgba(0,212,255,0.2)"}}>
+                  <div style={{display:"flex",gap:12,alignItems:"baseline"}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#00d4ff",minWidth:50}}>Day {step.day}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>{step.subject}</span>
+                  </div>
+                  <p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:"4px 0 0",paddingLeft:62,lineHeight:1.5}}>{step.body?.slice(0,120)}…</p>
+                </div>
+              ))}
+            </div>
+          ))}
+          {enrollResult && (
+            <div style={{padding:"12px 14px",borderRadius:11,background:enrollResult.error?"rgba(239,68,68,0.07)":"rgba(34,197,94,0.07)",border:`1px solid ${enrollResult.error?"rgba(239,68,68,0.2)":"rgba(34,197,94,0.2)"}`,marginTop:12}}>
+              {enrollResult.error
+                ? <p style={{fontSize:13,color:"#ef4444",margin:0}}>❌ {enrollResult.error}</p>
+                : <p style={{fontSize:13,color:"#22c55e",margin:0}}>✅ Enrolled {enrollResult.enrolled} leads · Skipped {enrollResult.skipped} (no email or already active)</p>
+              }
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Stats & Sent ── */}
+      {section==="stats" && (
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:0}}>Email Stats</p>
+            <button onClick={async()=>{
+              setStatsLoading(true);
+              try{
+                const r=await fetch("/api/admin/outreach/email/stats",{headers:{"x-admin-token":token}});
+                setEmailStats(await r.json());
+              }catch{} finally{setStatsLoading(false);}
+            }} style={{...btn(),fontSize:11,padding:"6px 14px",opacity:statsLoading?0.5:1}}>
+              {statsLoading?"Loading…":"↻ Refresh Stats"}
+            </button>
+          </div>
+
+          {emailStats && (
+            <>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10,marginBottom:20}}>
+                {[
+                  {label:"Total Enrolled",value:emailStats.totalEnrolled,color:"#00d4ff"},
+                  {label:"Active",value:emailStats.active,color:"#a78bfa"},
+                  {label:"Sent (7d)",value:emailStats.sentLast7,color:"#22c55e"},
+                  {label:"Total Sent",value:emailStats.totalSent,color:"rgba(255,255,255,0.6)"},
+                  {label:"Open Rate",value:`${emailStats.openRate}%`,color:"#f59e0b"},
+                  {label:"Reply Rate",value:`${emailStats.replyRate}%`,color:"#34d399"},
+                  {label:"Replied",value:emailStats.replied,color:"#22c55e"},
+                  {label:"Completed",value:emailStats.completed,color:"rgba(255,255,255,0.4)"},
+                ].map(stat=>(
+                  <div key={stat.label} style={{...card,padding:"14px 16px",textAlign:"center"}}>
+                    <p style={{fontSize:22,fontWeight:800,color:stat.color,margin:"0 0 4px"}}>{stat.value}</p>
+                    <p style={{fontSize:10,color:"rgba(255,255,255,0.35)",margin:0,textTransform:"uppercase",letterSpacing:"0.08em"}}>{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {emailStats.recentSent?.length > 0 && (
+                <>
+                  <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 12px"}}>Recent Sent ({emailStats.recentSent.length})</p>
+                  <div style={{overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                      <thead>
+                        <tr>
+                          {["Lead","Email","Step","Subject","Sent","Opened"].map(h=>(
+                            <th key={h} style={{textAlign:"left",padding:"8px 10px",color:"rgba(255,255,255,0.35)",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,0.06)",whiteSpace:"nowrap"}}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emailStats.recentSent.map((s: any)=>(
+                          <tr key={s.id} style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                            <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.8)"}}>{s.leadName}</td>
+                            <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.4)"}}>{s.leadEmail}</td>
+                            <td style={{padding:"8px 10px",color:"#00d4ff",textAlign:"center"}}>{s.step+1}</td>
+                            <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.6)",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject}</td>
+                            <td style={{padding:"8px 10px",color:"rgba(255,255,255,0.35)",whiteSpace:"nowrap"}}>{new Date(s.sentAt).toLocaleDateString()}</td>
+                            <td style={{padding:"8px 10px",textAlign:"center"}}>{s.opened?"✅":"—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {!emailStats && !statsLoading && (
+            <div style={{...card,textAlign:"center",padding:32}}>
+              <p style={{fontSize:13,color:"rgba(255,255,255,0.35)",margin:0}}>Click "Refresh Stats" to load email performance data.</p>
+            </div>
+          )}
+
+          {/* Enrollment list with controls */}
+          {emailStats && <EnrollmentsList token={token} />}
         </div>
       )}
     </div>
