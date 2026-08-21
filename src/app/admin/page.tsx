@@ -3853,6 +3853,7 @@ function OutreachTab({token}:{token:string}) {
 
   // Lead scraper state
   const [industry, setIndustry] = useState("HVAC");
+  const [usaMode, setUsaMode] = useState(true);
   const [cities, setCities] = useState<string[]>(["New York, NY","Los Angeles, CA","Chicago, IL"]);
   const [scraping, setScraping] = useState(false);
   const [scrapeResult, setScrapeResult] = useState<any>(null);
@@ -3903,7 +3904,7 @@ function OutreachTab({token}:{token:string}) {
 
   async function scrapeLeads() {
     setScraping(true); setScrapeResult(null);
-    const res = await fetch("/api/admin/outreach/scrape",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({industry,cities})});
+    const res = await fetch("/api/admin/outreach/scrape",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({industry,cities:usaMode?[]:cities,usaMode})});
     const d = await res.json(); setScrapeResult(d); setScraping(false);
     if (d.ok) loadLeads();
   }
@@ -4009,11 +4010,22 @@ function OutreachTab({token}:{token:string}) {
                 </select>
               </div>
               <div>
-                <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Cities (pick up to 5)</label>
-                <select multiple value={cities} onChange={e=>setCities([...e.target.selectedOptions].map(o=>o.value))}
-                  style={{...s(""),height:90,resize:"none"}}>
-                  {US_CITIES.map(c=><option key={c} value={c}>{c}</option>)}
-                </select>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                  <label style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Search Area</label>
+                  <button onClick={()=>setUsaMode(m=>!m)} style={{padding:"3px 10px",borderRadius:7,border:`1px solid ${usaMode?"rgba(0,212,255,0.4)":"rgba(255,255,255,0.15)"}`,background:usaMode?"rgba(0,212,255,0.1)":"transparent",color:usaMode?"#00d4ff":"rgba(255,255,255,0.4)",fontSize:11,cursor:"pointer",fontWeight:600}}>
+                    {usaMode?"🇺🇸 Entire USA":"📍 Manual Cities"}
+                  </button>
+                </div>
+                {usaMode ? (
+                  <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(0,212,255,0.05)",border:"1px solid rgba(0,212,255,0.15)",fontSize:12,color:"rgba(255,255,255,0.5)"}}>
+                    Automatically rotates through {US_CITIES.length}+ major US cities — 5 cities per run, picks up where it left off each time.
+                  </div>
+                ) : (
+                  <select multiple value={cities} onChange={e=>setCities([...e.target.selectedOptions].map(o=>o.value))}
+                    style={{...s(""),height:90,resize:"none"}}>
+                    {US_CITIES.map(c=><option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
@@ -4022,7 +4034,7 @@ function OutreachTab({token}:{token:string}) {
               </button>
               {scrapeResult && (
                 <span style={{fontSize:12,color:scrapeResult.ok?"#22c55e":"#ef4444"}}>
-                  {scrapeResult.ok ? `✓ Found ${scrapeResult.found} leads, ${scrapeResult.new} new (total: ${scrapeResult.total})` : scrapeResult.error}
+                  {scrapeResult.ok ? `✓ Found ${scrapeResult.found} leads, ${scrapeResult.new} new (total: ${scrapeResult.total})${scrapeResult.cities?.length ? ` — searched: ${scrapeResult.cities.join(", ")}` : ""}` : scrapeResult.error}
                 </span>
               )}
             </div>
