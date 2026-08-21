@@ -11,6 +11,8 @@ function auth(req: NextRequest) {
 // GET — list all sequences
 export async function GET(req: NextRequest) {
   if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const reset = new URL(req.url).searchParams.get("reset");
+  if (reset) await redis.del("outreach:sequences");
   const stored = await redis.get<Sequence[]>("outreach:sequences");
   return NextResponse.json({ sequences: stored ?? DEFAULT_SEQUENCES });
 }

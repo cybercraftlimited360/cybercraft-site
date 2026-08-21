@@ -3885,6 +3885,8 @@ function OutreachTab({token}:{token:string}) {
   const [selectedSeqId, setSelectedSeqId] = useState<string>("");
   const [enrolling, setEnrolling] = useState(false);
   const [enrollResult, setEnrollResult] = useState<any>(null);
+  const [sendingNow, setSendingNow] = useState(false);
+  const [sendNowResult, setSendNowResult] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [outreachEmail, setOutreachEmail] = useState("");
   const [outreachPassword, setOutreachPassword] = useState("");
@@ -3896,7 +3898,7 @@ function OutreachTab({token}:{token:string}) {
 
   useEffect(()=>{
     if(section==="sequences" && sequences.length===0) {
-      fetch("/api/admin/outreach/email/sequences",{headers:h}).then(r=>r.json()).then(d=>{
+      fetch("/api/admin/outreach/email/sequences?reset=1",{headers:h}).then(r=>r.json()).then(d=>{
         if(d.sequences) setSequences(d.sequences);
       }).catch(()=>{});
     }
@@ -4343,6 +4345,39 @@ function OutreachTab({token}:{token:string}) {
                 ? <p style={{fontSize:13,color:"#ef4444",margin:0}}>❌ {enrollResult.error}</p>
                 : <p style={{fontSize:13,color:"#22c55e",margin:0}}>✅ Enrolled {enrollResult.enrolled} leads · Skipped {enrollResult.skipped} (no email or already active)</p>
               }
+            </div>
+          )}
+
+          {/* Send Now — trigger the cron immediately */}
+          {enrollResult && !enrollResult.error && (
+            <div style={{...card,marginTop:16,borderColor:"rgba(0,212,255,0.2)",background:"rgba(0,212,255,0.04)"}}>
+              <p style={{fontSize:13,fontWeight:700,color:"#fff",margin:"0 0 6px"}}>Ready to send</p>
+              <p style={{fontSize:12,color:"rgba(255,255,255,0.45)",margin:"0 0 14px"}}>
+                Leads are enrolled. Click below to send the first email to all of them right now — no need to wait for the hourly cron.
+              </p>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <button disabled={sendingNow} onClick={async()=>{
+                  setSendingNow(true); setSendNowResult(null);
+                  try{
+                    const r = await fetch("/api/cron/outreach-email",{headers:{"x-admin-token":token}});
+                    const d = await r.json();
+                    setSendNowResult(d);
+                  }catch(e){setSendNowResult({error:String(e)});}
+                  finally{setSendingNow(false);}
+                }} style={{...btn("#22c55e"),opacity:sendingNow?0.5:1,fontSize:13}}>
+                  {sendingNow?"Sending…":"📤 Send First Emails Now"}
+                </button>
+                {sendNowResult && (
+                  <span style={{fontSize:12,color:sendNowResult.error?"#ef4444":"#22c55e"}}>
+                    {sendNowResult.error ? `❌ ${sendNowResult.error}` : sendNowResult.sent > 0 ? `✅ Sent ${sendNowResult.sent} emails` : `ℹ️ ${sendNowResult.message ?? "Done"}`}
+                  </span>
+                )}
+              </div>
+              {sendNowResult?.error?.includes("not configured") && (
+                <p style={{fontSize:11,color:"rgba(245,158,11,0.8)",margin:"10px 0 0"}}>
+                  ⚠ Set OUTREACH_EMAIL and OUTREACH_EMAIL_PASSWORD in your Vercel environment variables to enable sending.
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -9,10 +9,15 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
 const MAX_PER_RUN = 45; // stay under daily limits, humanized
 
 function auth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  const adminSecret = process.env.ADMIN_SECRET;
+  const authHeader = req.headers.get("authorization");
   const qs = req.nextUrl?.searchParams?.get("secret");
-  const secret = process.env.CRON_SECRET;
-  return auth === `Bearer ${secret}` || qs === secret;
+  const adminToken = req.headers.get("x-admin-token");
+  // Accept cron secret or admin token
+  if (cronSecret && (authHeader === `Bearer ${cronSecret}` || qs === cronSecret)) return true;
+  if (adminSecret && adminToken === Buffer.from(`cc360:${adminSecret}:v2`).toString("base64")) return true;
+  return false;
 }
 
 function buildTransport() {

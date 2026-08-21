@@ -44,6 +44,8 @@ export interface SentEmail {
   openedAt?: string;
 }
 
+const SITE = "https://cybercraft360.com";
+
 export const DEFAULT_SEQUENCES: Sequence[] = [
   {
     id: "hvac-seq",
@@ -52,60 +54,86 @@ export const DEFAULT_SEQUENCES: Sequence[] = [
     steps: [
       {
         day: 0,
-        subject: "Quick question about {{businessName}}",
+        subject: "{{businessName}} — a quick question",
         body: `Hi {{ownerName}},
 
-I was looking at HVAC businesses in {{city}} and came across {{businessName}} — {{reviewCount}} reviews is impressive.
+I came across {{businessName}} while looking into HVAC companies in {{city}} — your review count stood out.
 
-Quick question: when your techs are out on jobs, what happens to calls coming in? A lot of HVAC owners I talk to lose 3-5 leads a week just from missed calls during busy season.
+I wanted to ask a simple question: what happens to your inbound calls when your techs are out on jobs?
 
-I build AI systems that answer calls, qualify leads, and book appointments automatically — even at 2am.
+Most HVAC owners I speak with don't realize how many leads go unanswered during peak season. Someone calls about a broken AC in August, gets voicemail, and books with the next company that picks up.
 
-Worth a 15-minute chat to see if it fits? No pressure either way.
+I run CyberCraft360, a small automation company that builds AI systems specifically for service businesses. We handle inbound calls, qualify the lead, and book the appointment — even at 11pm when your office is closed.
 
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 3,
-        subject: "Re: Quick question about {{businessName}}",
-        body: `Hi {{ownerName}},
+I wrote a short piece on our blog about this exact problem if you'd like to take a look:
+${SITE}/blog
 
-Just following up on my last message.
+And if you want to see what we do: ${SITE}
 
-I know things get hectic during the season — that's exactly why a lot of HVAC businesses are switching to AI call handling. It doesn't replace your team, it just makes sure no call goes unanswered.
-
-If you'd like to see it in action, I'm happy to do a quick demo this week. Takes 15 minutes.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 7,
-        subject: "One last thing — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-Last follow-up, I promise.
-
-I put together a quick breakdown of what an AI receptionist typically saves HVAC businesses per month — happy to send it over if useful.
-
-If now's not the right time, no worries at all. Feel free to reach out whenever it makes sense.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 14,
-        subject: "Checking in — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-Circling back one more time. I've been working with a few {{city}} service businesses on automating their inbound calls and follow-ups.
-
-If it's something you'd want to revisit down the road, just reply and I'll be in touch.
+No pitch, no pressure. If it's relevant I'd love to have a 15-minute conversation this week.
 
 Best,
 Saad
-CyberCraft360`,
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 3,
+        subject: "Re: {{businessName}} — following up",
+        body: `Hi {{ownerName}},
+
+Just checking back on my previous message.
+
+I know how busy things get — that's the whole point of what we build. When you're managing a team out in the field, the last thing you want is to also be chasing down missed calls.
+
+One of our clients, an HVAC company, was losing an estimated 4-6 inbound leads a week just from unanswered calls during busy periods. Within the first month of using our system, those calls started converting into booked jobs automatically.
+
+If that sounds like something worth exploring for {{businessName}}, I'm happy to show you how it works — takes about 15 minutes over a call or video.
+
+You can also learn more about what we do here: ${SITE}
+
+Happy to work around your schedule.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 7,
+        subject: "One thing I wanted to share — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+I wanted to share something useful before I stop following up.
+
+We recently published a breakdown on our blog of the most common ways HVAC companies in competitive markets are losing revenue without realising it — missed calls is the biggest one, but there are a few others worth knowing about.
+
+You can read it here: ${SITE}/blog
+
+If any of it resonates, or you'd like to talk through what it would look like for {{businessName}} specifically, just reply to this email and we'll set something up.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 14,
+        subject: "Closing out — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+This is my last message — I don't want to clog your inbox.
+
+If there's ever a point where managing calls, bookings, or lead follow-up becomes something you want to take off your plate, I'd be glad to help. That's what CyberCraft360 is built for.
+
+You can explore what we do anytime at ${SITE} — and our blog at ${SITE}/blog has some practical reads on automation for service businesses.
+
+Wishing you a strong season.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
       },
     ],
   },
@@ -116,52 +144,81 @@ CyberCraft360`,
     steps: [
       {
         day: 0,
-        subject: "After-hours patients — {{businessName}}",
+        subject: "{{businessName}} — patients calling after hours",
         body: `Hi {{ownerName}},
 
-Came across {{businessName}} in {{city}} — great reviews.
+I was looking at dental practices in {{city}} and came across {{businessName}} — you're clearly doing something right.
 
-One thing I hear a lot from dental offices: patients call after hours and book with whoever picks up. You lose the patient and the revenue without even knowing.
+I wanted to raise something that often goes unnoticed: after-hours patient calls. When someone has a toothache at 7pm or a dental emergency on a Saturday, they call whoever comes up first on Google. If nobody answers, they book with the next practice that does.
 
-I build AI systems that answer after-hours calls, collect patient info, and schedule appointments — so you capture every lead even when the office is closed.
+I run CyberCraft360, and we build AI systems that handle exactly this — answering after-hours calls, collecting patient details, and scheduling appointments so your team has a full calendar waiting for them Monday morning.
 
-Would a quick 15-minute call make sense this week?
+If you're curious about how it works, we've written about it on our blog: ${SITE}/blog
 
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 3,
-        subject: "Re: After-hours patients — {{businessName}}",
-        body: `Hi {{ownerName}},
+And you can see what we build here: ${SITE}
 
-Following up quickly. Dental offices that add AI after-hours booking typically capture 20-30% more new patient appointments per month.
-
-Happy to walk you through exactly how it works for a practice like yours. Takes 15 minutes.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 7,
-        subject: "Still thinking about it? — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-No worries if the timing isn't right. Just wanted to leave this here: if you ever want to see how other dental offices in {{city}} are handling after-hours calls automatically, I'm happy to show you.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 14,
-        subject: "Last note — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-Final follow-up from me. If automation ever becomes a priority for {{businessName}}, feel free to reach out. Happy to help.
+Would a short call this week make sense? I can keep it to 15 minutes.
 
 Best,
 Saad
-CyberCraft360`,
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 3,
+        subject: "Re: {{businessName}} — quick follow-up",
+        body: `Hi {{ownerName}},
+
+Following up briefly in case my first message got buried.
+
+Dental practices that add automated after-hours call handling typically see a meaningful uptick in new patient bookings — simply because they're capturing inquiries that would have otherwise gone to a competitor.
+
+The system we build answers the call in your practice's name, collects the patient's details and reason for calling, and books the appointment directly into your schedule. No voicemail, no missed opportunity.
+
+You can read more about our work at ${SITE}, and our blog at ${SITE}/blog has a few pieces relevant to this if you're interested.
+
+Happy to walk you through it — 15 minutes is all it takes.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 7,
+        subject: "Something worth reading — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+Before I stop following up, I wanted to share something.
+
+We've put together content on our blog covering how small and mid-size practices are using automation to grow without increasing overhead. It's practical, not theoretical — drawn from what we've actually built for clients.
+
+${SITE}/blog
+
+If any of it is useful for {{businessName}}, great. And if you ever want to talk through what it could look like for your practice specifically, just reply and we'll find a time.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 14,
+        subject: "Last message — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+This is my final follow-up — I won't reach out again after this.
+
+If capturing after-hours patient calls or reducing the admin burden on your front desk ever becomes a priority, CyberCraft360 is worth looking at: ${SITE}
+
+Our blog also has some reading on how automation is changing the way small practices operate: ${SITE}/blog
+
+Thanks for your time. Wishing {{businessName}} continued success.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
       },
     ],
   },
@@ -172,108 +229,165 @@ CyberCraft360`,
     steps: [
       {
         day: 0,
-        subject: "Leads going cold — {{businessName}}",
+        subject: "{{businessName}} — leads going cold while you're on a showing",
         body: `Hi {{ownerName}},
 
-Noticed {{businessName}} in {{city}} — solid presence.
+I came across {{businessName}} in {{city}} and wanted to reach out directly.
 
-Real estate moves fast, and leads that don't hear back within 5 minutes are 80% less likely to convert. Most agents can't respond that fast while showing homes.
+There's a well-known stat in real estate: leads that don't get a response within 5 minutes are 80% less likely to convert. The problem is, that window is nearly impossible to hit when you're in the middle of a showing.
 
-I build AI systems that instantly respond to new leads, qualify them, and keep them warm until you're ready to talk.
+I run CyberCraft360, and we build AI systems that respond to new leads instantly, qualify them based on your criteria, and keep them engaged until you're free to have a real conversation.
 
-Worth a quick 15-minute chat?
+It's not a chatbot. It's a fully automated system built around your specific business and the way you work.
 
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 3,
-        subject: "Re: Leads going cold — {{businessName}}",
-        body: `Hi {{ownerName}},
+You can see what we do at ${SITE}, and our blog at ${SITE}/blog has a few pieces on lead conversion that might be worth your time.
 
-Just following up. A few agents I've worked with in {{city}} were losing 40-50% of their leads just from slow response time.
-
-The AI handles the first contact instantly, so you only spend time on leads that are actually ready to move.
-
-Happy to show you how it works — 15 minutes is all it takes.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 7,
-        subject: "Quick question — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-Last thing: what does your current lead follow-up process look like? If it's mostly manual, there's likely a lot of time being left on the table.
-
-Happy to take a look and show you what's possible. No commitment needed.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 14,
-        subject: "Keeping the door open — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-This is my last message. If you ever want to talk about automating your lead follow-up, I'd be happy to help.
+Would a 15-minute call make sense this week?
 
 Best,
 Saad
-CyberCraft360`,
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 3,
+        subject: "Re: {{businessName}} — following up",
+        body: `Hi {{ownerName}},
+
+Just following up in case my last message got lost.
+
+A real estate agent I worked with in a similar market was spending roughly 2 hours a day on initial lead qualification — calls, texts, follow-ups. After implementing our system, that dropped close to zero. The AI handles the first conversation and surfaces only the leads that are actually ready to move.
+
+That means more time at showings, more time closing, less time chasing cold leads that go nowhere.
+
+More about how we work: ${SITE}
+Blog: ${SITE}/blog
+
+Happy to show you a live demo — 15 minutes over a call or video.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 7,
+        subject: "Quick thought — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+One last thought before I close out my follow-ups.
+
+The real estate agents getting the most leverage right now aren't necessarily the ones working the hardest — they're the ones who've automated the parts of the business that don't require them personally.
+
+We've written about this on our blog: ${SITE}/blog
+
+If you'd ever like to talk through how that could apply to {{businessName}}, I'd be glad to. No pitch, just a conversation.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 14,
+        subject: "Closing out — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+Last message from me.
+
+If automating lead response or follow-up ever moves up your priority list, take a look at what we do at ${SITE}. Our blog also has some relevant reading for agents thinking about scaling without adding headcount: ${SITE}/blog
+
+Wishing you a strong market ahead.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
       },
     ],
   },
   {
     id: "general-seq",
-    name: "General Outreach",
+    name: "General Business Outreach",
     industry: "General",
     steps: [
       {
         day: 0,
-        subject: "Quick question — {{businessName}}",
+        subject: "{{businessName}} — quick question about your inbound calls",
         body: `Hi {{ownerName}},
 
-Came across {{businessName}} in {{city}} — impressive reviews.
+I came across {{businessName}} in {{city}} and wanted to reach out.
 
-I build AI systems that handle inbound calls, follow up with leads, and book appointments automatically. Saves most business owners 10-15 hours a week.
+Running a business means wearing a lot of hats — and one of the most time-consuming is managing inbound calls, following up with leads, and booking appointments. Most business owners I speak with are handling this manually, and it's costing them hours a week they could be spending elsewhere.
 
-Worth a 15-minute call to see if it's a fit?
+I run CyberCraft360, and we build AI-powered systems that take care of all of this automatically. Calls get answered, leads get qualified, appointments get booked — without you needing to be involved in every step.
 
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 3,
-        subject: "Re: Quick question — {{businessName}}",
-        body: `Hi {{ownerName}},
+If you'd like to see what we do and how we've helped businesses like yours, our website is a good place to start: ${SITE}
 
-Following up briefly. Happy to walk you through exactly how the AI works for businesses like yours — no commitment, just 15 minutes.
+We also write regularly about automation and business efficiency on our blog: ${SITE}/blog
 
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 7,
-        subject: "One more thought — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-Last thought: if missed calls or slow follow-up is something you deal with, I'd love to show you what's possible. Reach out anytime.
-
-— Saad
-CyberCraft360`,
-      },
-      {
-        day: 14,
-        subject: "Closing the loop — {{businessName}}",
-        body: `Hi {{ownerName}},
-
-Last message from me. If automating your follow-ups ever becomes a priority, feel free to get in touch.
+Would a 15-minute call make sense to explore whether it's a fit?
 
 Best,
 Saad
-CyberCraft360`,
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 3,
+        subject: "Re: {{businessName}} — following up",
+        body: `Hi {{ownerName}},
+
+Just circling back in case my first message got buried.
+
+The short version of what we do: we build custom AI systems that handle the parts of your business that are repetitive and time-consuming — inbound calls, lead follow-up, appointment booking — so you and your team can focus on the work that actually requires you.
+
+Every system we build is specific to the business, not an off-the-shelf product.
+
+You can see our work here: ${SITE}
+And our blog if you'd like some reading: ${SITE}/blog
+
+Happy to keep it to 15 minutes if you're curious about what it could look like for {{businessName}}.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 7,
+        subject: "Something that might be useful — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+Before I stop following up, I wanted to share something that might be worth your time.
+
+We've been writing on our blog about how small and medium-sized businesses are using AI automation to reduce costs and grow revenue without hiring additional staff. It covers practical examples, not theory.
+
+${SITE}/blog
+
+If any of it resonates, or you'd like to talk through what it could mean for {{businessName}} specifically, just reply and we can set up a call.
+
+Best,
+Saad
+CyberCraft360
+${SITE}`,
+      },
+      {
+        day: 14,
+        subject: "Last message — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+This is my last follow-up — I won't be in touch again after this.
+
+If automating parts of {{businessName}} ever becomes a priority, I'd welcome the conversation. CyberCraft360 builds systems that save business owners real time and real money: ${SITE}
+
+Our blog is also worth a bookmark if you're thinking about this space: ${SITE}/blog
+
+Thanks for your time. All the best.
+
+Saad
+CyberCraft360
+${SITE}`,
       },
     ],
   },
