@@ -6,7 +6,39 @@ import { Enrollment, SentEmail, Sequence, DEFAULT_SEQUENCES, personalizeEmail } 
 export const maxDuration = 300;
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-const MAX_PER_RUN = 25; // 6 runs/day × 25 = 150 emails/day, within Gmail limits
+
+// Warmup ramp: gradually increase daily volume to build sender reputation
+// Week 1: 20/day (≈3/run), Week 2: 50/day (≈8/run), Week 3: 100/day (≈16/run), Week 4+: 150/day (25/run)
+function getMaxPerRun(): number {
+  const startKey = "outreach:warmup_start";
+  // warmup_start is set on first send; calculated synchronously using a module-level cache
+  return 25; // overridden below after async lookup
+}
+
+async function getDailyLimit(redis: any): Promise<number> {
+  const start = await redis.get<string>("outreach:warmup_start");
+  if (!start) {
+    await redis.set("outreach:warmup_start", new Date().toISOString());
+    return 4; // first run: very conservative
+  }
+  const daysSinceStart = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
+  if (daysSinceStart < 7)  return 20;   // Week 1: 20/day
+  if (daysSinceStart < 14) return 50;   // Week 2: 50/day
+  if (daysSinceStart < 21) return 100;  // Week 3: 100/day
+  return 150;                            // Week 4+: full speed
+}
+
+// Track how many emails sent today (resets at midnight UTC)
+async function getTodaySentCount(redis: any): Promise<number> {
+  const todayKey = `outreach:sent_today:${new Date().toISOString().slice(0, 10)}`;
+  return await redis.get<number>(todayKey) ?? 0;
+}
+
+async function incrementTodaySent(redis: any, count: number): Promise<void> {
+  const todayKey = `outreach:sent_today:${new Date().toISOString().slice(0, 10)}`;
+  const current = await redis.get<number>(todayKey) ?? 0;
+  await redis.set(todayKey, current + count, { ex: 86400 }); // expires after 24h
+}
 
 function auth(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -52,18 +84,27 @@ export async function GET(req: NextRequest) {
   const fromEmail = process.env.OUTREACH_EMAIL!;
   const fromName = process.env.OUTREACH_NAME ?? "Saad";
 
-  const [enrollments, sequences, sentLog] = await Promise.all([
+  const [enrollments, sequences, sentLog, dailyLimit, todaySent] = await Promise.all([
     redis.get<Enrollment[]>("outreach:enrollments").then(r => r ?? []),
     redis.get<Sequence[]>("outreach:sequences").then(r => r ?? DEFAULT_SEQUENCES),
     redis.get<SentEmail[]>("outreach:sent_emails").then(r => r ?? []),
+    getDailyLimit(redis),
+    getTodaySentCount(redis),
   ]);
+
+  const remainingToday = Math.max(0, dailyLimit - todaySent);
+  const perRunLimit = Math.min(25, remainingToday); // never more than 25 per run
+
+  if (remainingToday <= 0) {
+    return NextResponse.json({ ok: true, sent: 0, message: `Daily limit reached (${dailyLimit}/day warmup cap)` });
+  }
 
   const now = new Date();
   const due = enrollments.filter(e =>
     e.status === "active" &&
     e.currentStep < (sequences.find(s => s.id === e.sequenceId)?.steps.length ?? 0) &&
     new Date(e.nextSendAt) <= now
-  ).slice(0, MAX_PER_RUN);
+  ).slice(0, perRunLimit);
 
   if (due.length === 0) {
     return NextResponse.json({ ok: true, sent: 0, message: "No emails due" });
@@ -151,7 +192,8 @@ ${bodyText.split("\n").map(line => line.trim() === "" ? "<br>" : `<p style="marg
   await Promise.all([
     redis.set("outreach:enrollments", updatedEnrollments),
     redis.set("outreach:sent_emails", [...newSentLogs, ...sentLog].slice(0, 2000)),
+    incrementTodaySent(redis, sent),
   ]);
 
-  return NextResponse.json({ ok: true, sent, failed, due: due.length });
+  return NextResponse.json({ ok: true, sent, failed, due: due.length, dailyLimit, todaySent: todaySent + sent });
 }
