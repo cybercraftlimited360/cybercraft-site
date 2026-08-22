@@ -78,9 +78,9 @@ And if you want to see what we do: ${SITE}
 No pitch, no pressure. If it's relevant I'd love to have a 15-minute conversation this week.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 3,
@@ -100,9 +100,9 @@ You can also learn more about what we do here: ${SITE}
 Happy to work around your schedule.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 7,
@@ -118,9 +118,9 @@ You can read it here: ${SITE}/blog
 If any of it resonates, or you'd like to talk through what it would look like for {{businessName}} specifically, just reply to this email and we'll set something up.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 14,
@@ -136,9 +136,9 @@ You can explore what we do anytime at ${SITE} — and our blog at ${SITE}/blog h
 Wishing you a strong season.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
     ],
   },
@@ -165,9 +165,9 @@ And you can see what we build here: ${SITE}
 Would a short call this week make sense? I can keep it to 15 minutes.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 3,
@@ -185,9 +185,9 @@ You can read more about our work at ${SITE}, and our blog at ${SITE}/blog has a 
 Happy to walk you through it — 15 minutes is all it takes.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 7,
@@ -203,9 +203,9 @@ ${SITE}/blog
 If any of it is useful for {{businessName}}, great. And if you ever want to talk through what it could look like for your practice specifically, just reply and we'll find a time.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 14,
@@ -221,9 +221,9 @@ Our blog also has some reading on how automation is changing the way small pract
 Thanks for your time. Wishing {{businessName}} continued success.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
     ],
   },
@@ -250,9 +250,9 @@ You can see what we do at ${SITE}, and our blog at ${SITE}/blog has a few pieces
 Would a 15-minute call make sense this week?
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 3,
@@ -271,9 +271,9 @@ Blog: ${SITE}/blog
 Happy to show you a live demo — 15 minutes over a call or video.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 7,
@@ -289,9 +289,9 @@ We've written about this on our blog: ${SITE}/blog
 If you'd ever like to talk through how that could apply to {{businessName}}, I'd be glad to. No pitch, just a conversation.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 14,
@@ -305,9 +305,9 @@ If automating lead response or follow-up ever moves up your priority list, take 
 Wishing you a strong market ahead.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
     ],
   },
@@ -332,9 +332,9 @@ You can see what we do at https://cybercraft360.com, and our blog covers how ser
 Would a 15-minute conversation make sense this week?
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 3,
@@ -353,9 +353,9 @@ Blog: https://cybercraft360.com/blog
 Happy to keep it to 15 minutes if you're curious.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 7,
@@ -371,9 +371,9 @@ https://cybercraft360.com/blog
 If any of it is relevant, or you'd like to talk through what it would look like for your practice, just reply and we'll find a time.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 14,
@@ -389,9 +389,9 @@ Our blog is also worth bookmarking if you're thinking about this area: https://c
 Wishing you continued success.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
     ],
   },
@@ -416,9 +416,9 @@ You can see our work at https://cybercraft360.com, and our blog has relevant rea
 Would a 15-minute call make sense this week?
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 3,
@@ -437,9 +437,9 @@ Blog: https://cybercraft360.com/blog
 Happy to show you exactly how it works — 15 minutes is all it takes.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 7,
@@ -455,9 +455,9 @@ https://cybercraft360.com/blog
 If any of it resonates for {{businessName}}, just reply and we can set up a call.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 14,
@@ -473,9 +473,9 @@ Our blog is also worth a read if you're thinking about this space: https://cyber
 Wishing {{businessName}} continued growth.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-https://cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`,
+https://cybercraft360.com  ·  Schedule a call: +1 (346) 600-9210`,
       },
     ],
   },
@@ -502,9 +502,9 @@ We also write regularly about automation and business efficiency on our blog: ${
 Would a 15-minute call make sense to explore whether it's a fit?
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 3,
@@ -523,9 +523,9 @@ And our blog if you'd like some reading: ${SITE}/blog
 Happy to keep it to 15 minutes if you're curious about what it could look like for {{businessName}}.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 7,
@@ -541,9 +541,9 @@ ${SITE}/blog
 If any of it resonates, or you'd like to talk through what it could mean for {{businessName}} specifically, just reply and we can set up a call.
 
 Best,
-Saad Imran
+Saad Imran, Founder
 CyberCraft360 — AI Automation for Service Businesses
-${SITE}  ·  Book a call with Amy: +1 (346) 600-9210`,
+${SITE}  ·  Schedule a call: +1 (346) 600-9210`,
       },
       {
         day: 14,
