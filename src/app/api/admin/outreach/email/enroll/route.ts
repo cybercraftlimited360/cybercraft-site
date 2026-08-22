@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { leads, sequenceId } = await req.json() as {
-    leads: Array<{ id: string; name: string; email: string; industry: string; city: string; ownerName?: string }>;
+    leads: Array<{ id: string; name: string; email: string; industry: string; city: string; ownerName?: string; flags?: string[]; website?: string; phone?: string; rating?: number; reviewCount?: number }>;
     sequenceId: string;
   };
 
@@ -47,9 +47,14 @@ export async function POST(req: NextRequest) {
       leadIndustry: lead.industry,
       leadCity: lead.city,
       ownerName: lead.ownerName,
+      leadFlags: lead.flags ?? [],
+      leadWebsite: lead.website ?? undefined,
+      leadPhone: lead.phone ?? undefined,
+      leadRating: lead.rating ?? undefined,
+      leadReviewCount: lead.reviewCount ?? undefined,
       sequenceId,
       currentStep: 0,
-      nextSendAt: now.toISOString(), // send first email immediately
+      nextSendAt: now.toISOString(),
       status: "active",
       enrolledAt: now.toISOString(),
       sentSteps: [],

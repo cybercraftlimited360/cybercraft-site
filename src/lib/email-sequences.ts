@@ -20,6 +20,11 @@ export interface Enrollment {
   leadIndustry: string;
   leadCity: string;
   ownerName?: string;
+  leadFlags?: string[];        // e.g. ["No website", "Missed call signals", "Very few reviews"]
+  leadWebsite?: string;
+  leadPhone?: string;
+  leadRating?: number;
+  leadReviewCount?: number;
   sequenceId: string;
   currentStep: number;        // next step index to send (0 = first email not sent yet)
   nextSendAt: string;         // ISO — when to send next step
@@ -57,13 +62,13 @@ export const DEFAULT_SEQUENCES: Sequence[] = [
         subject: "{{businessName}} — a quick question",
         body: `Hi {{ownerName}},
 
-I came across {{businessName}} while looking into HVAC companies in {{city}} — your review count stood out.
+{{observation}}
 
 I wanted to ask a simple question: what happens to your inbound calls when your techs are out on jobs?
 
-Most HVAC owners I speak with don't realize how many leads go unanswered during peak season. Someone calls about a broken AC in August, gets voicemail, and books with the next company that picks up.
+Most HVAC owners I speak with don't realize how many leads go unanswered during peak season. Someone calls about a broken AC in August, gets voicemail, and books with the next company that picks up.{{missedCallNote}}
 
-I run CyberCraft360, a small automation company that builds AI systems specifically for service businesses. We handle inbound calls, qualify the lead, and book the appointment — even at 11pm when your office is closed.
+I run CyberCraft360, a small automation company that builds AI systems specifically for service businesses. We handle inbound calls, qualify the lead, and book the appointment — even at 11pm when your office is closed.{{noWebsiteNote}}
 
 I wrote a short piece on our blog about this exact problem if you'd like to take a look:
 ${SITE}/blog
@@ -147,11 +152,11 @@ ${SITE}`,
         subject: "{{businessName}} — patients calling after hours",
         body: `Hi {{ownerName}},
 
-I was looking at dental practices in {{city}} and came across {{businessName}} — you're clearly doing something right.
+{{observation}}
 
 I wanted to raise something that often goes unnoticed: after-hours patient calls. When someone has a toothache at 7pm or a dental emergency on a Saturday, they call whoever comes up first on Google. If nobody answers, they book with the next practice that does.
 
-I run CyberCraft360, and we build AI systems that handle exactly this — answering after-hours calls, collecting patient details, and scheduling appointments so your team has a full calendar waiting for them Monday morning.
+I run CyberCraft360, and we build AI systems that handle exactly this — answering after-hours calls, collecting patient details, and scheduling appointments so your team has a full calendar waiting for them Monday morning.{{missedCallNote}}{{noWebsiteNote}}
 
 If you're curious about how it works, we've written about it on our blog: ${SITE}/blog
 
@@ -232,11 +237,11 @@ ${SITE}`,
         subject: "{{businessName}} — leads going cold while you're on a showing",
         body: `Hi {{ownerName}},
 
-I came across {{businessName}} in {{city}} and wanted to reach out directly.
+{{observation}}
 
 There's a well-known stat in real estate: leads that don't get a response within 5 minutes are 80% less likely to convert. The problem is, that window is nearly impossible to hit when you're in the middle of a showing.
 
-I run CyberCraft360, and we build AI systems that respond to new leads instantly, qualify them based on your criteria, and keep them engaged until you're free to have a real conversation.
+I run CyberCraft360, and we build AI systems that respond to new leads instantly, qualify them based on your criteria, and keep them engaged until you're free to have a real conversation.{{missedCallNote}}{{noWebsiteNote}}
 
 It's not a chatbot. It's a fully automated system built around your specific business and the way you work.
 
@@ -316,11 +321,11 @@ ${SITE}`,
         subject: "{{businessName}} — a question about intake calls",
         body: `Hi {{ownerName}},
 
-I came across {{businessName}} in {{city}} and wanted to reach out directly.
+{{observation}}
 
 One thing I hear consistently from attorneys and small firms: potential clients call during a consultation, during court, or after hours — and when nobody answers, they call the next firm on the list. That lead, and the fees attached to it, are gone.
 
-I run CyberCraft360, and we build AI systems that handle intake calls automatically. The AI answers in your firm's name, collects the caller's details and case type, and either books a consultation or sends you a summary to follow up — so no potential client slips through.
+I run CyberCraft360, and we build AI systems that handle intake calls automatically. The AI answers in your firm's name, collects the caller's details and case type, and either books a consultation or sends you a summary to follow up — so no potential client slips through.{{missedCallNote}}{{noWebsiteNote}}
 
 You can see what we do at https://cybercraft360.com, and our blog covers how service businesses are using AI to stop losing inbound leads: https://cybercraft360.com/blog
 
@@ -400,11 +405,11 @@ https://cybercraft360.com`,
         subject: "{{businessName}} — after-hours bookings",
         body: `Hi {{ownerName}},
 
-I came across {{businessName}} in {{city}} — the reviews look great.
+{{observation}}
 
 I wanted to raise something that med spas and aesthetic clinics often overlook: after-hours booking inquiries. When someone decides they want a treatment at 8pm on a Tuesday and calls your clinic, if nobody answers they'll book with whoever does — often a competitor running the same services.
 
-I run CyberCraft360 and we build AI systems that handle exactly this. The AI answers calls in your clinic's name, collects the client's details and service interest, and books the appointment directly — even outside office hours.
+I run CyberCraft360 and we build AI systems that handle exactly this. The AI answers calls in your clinic's name, collects the client's details and service interest, and books the appointment directly — even outside office hours.{{missedCallNote}}{{noWebsiteNote}}
 
 You can see our work at https://cybercraft360.com, and our blog has relevant reading on how aesthetic practices are using automation to grow bookings: https://cybercraft360.com/blog
 
@@ -484,11 +489,11 @@ https://cybercraft360.com`,
         subject: "{{businessName}} — quick question about your inbound calls",
         body: `Hi {{ownerName}},
 
-I came across {{businessName}} in {{city}} and wanted to reach out.
+{{observation}}
 
 Running a business means wearing a lot of hats — and one of the most time-consuming is managing inbound calls, following up with leads, and booking appointments. Most business owners I speak with are handling this manually, and it's costing them hours a week they could be spending elsewhere.
 
-I run CyberCraft360, and we build AI-powered systems that take care of all of this automatically. Calls get answered, leads get qualified, appointments get booked — without you needing to be involved in every step.
+I run CyberCraft360, and we build AI-powered systems that take care of all of this automatically. Calls get answered, leads get qualified, appointments get booked — without you needing to be involved in every step.{{missedCallNote}}{{noWebsiteNote}}
 
 If you'd like to see what we do and how we've helped businesses like yours, our website is a good place to start: ${SITE}
 
@@ -561,12 +566,53 @@ ${SITE}`,
   },
 ];
 
+// Build a specific observation sentence based on what the scraper found about this lead
+function buildObservation(lead: Enrollment): string {
+  const flags = lead.leadFlags ?? [];
+  const observations: string[] = [];
+
+  if (flags.includes("No website")) {
+    observations.push(`I noticed {{businessName}} doesn't have a website listed — which usually means you're relying entirely on calls and word of mouth to bring in new business.`);
+  }
+  if (flags.includes("Missed call signals")) {
+    observations.push(`I came across a few reviews for {{businessName}} mentioning difficulty getting through — which tells me inbound calls may be slipping through the cracks.`);
+  }
+  if (flags.includes("Very few reviews")) {
+    observations.push(`{{businessName}} has relatively few reviews online, which often means a lot of happy customers just aren't being asked — and new leads are judging you against competitors with more visible social proof.`);
+  }
+  if (lead.leadPhone && flags.includes("No website")) {
+    observations.push(`With only a phone number and no web presence, every lead that can't reach you by phone is a lead you lose permanently.`);
+  }
+
+  if (observations.length === 0) {
+    // Generic observation using what we know
+    const rc = lead.leadReviewCount;
+    const rat = lead.leadRating;
+    if (rc && rc > 50 && rat && rat >= 4.3) {
+      observations.push(`I came across {{businessName}} while researching {{industry}} businesses in {{city}} — strong ratings and a solid review count.`);
+    } else {
+      observations.push(`I came across {{businessName}} while researching {{industry}} businesses in {{city}}.`);
+    }
+  }
+
+  return observations[0];
+}
+
 export function personalizeEmail(template: string, lead: Enrollment): string {
   const ownerFirst = lead.ownerName?.split(" ")[0] ?? "there";
+  const observation = buildObservation(lead);
+
   return template
     .replace(/\{\{businessName\}\}/g, lead.leadName)
     .replace(/\{\{ownerName\}\}/g, ownerFirst)
     .replace(/\{\{city\}\}/g, lead.leadCity)
     .replace(/\{\{industry\}\}/g, lead.leadIndustry)
-    .replace(/\{\{reviewCount\}\}/g, "");
+    .replace(/\{\{reviewCount\}\}/g, lead.leadReviewCount ? String(lead.leadReviewCount) : "")
+    .replace(/\{\{observation\}\}/g, observation.replace(/\{\{businessName\}\}/g, lead.leadName).replace(/\{\{industry\}\}/g, lead.leadIndustry).replace(/\{\{city\}\}/g, lead.leadCity))
+    .replace(/\{\{noWebsiteNote\}\}/g, (lead.leadFlags ?? []).includes("No website")
+      ? `\n\nOne thing I noticed: {{businessName}} doesn't appear to have a website. If a potential customer Googles you and finds nothing, they move on. We can also help with that — a simple, fast landing page that converts is part of what we build.`.replace(/\{\{businessName\}\}/g, lead.leadName)
+      : "")
+    .replace(/\{\{missedCallNote\}\}/g, (lead.leadFlags ?? []).includes("Missed call signals")
+      ? `\n\nI also noticed some reviews mentioning difficulty getting through to {{businessName}} — which is exactly the problem our call-handling system solves.`.replace(/\{\{businessName\}\}/g, lead.leadName)
+      : "");
 }
