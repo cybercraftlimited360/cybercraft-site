@@ -3773,7 +3773,7 @@ function ReviewQueueTab({token}:{token:string}){
 }
 
 // ── Outreach Tab ──────────────────────────────────────────────────────────────
-const INDUSTRIES = ["HVAC","Dental","Real Estate","Plumbing","Roofing","Auto Repair","Cleaning"];
+const INDUSTRIES = ["HVAC","Dental","Real Estate","Plumbing","Roofing","Auto Repair","Cleaning","Law Firm","Med Spa"];
 const US_CITIES = [
   "New York, NY","Los Angeles, CA","Chicago, IL","Houston, TX","Phoenix, AZ",
   "Philadelphia, PA","San Antonio, TX","San Diego, CA","Dallas, TX","San Jose, CA",

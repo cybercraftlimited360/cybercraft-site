@@ -307,6 +307,174 @@ ${SITE}`,
     ],
   },
   {
+    id: "lawfirm-seq",
+    name: "Law Firm Outreach",
+    industry: "Law Firm",
+    steps: [
+      {
+        day: 0,
+        subject: "{{businessName}} — a question about intake calls",
+        body: `Hi {{ownerName}},
+
+I came across {{businessName}} in {{city}} and wanted to reach out directly.
+
+One thing I hear consistently from attorneys and small firms: potential clients call during a consultation, during court, or after hours — and when nobody answers, they call the next firm on the list. That lead, and the fees attached to it, are gone.
+
+I run CyberCraft360, and we build AI systems that handle intake calls automatically. The AI answers in your firm's name, collects the caller's details and case type, and either books a consultation or sends you a summary to follow up — so no potential client slips through.
+
+You can see what we do at https://cybercraft360.com, and our blog covers how service businesses are using AI to stop losing inbound leads: https://cybercraft360.com/blog
+
+Would a 15-minute conversation make sense this week?
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+      {
+        day: 3,
+        subject: "Re: {{businessName}} — following up",
+        body: `Hi {{ownerName}},
+
+Following up briefly in case my first message got buried.
+
+The firms I've worked with that see the biggest impact are typically solo practitioners or small teams where every call matters — there's no receptionist catching what falls through the cracks.
+
+Our system changes that. Every call gets answered, every intake gets logged, and you wake up knowing exactly who called and why.
+
+More on how it works: https://cybercraft360.com
+Blog: https://cybercraft360.com/blog
+
+Happy to keep it to 15 minutes if you're curious.
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+      {
+        day: 7,
+        subject: "One thing worth reading — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+Before I close out my follow-ups, I wanted to share something useful.
+
+We've written on our blog about how solo and small-firm attorneys are using AI to handle intake without hiring additional staff — it's practical and specific to firms like {{businessName}}.
+
+https://cybercraft360.com/blog
+
+If any of it is relevant, or you'd like to talk through what it would look like for your practice, just reply and we'll find a time.
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+      {
+        day: 14,
+        subject: "Last message — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+This is my final follow-up.
+
+If capturing intake calls automatically ever becomes a priority for {{businessName}}, I'd welcome the conversation: https://cybercraft360.com
+
+Our blog is also worth bookmarking if you're thinking about this area: https://cybercraft360.com/blog
+
+Wishing you continued success.
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+    ],
+  },
+  {
+    id: "medspa-seq",
+    name: "Med Spa Outreach",
+    industry: "Med Spa",
+    steps: [
+      {
+        day: 0,
+        subject: "{{businessName}} — after-hours bookings",
+        body: `Hi {{ownerName}},
+
+I came across {{businessName}} in {{city}} — the reviews look great.
+
+I wanted to raise something that med spas and aesthetic clinics often overlook: after-hours booking inquiries. When someone decides they want a treatment at 8pm on a Tuesday and calls your clinic, if nobody answers they'll book with whoever does — often a competitor running the same services.
+
+I run CyberCraft360 and we build AI systems that handle exactly this. The AI answers calls in your clinic's name, collects the client's details and service interest, and books the appointment directly — even outside office hours.
+
+You can see our work at https://cybercraft360.com, and our blog has relevant reading on how aesthetic practices are using automation to grow bookings: https://cybercraft360.com/blog
+
+Would a 15-minute call make sense this week?
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+      {
+        day: 3,
+        subject: "Re: {{businessName}} — quick follow-up",
+        body: `Hi {{ownerName}},
+
+Just following up on my previous message.
+
+Med spas that add automated after-hours call handling typically see a meaningful increase in new client bookings — not from spending more on advertising, but simply from capturing inquiries that were already coming in and going unanswered.
+
+The system handles the booking in your name, so the client experience is seamless.
+
+More on what we build: https://cybercraft360.com
+Blog: https://cybercraft360.com/blog
+
+Happy to show you exactly how it works — 15 minutes is all it takes.
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+      {
+        day: 7,
+        subject: "Something useful — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+Before I stop following up, I wanted to share something that might be worth your time.
+
+We've put together content on our blog covering how aesthetic clinics and med spas are using AI to increase bookings without increasing headcount. It's practical, based on what we've actually built.
+
+https://cybercraft360.com/blog
+
+If any of it resonates for {{businessName}}, just reply and we can set up a call.
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+      {
+        day: 14,
+        subject: "Closing out — {{businessName}}",
+        body: `Hi {{ownerName}},
+
+Last message from me.
+
+If automating bookings or after-hours call handling ever becomes a priority, take a look at what we do: https://cybercraft360.com
+
+Our blog is also worth a read if you're thinking about this space: https://cybercraft360.com/blog
+
+Wishing {{businessName}} continued growth.
+
+Best,
+Saad
+CyberCraft360
+https://cybercraft360.com`,
+      },
+    ],
+  },
+  {
     id: "general-seq",
     name: "General Business Outreach",
     industry: "General",

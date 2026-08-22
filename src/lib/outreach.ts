@@ -8,6 +8,8 @@ export const INDUSTRIES: Record<string, string[]> = {
   "Roofing":     ["roofing company", "roofer", "roof repair"],
   "Auto Repair": ["auto repair shop", "mechanic", "car repair"],
   "Cleaning":    ["cleaning company", "cleaning service", "janitorial service"],
+  "Law Firm":    ["law firm", "attorney", "lawyer office", "legal services"],
+  "Med Spa":     ["med spa", "medical spa", "aesthetic clinic", "medspa"],
 };
 
 export const INDUSTRY_PAIN: Record<string, string> = {
@@ -18,6 +20,8 @@ export const INDUSTRY_PAIN: Record<string, string> = {
   "Roofing":     "losing storm-season leads to faster-responding competitors",
   "Auto Repair": "customers hanging up when put on hold too long",
   "Cleaning":    "missing quote requests outside business hours",
+  "Law Firm":    "missing intake calls that represent thousands in potential fees",
+  "Med Spa":     "losing high-ticket bookings to competitors who answer faster",
 };
 
 // Weekly auto-scrape rotation
@@ -29,6 +33,8 @@ export const WEEKLY_TARGETS = [
   { industry: "Roofing",     cities: ["Dallas, TX", "Houston, TX", "Atlanta, GA", "Tampa, FL", "Orlando, FL"] },
   { industry: "Auto Repair", cities: ["Los Angeles, CA", "Detroit, MI", "San Jose, CA", "Memphis, TN", "Louisville, KY"] },
   { industry: "Cleaning",    cities: ["New York, NY", "Boston, MA", "Washington, DC", "Portland, OR", "Denver, CO"] },
+  { industry: "Law Firm",    cities: ["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ"] },
+  { industry: "Med Spa",     cities: ["Los Angeles, CA", "Miami, FL", "New York, NY", "Dallas, TX", "Las Vegas, NV"] },
 ];
 
 // Pain signals detected in Google reviews

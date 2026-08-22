@@ -7,6 +7,8 @@ const INDUSTRY_TO_SEQ: Record<string, string> = {
   "HVAC": "hvac-seq",
   "Dental": "dental-seq",
   "Real Estate": "realestate-seq",
+  "Law Firm": "lawfirm-seq",
+  "Med Spa": "medspa-seq",
 };
 function industrySeqId(industry: string): string {
   return INDUSTRY_TO_SEQ[industry] ?? "general-seq";
