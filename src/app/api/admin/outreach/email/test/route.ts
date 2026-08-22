@@ -43,9 +43,9 @@ https://cybercraft360.com/blog
 Happy to set up a 15-minute call if you'd like to explore whether it makes sense for your business.
 
 Best,
-Saad
-CyberCraft360
-https://cybercraft360.com`;
+Saad Imran
+CyberCraft360 — AI Automation for Service Businesses
+cybercraft360.com  ·  Book a call with Amy: +1 (346) 600-9210`;
 
   const lines = body.split("\n");
   const sigIdx = lines.findIndex(l => /^(best|regards|warm regards|sincerely),?\s*$/i.test(l.trim()));
