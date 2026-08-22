@@ -6,7 +6,7 @@ import { Enrollment, SentEmail, Sequence, DEFAULT_SEQUENCES, personalizeEmail } 
 export const maxDuration = 300;
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
-const MAX_PER_RUN = 45; // stay under daily limits, humanized
+const MAX_PER_RUN = 25; // 6 runs/day × 25 = 150 emails/day, within Gmail limits
 
 function auth(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -137,9 +137,9 @@ ${bodyText.split("\n").map(line => line.trim() === "" ? "<br>" : `<p style="marg
       sent++;
       console.log(`[outreach-cron] Sent step ${enrollment.currentStep} to ${enrollment.leadEmail}`);
 
-      // Humanized delay between sends: 30-90 seconds
+      // Humanized delay between sends: 3-8 seconds (25 emails × 8s ≈ 200s, within 300s limit)
       if (due.indexOf(enrollment) < due.length - 1) {
-        await randomDelay(30000, 90000);
+        await randomDelay(3000, 8000);
       }
     } catch (e) {
       console.error(`[outreach-cron] Failed to send to ${enrollment.leadEmail}:`, String(e).slice(0, 200));

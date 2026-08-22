@@ -14,6 +14,8 @@ function industrySeqId(industry: string): string {
   return INDUSTRY_TO_SEQ[industry] ?? "general-seq";
 }
 
+export const maxDuration = 300;
+
 const USA_CITIES = [
   "New York, NY","Los Angeles, CA","Chicago, IL","Houston, TX","Phoenix, AZ",
   "Philadelphia, PA","San Antonio, TX","San Diego, CA","Dallas, TX","San Jose, CA",
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   // Rotate through USA cities (5 per run)
   const cursor = await redis.get<number>("outreach:city_cursor") ?? 0;
-  const BATCH = 5;
+  const BATCH = 10;
   const citiesToScrape = USA_CITIES.slice(cursor, cursor + BATCH).length > 0
     ? USA_CITIES.slice(cursor, cursor + BATCH)
     : USA_CITIES.slice(0, BATCH);
@@ -67,13 +69,13 @@ export async function GET(req: NextRequest) {
   const leads: any[] = [];
 
   for (const city of citiesToScrape) {
-    for (const query of queries.slice(0, 1)) {
+    for (const query of queries.slice(0, 2)) {
       try {
         const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + " in " + city)}&key=${apiKey}`;
         const searchRes = await fetch(searchUrl);
         const searchData = await searchRes.json();
 
-        for (const place of (searchData.results ?? []).slice(0, 10)) {
+        for (const place of (searchData.results ?? []).slice(0, 20)) {
           if (seen.has(place.place_id) || contactedIds.has(place.place_id)) continue;
           seen.add(place.place_id);
 
