@@ -105,6 +105,7 @@ const CARD_GROUPS = [
     label: "Outreach", color: "#00d4ff",
     cards: [
       { tab:"outreach" as Tab, icon:"🎯", title:"Outreach", desc:"Lead scraper, Facebook groups, LinkedIn search, post monitor & message generator" },
+      { tab:"linkedin" as Tab, icon:"💼", title:"LinkedIn Bot", desc:"Auto-connect with business owners — trigger manually or runs daily at 9am" },
     ],
   },
 ];
