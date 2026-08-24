@@ -115,8 +115,28 @@ export async function GET(req: NextRequest) {
   const merged = [...newLeads, ...existing].slice(0, 500);
   await redis.set("outreach:leads", merged);
 
-  // Auto-enroll new leads that have email addresses into the right sequence
-  const leadsWithEmail = newLeads.filter(l => l.email);
+  // Fake/placeholder domains that should never be emailed
+  const BLOCKED_DOMAINS = new Set([
+    "example.com", "domain.com", "test.com", "email.com", "placeholder.com",
+    "yourdomain.com", "yourcompany.com", "company.com", "business.com",
+    "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com", "icloud.com",
+  ]);
+
+  function isValidBusinessEmail(email: string): boolean {
+    if (!email) return false;
+    const lower = email.toLowerCase().trim();
+    // Must match basic email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lower)) return false;
+    const domain = lower.split("@")[1];
+    // Block fake/placeholder/personal domains
+    if (BLOCKED_DOMAINS.has(domain)) return false;
+    // Block obviously fake local parts
+    if (/^(user|test|example|noreply|no-reply|info@example)/.test(lower.split("@")[0]) && BLOCKED_DOMAINS.has(domain)) return false;
+    return true;
+  }
+
+  // Auto-enroll new leads that have valid business email addresses into the right sequence
+  const leadsWithEmail = newLeads.filter(l => isValidBusinessEmail(l.email));
   if (leadsWithEmail.length > 0) {
     const sequences: Sequence[] = await redis.get("outreach:sequences") ?? DEFAULT_SEQUENCES;
     const enrollments: Enrollment[] = await redis.get("outreach:enrollments") ?? [];
