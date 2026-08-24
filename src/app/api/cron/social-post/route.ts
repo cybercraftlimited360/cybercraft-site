@@ -28,12 +28,11 @@ export async function GET(req: NextRequest) {
     const force = req.nextUrl?.searchParams?.get("force") === "true";
     const today = new Date().toISOString().slice(0, 10);
     if (!force) {
-      const recentLog = await redis.get<any[]>("social:auto_posts") ?? [];
-      const alreadyPostedToday = recentLog.some(
-        (p: any) => p.postedAt && p.postedAt.startsWith(today) && p.source !== "manual"
-      );
-      if (alreadyPostedToday) {
-        return NextResponse.json({ ok: false, skipped: true, reason: "Already posted today", date: today });
+      // Atomic lock: only one invocation can proceed per day (expires in 23h)
+      const lockKey = `social:lock:${today}`;
+      const acquired = await redis.set(lockKey, "1", { nx: true, ex: 82800 });
+      if (!acquired) {
+        return NextResponse.json({ ok: false, skipped: true, reason: "Already posted today (lock held)", date: today });
       }
     }
 
