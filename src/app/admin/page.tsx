@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -239,6 +239,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="reports"    &&<ReportsTab     token={token}/>}
             {tab==="review"     &&<ReviewQueueTab token={token}/>}
             {tab==="outreach"   &&<OutreachTab    token={token}/>}
+            {tab==="linkedin"   &&<LinkedInBotTab token={token}/>}
           </>
         ):(
           <div style={{textAlign:"center",marginTop:60,padding:"0 24px"}}>
@@ -4460,6 +4461,146 @@ function OutreachTab({token}:{token:string}) {
           {emailStats && <EnrollmentsList token={token} />}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── LinkedIn Bot Tab ──────────────────────────────────────────────────────────
+function LinkedInBotTab({token}:{token:string}) {
+  const h = {"x-admin-token":token,"Content-Type":"application/json"};
+  const [status, setStatus] = useState<any>(null);
+  const [runs, setRuns] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [triggering, setTriggering] = useState(false);
+  const [triggerResult, setTriggerResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function loadStats() {
+    setLoading(true);
+    const [statusRes, statsRes] = await Promise.all([
+      fetch("/api/admin/linkedin/trigger", {headers:h}).catch(()=>null),
+      fetch("/api/admin/linkedin/stats", {headers:h}).catch(()=>null),
+    ]);
+    if (statusRes?.ok) { const d = await statusRes.json(); setStatus(d); }
+    if (statsRes?.ok) { const d = await statsRes.json(); setRuns(d.runs??[]); setStats(d.stats??null); }
+    setLoading(false);
+  }
+
+  useEffect(() => { loadStats(); }, []);
+
+  async function triggerBot() {
+    setTriggering(true); setTriggerResult(null);
+    const res = await fetch("/api/admin/linkedin/trigger", {method:"POST", headers:h}).catch(()=>null);
+    const d = res ? await res.json() : {error:"Network error"};
+    setTriggerResult(d);
+    setTriggering(false);
+    setTimeout(loadStats, 3000);
+  }
+
+  const card = (style?:any) => ({background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:20,...style});
+  const statBox = (col:string) => ({background:`rgba(${col},0.08)`,border:`1px solid rgba(${col},0.2)`,borderRadius:12,padding:"16px 20px",flex:1,minWidth:120});
+  const online = status?.online;
+  const isRunning = status?.isRunning;
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:20,maxWidth:900}}>
+      <SectionHeader icon="💼" title="LinkedIn Bot" sub="Auto-connect with HVAC, Dental, Law Firm & Med Spa owners across the US"/>
+
+      {/* Status + Trigger */}
+      <div style={card()}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:10,height:10,borderRadius:"50%",background:online===undefined?"#6b7280":online?"#22c55e":"#ef4444",boxShadow:`0 0 8px ${online?"#22c55e":"#ef4444"}`}}/>
+            <span style={{color:"#fff",fontWeight:700,fontSize:15}}>
+              {online===undefined?"Checking…":online?(isRunning?"Bot Running…":"Bot Online — Ready"):"Bot Offline"}
+            </span>
+            {online && !isRunning && <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>PC is on &amp; connected</span>}
+            {online===false && <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Start bot-server.js on your PC</span>}
+          </div>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <button onClick={loadStats} style={{padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.6)",fontSize:12,cursor:"pointer"}}>↻ Refresh</button>
+            <button onClick={triggerBot} disabled={triggering||isRunning||!online}
+              style={{padding:"10px 22px",borderRadius:10,border:"none",background:(!online||isRunning||triggering)?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#0077b5,#00a0dc)",color:(!online||isRunning||triggering)?"rgba(255,255,255,0.3)":"#fff",fontSize:14,fontWeight:700,cursor:(!online||isRunning||triggering)?"not-allowed":"pointer"}}>
+              {triggering?"Starting…":isRunning?"Running…":"▶ Run LinkedIn Bot"}
+            </button>
+          </div>
+        </div>
+        {triggerResult && (
+          <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:triggerResult.error?"rgba(239,68,68,0.08)":"rgba(34,197,94,0.08)",border:`1px solid ${triggerResult.error?"rgba(239,68,68,0.2)":"rgba(34,197,94,0.2)"}`,fontSize:13,color:triggerResult.error?"#ef4444":"#22c55e"}}>
+            {triggerResult.error ?? (triggerResult.message ?? "Bot triggered successfully")}
+          </div>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+        <div style={statBox("0,212,255")}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Total Sent</div>
+          <div style={{fontSize:28,fontWeight:800,color:"#00d4ff"}}>{loading?"…":stats?.totalSent??0}</div>
+        </div>
+        <div style={statBox("124,58,237")}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Total Runs</div>
+          <div style={{fontSize:28,fontWeight:800,color:"#7c3aed"}}>{loading?"…":stats?.totalRuns??0}</div>
+        </div>
+        <div style={statBox("34,197,94")}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Today</div>
+          <div style={{fontSize:28,fontWeight:800,color:"#22c55e"}}>
+            {loading?"…":(runs[0]&&runs[0].startedAt?.slice(0,10)===new Date().toISOString().slice(0,10)?runs[0].sent:0)}
+          </div>
+        </div>
+        <div style={statBox("251,146,60")}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Last Run</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#fb923c",marginTop:4}}>
+            {loading?"…":stats?.lastRun?new Date(stats.lastRun).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"Never"}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent runs */}
+      <div style={card()}>
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.6)",marginBottom:14,textTransform:"uppercase",letterSpacing:"0.08em"}}>Recent Runs</div>
+        {loading?(<div style={{color:"rgba(255,255,255,0.3)",fontSize:13}}>Loading…</div>):runs.length===0?(
+          <div style={{color:"rgba(255,255,255,0.3)",fontSize:13}}>No runs yet. Click "Run LinkedIn Bot" to start.</div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {runs.slice(0,10).map((run:any,i:number)=>(
+              <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:12,padding:"12px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:run.log?.length?6:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:20,fontWeight:800,color:"#00d4ff"}}>{run.sent}</span>
+                    <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>connections sent</span>
+                  </div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{fontSize:11,padding:"2px 8px",borderRadius:6,background:run.exitCode===0?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",color:run.exitCode===0?"#22c55e":"#ef4444"}}>
+                      {run.exitCode===0?"✓ Success":"✗ Error"}
+                    </span>
+                    <span style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+                      {run.startedAt?new Date(run.startedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):""}
+                    </span>
+                  </div>
+                </div>
+                {run.log&&run.log.length>0&&(
+                  <div style={{fontFamily:"monospace",fontSize:11,color:"rgba(255,255,255,0.35)",background:"rgba(0,0,0,0.3)",borderRadius:8,padding:"8px 10px",maxHeight:80,overflow:"auto",whiteSpace:"pre-wrap"}}>
+                    {run.log.filter((l:string)=>l.trim()).slice(-6).join("\n")}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Setup instructions */}
+      <div style={card({background:"rgba(251,146,60,0.04)",borderColor:"rgba(251,146,60,0.15)"})}>
+        <div style={{fontSize:13,fontWeight:700,color:"#fb923c",marginBottom:10}}>⚙️ One-Time Setup</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",lineHeight:2,display:"flex",flexDirection:"column",gap:2}}>
+          <div>1. In <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 6px",borderRadius:4}}>C:\linkedin-bot</code> run: <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 6px",borderRadius:4}}>npm install express</code></div>
+          <div>2. Install ngrok free: <strong style={{color:"rgba(255,255,255,0.7)"}}>ngrok.com/download</strong></div>
+          <div>3. Run: <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 6px",borderRadius:4}}>node C:\linkedin-bot\bot-server.js</code></div>
+          <div>4. Run: <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 6px",borderRadius:4}}>ngrok http 3001</code> — copy the https URL</div>
+          <div>5. Add to Vercel env: <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 6px",borderRadius:4}}>LINKEDIN_BOT_URL</code> = ngrok URL, then redeploy</div>
+        </div>
+      </div>
     </div>
   );
 }
