@@ -104,9 +104,55 @@ export function getFlags(detail: any, reviewTexts: string[]): string[] {
 // Enrichment: scrape website for email, owner name, social links
 const JUNK_EMAIL_PATTERNS = [
   /noreply/i, /no-reply/i, /donotreply/i, /wordpress/i, /sentry/i,
-  /example\.com/, /wix\.com/, /squarespace\.com/, /godaddy/i, /hostgator/i,
-  /mailer/i, /bounce/i, /support@(?!cybercraft)/i,
+  /example\./i, /wix\.com/i, /squarespace\.com/i, /godaddy/i, /hostgator/i,
+  /mailer/i, /bounce/i, /support@/i, /admin@/i, /webmaster@/i,
+  /test@/i, /demo@/i, /user@/i, /email@/i, /mail@/i,
+  /placeholder/i, /yourdomain/i, /domain\.com/i, /company\.com/i,
+  /\.png$/i, /\.jpg$/i, /\.gif$/i, /\.svg$/i, /\.css$/i, /\.js$/i,
+  /sampleemail/i, /myemail/i, /yourname/i, /someone@/i,
+  /2x\./i, /1x\./i, // image srcset artifacts
+  /privacy@/i, /legal@/i, /dmca@/i, /abuse@/i, /spam@/i,
+  /careers@/i, /jobs@/i, /hr@/i, /billing@/i, /invoice@/i,
 ];
+
+// Only accept emails found in mailto: links or visible contact sections — not just anywhere in HTML
+function extractEmailsFromHtml(html: string): string[] {
+  const emails: string[] = [];
+
+  // Priority 1: mailto: links (most reliable — these are real clickable contacts)
+  const mailtoMatches = [...html.matchAll(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,8})/g)];
+  for (const m of mailtoMatches) emails.push(m[1].toLowerCase());
+
+  // Priority 2: emails near contact keywords in visible text sections
+  // Strip scripts, styles, and attributes first to reduce noise
+  const stripped = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/\s(?:src|href|data-[a-z-]+|class|id|style)="[^"]*"/g, "");
+
+  const contactSection = stripped.match(/(?:contact|email us|reach us|get in touch|write to us|email:?|e-mail:?)[\s\S]{0,300}/i);
+  if (contactSection) {
+    const inSection = [...contactSection[0].matchAll(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,8})/g)];
+    for (const m of inSection) emails.push(m[1].toLowerCase());
+  }
+
+  return emails;
+}
+
+// Check that the email domain has MX records (proves it can receive mail)
+async function domainHasMx(email: string): Promise<boolean> {
+  const domain = email.split("@")[1];
+  if (!domain) return false;
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=MX`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await res.json();
+    return Array.isArray(data.Answer) && data.Answer.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 export async function enrichLead(website: string): Promise<Partial<{
   email: string; ownerName: string; facebookUrl: string; linkedinUrl: string;
@@ -115,21 +161,26 @@ export async function enrichLead(website: string): Promise<Partial<{
   try {
     const url = website.startsWith("http") ? website : `https://${website}`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
     });
     clearTimeout(timeout);
     if (!res.ok) return result;
     const html = await res.text();
 
-    // Email — pick first valid, non-junk email
-    const emailMatches = [...html.matchAll(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g)];
-    for (const m of emailMatches) {
-      const email = m[0].toLowerCase();
+    // Email — extract only from mailto links and contact sections, then MX-validate
+    const candidates = extractEmailsFromHtml(html);
+    for (const email of candidates) {
       if (JUNK_EMAIL_PATTERNS.some(p => p.test(email))) continue;
       if (email.length > 60) continue;
+      // Must have a real TLD (2-8 chars), not a file extension pattern
+      const tld = email.split(".").pop() ?? "";
+      if (tld.length < 2 || tld.length > 8) continue;
+      // MX check — only send to domains that can actually receive email
+      const hasMx = await domainHasMx(email);
+      if (!hasMx) continue;
       result.email = email;
       break;
     }
@@ -147,7 +198,7 @@ export async function enrichLead(website: string): Promise<Partial<{
     }
 
     // Facebook
-    const fbMatch = html.match(/https?:\/\/(?:www\.)?facebook\.com\/(?!sharer|share|login|dialog)([a-zA-Z0-9._\-]{3,})/);
+    const fbMatch = html.match(/https?:\/\/(?:www\.)?facebook\.com\/(?!sharer|share|login|dialog|plugins|groups)([a-zA-Z0-9._\-]{3,})/);
     if (fbMatch) result.facebookUrl = fbMatch[0].split(/['"?\s]/)[0];
 
     // LinkedIn

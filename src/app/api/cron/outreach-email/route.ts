@@ -99,9 +99,24 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0, message: `Daily limit reached (${dailyLimit}/day warmup cap)` });
   }
 
+  // Basic email format validation
+  function isValidEmail(email: string): boolean {
+    if (!email || typeof email !== "string") return false;
+    const parts = email.trim().split("@");
+    if (parts.length !== 2) return false;
+    const [local, domain] = parts;
+    if (!local || local.length > 64) return false;
+    if (!domain || !domain.includes(".")) return false;
+    const tld = domain.split(".").pop() ?? "";
+    if (tld.length < 2 || tld.length > 8) return false;
+    if (!/^[a-zA-Z0-9._%+\-]+$/.test(local)) return false;
+    return true;
+  }
+
   const now = new Date();
   const due = enrollments.filter(e =>
     e.status === "active" &&
+    isValidEmail(e.leadEmail) &&
     e.currentStep < (sequences.find(s => s.id === e.sequenceId)?.steps.length ?? 0) &&
     new Date(e.nextSendAt) <= now
   ).slice(0, perRunLimit);
