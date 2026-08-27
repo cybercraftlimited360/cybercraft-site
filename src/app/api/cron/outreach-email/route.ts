@@ -237,5 +237,48 @@ export async function GET(req: NextRequest) {
     incrementTodaySent(redis, sent),
   ]);
 
+  // Send daily summary report to owner if any emails went out
+  if (sent > 0) {
+    try {
+      const OWNER_EMAIL = "cybercraftlimited@gmail.com";
+      const rows = newSentLogs.map(l =>
+        `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0">${l.leadName}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#555">${l.leadEmail}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#555">Step ${l.step + 1}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#888;font-size:12px">${l.subject}</td></tr>`
+      ).join("");
+
+      const reportHtml = `<!DOCTYPE html><html><body style="margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;background:#f9f9f9">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;margin:32px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+  <tr><td style="background:#0f172a;padding:24px 32px">
+    <span style="color:#fff;font-size:18px;font-weight:600">CyberCraft360</span>
+    <span style="color:#64748b;font-size:13px;margin-left:12px">Daily Outreach Report</span>
+  </td></tr>
+  <tr><td style="padding:28px 32px">
+    <p style="margin:0 0 8px;font-size:28px;font-weight:700;color:#0f172a">${sent} email${sent === 1 ? "" : "s"} sent</p>
+    <p style="margin:0 0 24px;color:#64748b;font-size:14px">${new Date().toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })} &nbsp;·&nbsp; ${failed > 0 ? `${failed} failed` : "0 failures"} &nbsp;·&nbsp; Daily cap: ${dailyLimit}</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8fafc">
+        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Business</th>
+        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Email</th>
+        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Step</th>
+        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Subject</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">Sent from info@cybercraft360.com &nbsp;·&nbsp; <a href="https://cybercraft360.com/admin" style="color:#94a3b8">View Admin</a></p>
+  </td></tr>
+</table>
+</body></html>`;
+
+      await transport.sendMail({
+        from: `CyberCraft360 Bot <${fromEmail}>`,
+        to: OWNER_EMAIL,
+        subject: `[Outreach] ${sent} email${sent === 1 ? "" : "s"} sent today — ${new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" })}`,
+        text: `${sent} outreach email(s) sent today.\n\n${newSentLogs.map(l => `• ${l.leadName} <${l.leadEmail}> — Step ${l.step + 1}: ${l.subject}`).join("\n")}\n\nFailed: ${failed}. Daily cap: ${dailyLimit}.`,
+        html: reportHtml,
+      });
+    } catch (e) {
+      console.error("[outreach-cron] Failed to send owner report:", String(e).slice(0, 200));
+    }
+  }
+
   return NextResponse.json({ ok: true, sent, failed, due: due.length, dailyLimit, todaySent: todaySent + sent });
 }
