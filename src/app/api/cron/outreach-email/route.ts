@@ -16,16 +16,21 @@ function getMaxPerRun(): number {
 }
 
 async function getDailyLimit(redis: any): Promise<number> {
+  const override = await redis.get<number>("outreach:daily_limit_override");
+  if (override && override > 0) return override; // admin can set custom limit anytime
+
   const start = await redis.get<string>("outreach:warmup_start");
   if (!start) {
     await redis.set("outreach:warmup_start", new Date().toISOString());
     return 4; // first run: very conservative
   }
   const daysSinceStart = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
-  if (daysSinceStart < 7)  return 20;   // Week 1: 20/day
-  if (daysSinceStart < 14) return 50;   // Week 2: 50/day
-  if (daysSinceStart < 21) return 100;  // Week 3: 100/day
-  return 150;                            // Week 4+: full speed
+  if (daysSinceStart < 7)  return 20;   // Week 1
+  if (daysSinceStart < 14) return 50;   // Week 2
+  if (daysSinceStart < 21) return 100;  // Week 3
+  if (daysSinceStart < 28) return 150;  // Week 4
+  if (daysSinceStart < 42) return 200;  // Week 5-6
+  return 300;                            // Week 7+: full speed
 }
 
 // Track how many emails sent today (resets at midnight UTC)
@@ -224,8 +229,20 @@ export async function GET(req: NextRequest) {
       if (due.indexOf(enrollment) < due.length - 1) {
         await randomDelay(3000, 8000);
       }
-    } catch (e) {
-      console.error(`[outreach-cron] Failed to send to ${enrollment.leadEmail}:`, String(e).slice(0, 200));
+    } catch (e: any) {
+      const errStr = String(e).toLowerCase();
+      // Hard bounce codes — permanently unsubscribe so we never retry
+      const isHardBounce = errStr.includes("550") || errStr.includes("551") || errStr.includes("552") ||
+        errStr.includes("553") || errStr.includes("554") || errStr.includes("user unknown") ||
+        errStr.includes("no such user") || errStr.includes("does not exist") ||
+        errStr.includes("invalid address") || errStr.includes("address rejected");
+      if (isHardBounce) {
+        const idx = updatedEnrollments.findIndex(e => e.id === enrollment.id);
+        if (idx !== -1) updatedEnrollments[idx] = { ...updatedEnrollments[idx], status: "unsubscribed" };
+        console.log(`[outreach-cron] Hard bounce — removed ${enrollment.leadEmail}`);
+      } else {
+        console.error(`[outreach-cron] Failed to send to ${enrollment.leadEmail}:`, String(e).slice(0, 200));
+      }
       failed++;
     }
   }
