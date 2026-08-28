@@ -103,22 +103,31 @@ export async function POST(req: NextRequest) {
   const address = gmaps?.formatted_address ?? "";
   const reviews = (gmaps?.reviews ?? []).map((r: any) => r.text).slice(0, 5).join("\n---\n");
 
+  // Extract visible text from HTML — strip tags, collapse whitespace
+  const visibleText = siteData?.html
+    ? siteData.html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+        .slice(0, 3000)
+    : "No website";
+
   const contextSummary = `
 Business: ${businessName}
 City: ${city || "Unknown"}
 Address: ${address}
 Phone: ${phone || "Not found"}
-Website: ${siteUrl || "NO WEBSITE"}
-Google Rating: ${rating ? `${rating}/5` : "Not on Google"} (${reviewCount} reviews)
-Has online booking: ${hasBooking ? "YES" : "NO"}
-Has chatbot/live chat: ${hasChatbot ? "YES" : "NO"}
-Has review widget: ${hasReviewWidget ? "YES" : "NO"}
-Social media links found: ${hasSocial ? (siteData?.socialLinks?.join(", ") ?? "None") : "NONE"}
-Emails found: ${siteData?.emails?.join(", ") || "None visible"}
-Recent Google reviews:
-${reviews || "No reviews available"}
-Website HTML snippet (first 8000 chars):
-${siteData?.html?.slice(0, 8000) || "No website"}
+Website: ${siteUrl || "NO WEBSITE — this is a major gap"}
+Google Rating: ${rating ? `${rating}/5` : "Not found on Google"} (${reviewCount} reviews)
+Online booking detected: ${hasBooking ? "YES" : "NO"}
+Chatbot/live chat detected: ${hasChatbot ? "YES" : "NO"}
+Review widget on site: ${hasReviewWidget ? "YES" : "NO"}
+Social media: ${hasSocial ? siteData?.socialLinks?.join(", ") : "NONE FOUND"}
+Contact email visible: ${siteData?.emails?.length ? siteData.emails.join(", ") : "NOT VISIBLE"}
+Recent Google reviews: ${reviews || "None available"}
+Website visible text (for context): ${visibleText}
 `.trim();
 
   // 4. AI analysis
@@ -181,24 +190,39 @@ Return a JSON object with EXACTLY this structure:
 Be SPECIFIC to this business. Use their actual review count, rating, website status, location. Do not be generic. The weakness impact should include real numbers where possible.`;
 
   let analysis: any = null;
+  let aiError: string | null = null;
   try {
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${groqKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: aiPrompt }],
-        temperature: 0.4,
-        max_tokens: 2500,
+        messages: [
+          { role: "system", content: "You are a sales intelligence analyst. Always respond with valid, complete JSON only. Never truncate your response. Fill every field." },
+          { role: "user", content: aiPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 3000,
         response_format: { type: "json_object" },
       }),
       signal: AbortSignal.timeout(55000),
     });
     const groqData = await groqRes.json();
-    const raw = groqData.choices?.[0]?.message?.content ?? "{}";
-    analysis = JSON.parse(raw);
-  } catch (e) {
-    console.error("[precall] AI error:", String(e).slice(0, 200));
+    if (!groqRes.ok) {
+      aiError = `Groq API error: ${groqData.error?.message ?? JSON.stringify(groqData)}`;
+      console.error("[precall]", aiError);
+    } else {
+      const raw = groqData.choices?.[0]?.message?.content ?? "{}";
+      try {
+        analysis = JSON.parse(raw);
+      } catch {
+        aiError = "JSON parse failed: " + raw.slice(0, 200);
+        console.error("[precall] JSON parse error:", raw.slice(0, 500));
+      }
+    }
+  } catch (e: any) {
+    aiError = String(e).slice(0, 200);
+    console.error("[precall] fetch error:", aiError);
   }
 
   // Attach service details to recommendations
@@ -211,6 +235,7 @@ Be SPECIFIC to this business. Use their actual review count, rating, website sta
 
   return NextResponse.json({
     ok: true,
+    aiError,
     businessName,
     gmaps: gmaps ? {
       rating: gmaps.rating,
