@@ -4615,6 +4615,7 @@ function LinkedInBotTab({token}:{token:string}) {
 
 // ── Pre-Call Intel Tab ────────────────────────────────────────────────────────
 function PreCallIntelTab({token}:{token:string}) {
+  const card=(style?:any)=>({background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:20,...style});
   const [businessName,setBusinessName]=useState("");
   const [website,setWebsite]=useState("");
   const [city,setCity]=useState("");
