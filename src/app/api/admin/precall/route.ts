@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 
 export const maxDuration = 60;
 
@@ -84,8 +83,6 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY ?? "";
   const groqKey = process.env.GROQ_API_KEY ?? "";
   if (!groqKey) return NextResponse.json({ error: "GROQ_API_KEY not configured" }, { status: 500 });
-
-  const groq = new Groq({ apiKey: groqKey });
 
   // 1. Google Maps lookup
   const gmaps = apiKey ? await lookupGoogleMaps(businessName, city ?? "", apiKey) : null;
@@ -185,14 +182,20 @@ Be SPECIFIC to this business. Use their actual review count, rating, website sta
 
   let analysis: any = null;
   try {
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: aiPrompt }],
-      temperature: 0.4,
-      max_tokens: 2500,
-      response_format: { type: "json_object" },
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${groqKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: aiPrompt }],
+        temperature: 0.4,
+        max_tokens: 2500,
+        response_format: { type: "json_object" },
+      }),
+      signal: AbortSignal.timeout(55000),
     });
-    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const groqData = await groqRes.json();
+    const raw = groqData.choices?.[0]?.message?.content ?? "{}";
     analysis = JSON.parse(raw);
   } catch (e) {
     console.error("[precall] AI error:", String(e).slice(0, 200));
