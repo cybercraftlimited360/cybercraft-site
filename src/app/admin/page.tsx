@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","precall"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",precall:"🧠" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",precall:"Pre-Call Intel" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -106,6 +106,12 @@ const CARD_GROUPS = [
     cards: [
       { tab:"outreach" as Tab, icon:"🎯", title:"Outreach", desc:"Lead scraper, Facebook groups, LinkedIn search, post monitor & message generator" },
       { tab:"linkedin" as Tab, icon:"💼", title:"LinkedIn Bot", desc:"Auto-connect with business owners — trigger manually or runs daily at 9am" },
+    ],
+  },
+  {
+    label: "Sales Prep", color: "#f59e0b",
+    cards: [
+      { tab:"precall" as Tab, icon:"🧠", title:"Pre-Call Intel", desc:"Paste a website or business name — get a full sales brief before every call" },
     ],
   },
 ];
@@ -241,6 +247,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="review"     &&<ReviewQueueTab token={token}/>}
             {tab==="outreach"   &&<OutreachTab    token={token}/>}
             {tab==="linkedin"   &&<LinkedInBotTab token={token}/>}
+            {tab==="precall"    &&<PreCallIntelTab token={token}/>}
           </>
         ):(
           <div style={{textAlign:"center",marginTop:60,padding:"0 24px"}}>
@@ -4602,6 +4609,231 @@ function LinkedInBotTab({token}:{token:string}) {
           <div>5. Add to Vercel env: <code style={{background:"rgba(255,255,255,0.08)",padding:"1px 6px",borderRadius:4}}>LINKEDIN_BOT_URL</code> = ngrok URL, then redeploy</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Pre-Call Intel Tab ────────────────────────────────────────────────────────
+function PreCallIntelTab({token}:{token:string}) {
+  const [businessName,setBusinessName]=useState("");
+  const [website,setWebsite]=useState("");
+  const [city,setCity]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [result,setResult]=useState<any>(null);
+  const [error,setError]=useState("");
+
+  async function analyze() {
+    if(!businessName.trim()){setError("Enter a business name");return;}
+    setLoading(true);setError("");setResult(null);
+    try {
+      const res=await fetch("/api/admin/precall",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({businessName:businessName.trim(),website:website.trim()||undefined,city:city.trim()||undefined})});
+      const d=await res.json();
+      if(d.ok) setResult(d);
+      else setError(d.error||"Analysis failed");
+    } catch(e:any){setError(e.message||"Network error");}
+    setLoading(false);
+  }
+
+  const a=result?.analysis;
+  const healthColor=(h:string)=>h==="strong"?"#22c55e":h==="growing"?"#00d4ff":h==="struggling"?"#ef4444":"#94a3b8";
+  const urgencyColor=(u:string)=>u==="high"?"#ef4444":u==="medium"?"#f59e0b":"#94a3b8";
+  const closeColor=(c:string)=>c==="high"?"#22c55e":c==="medium"?"#f59e0b":"#ef4444";
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      {/* Search bar */}
+      <div style={card({})}>
+        <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4}}>🧠 Pre-Call Intelligence</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:16}}>Enter the prospect's info before a call — get a full AI sales brief in seconds</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <input value={businessName} onChange={e=>setBusinessName(e.target.value)} placeholder="Business name (required) — e.g. Houston HVAC Pro"
+            style={{padding:"12px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:14,outline:"none",width:"100%"}}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="Website URL (optional)"
+              style={{padding:"11px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,outline:"none"}}/>
+            <input value={city} onChange={e=>setCity(e.target.value)} placeholder="City, State (optional)"
+              style={{padding:"11px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,outline:"none"}}/>
+          </div>
+          {error&&<div style={{fontSize:12,color:"#ef4444",padding:"8px 12px",background:"rgba(239,68,68,0.08)",borderRadius:8}}>{error}</div>}
+          <button onClick={analyze} disabled={loading}
+            style={{padding:"13px 20px",borderRadius:10,border:"none",background:loading?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#f59e0b,#ef4444)",color:"#fff",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {loading?<><div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 0.8s linear infinite"}}/>Analyzing — this takes ~15 seconds…</>:"🧠 Analyze Prospect"}
+          </button>
+        </div>
+      </div>
+
+      {result&&a&&(<>
+        {/* Header: Snapshot + deal potential */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={card({background:"rgba(0,212,255,0.04)",borderColor:"rgba(0,212,255,0.15)"})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Business Snapshot</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#fff",marginBottom:4}}>{result.businessName}</div>
+            {result.gmaps?.rating&&<div style={{fontSize:13,color:"#f59e0b",marginBottom:4}}>⭐ {result.gmaps.rating}/5 · {result.gmaps.reviewCount} reviews</div>}
+            {result.gmaps?.address&&<div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:8}}>{result.gmaps.address}</div>}
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Overall:</span>
+              <span style={{fontSize:12,fontWeight:700,color:healthColor(a.snapshot?.overallHealth),background:`${healthColor(a.snapshot?.overallHealth)}18`,padding:"2px 8px",borderRadius:20,textTransform:"capitalize"}}>{a.snapshot?.overallHealth}</span>
+            </div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",lineHeight:1.5}}>{a.snapshot?.healthReason}</div>
+          </div>
+          <div style={card({background:"rgba(34,197,94,0.04)",borderColor:"rgba(34,197,94,0.15)"})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>Deal Potential</div>
+            <div style={{fontSize:22,fontWeight:800,color:"#22c55e",marginBottom:4}}>{a.dealPotential?.estimatedMonthlyValue}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginBottom:10}}>estimated MRR if signed</div>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Close chance:</span>
+              <span style={{fontSize:12,fontWeight:700,color:closeColor(a.dealPotential?.closeChance),background:`${closeColor(a.dealPotential?.closeChance)}18`,padding:"2px 8px",borderRadius:20,textTransform:"capitalize"}}>{a.dealPotential?.closeChance}</span>
+            </div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",lineHeight:1.5}}>{a.dealPotential?.closeReason}</div>
+          </div>
+        </div>
+
+        {/* Digital presence check */}
+        <div style={card({})}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>Digital Presence Check</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+            {[
+              {label:"Website",   has:result.hasWebsite,    miss:"No website — huge opportunity"},
+              {label:"Booking",   has:result.hasBooking,    miss:"No online booking system"},
+              {label:"Chatbot",   has:result.hasChatbot,    miss:"No chatbot / live chat"},
+              {label:"Reviews",   has:result.hasReviewWidget,miss:"No review widget on site"},
+              {label:"Social",    has:result.hasSocial,     miss:"No social links found"},
+              {label:"Email",     has:(result.emails?.length>0),miss:"Email not publicly visible"},
+            ].map(item=>(
+              <div key={item.label} style={{padding:"10px 12px",borderRadius:10,background:item.has?"rgba(34,197,94,0.06)":"rgba(239,68,68,0.06)",border:`1px solid ${item.has?"rgba(34,197,94,0.2)":"rgba(239,68,68,0.2)"}`}}>
+                <div style={{fontSize:16,marginBottom:4}}>{item.has?"✅":"❌"}</div>
+                <div style={{fontSize:12,fontWeight:700,color:item.has?"#22c55e":"#ef4444"}}>{item.label}</div>
+                {!item.has&&<div style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginTop:2,lineHeight:1.4}}>{item.miss}</div>}
+              </div>
+            ))}
+          </div>
+          {result.socialLinks?.length>0&&<div style={{marginTop:10,fontSize:11,color:"rgba(255,255,255,0.35)"}}>{result.socialLinks.join("  ·  ")}</div>}
+        </div>
+
+        {/* Weaknesses */}
+        {a.weaknesses?.length>0&&(
+          <div style={card({background:"rgba(239,68,68,0.03)",borderColor:"rgba(239,68,68,0.12)"})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>⚠️ Key Weaknesses — Your Sales Ammo</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {a.weaknesses.map((w:any,i:number)=>(
+                <div key={i} style={{padding:"12px 14px",borderRadius:10,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",display:"flex",gap:12,alignItems:"flex-start"}}>
+                  <div style={{background:`${urgencyColor(w.urgency)}20`,border:`1px solid ${urgencyColor(w.urgency)}40`,borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,color:urgencyColor(w.urgency),textTransform:"uppercase",whiteSpace:"nowrap",flexShrink:0,marginTop:1}}>{w.urgency}</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:"#fff",marginBottom:3}}>{w.issue}</div>
+                    <div style={{fontSize:12,color:"rgba(255,255,255,0.45)",lineHeight:1.5}}>💸 {w.impact}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended services */}
+        {a.recommendedServices?.length>0&&(
+          <div style={card({background:"rgba(124,58,237,0.04)",borderColor:"rgba(124,58,237,0.15)"})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>🎯 Services to Pitch — In Order</div>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {a.recommendedServices.map((s:any,i:number)=>(
+                <div key={i} style={{padding:"14px 16px",borderRadius:12,background:"rgba(124,58,237,0.06)",border:"1px solid rgba(124,58,237,0.2)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{width:22,height:22,borderRadius:"50%",background:"linear-gradient(135deg,#7c3aed,#00d4ff)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>{i+1}</span>
+                      <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>{s.name}</span>
+                    </div>
+                    <span style={{fontSize:12,fontWeight:700,color:"#00d4ff",background:"rgba(0,212,255,0.1)",padding:"3px 10px",borderRadius:20}}>{s.price}</span>
+                  </div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginBottom:8,lineHeight:1.5}}>{s.pitch}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginBottom:6,lineHeight:1.5}}><span style={{color:"#f59e0b",fontWeight:600}}>Why now: </span>{s.whyNow}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",marginBottom:8,lineHeight:1.5}}><span style={{color:"#22c55e",fontWeight:600}}>Expected ROI: </span>{s.expectedROI}</div>
+                  <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.25)",marginBottom:4,letterSpacing:"0.1em",textTransform:"uppercase"}}>Opening line</div>
+                    <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6,fontStyle:"italic"}}>"{s.openingLine}"</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Call strategy */}
+        {a.callStrategy&&(
+          <div style={card({background:"rgba(0,212,255,0.03)",borderColor:"rgba(0,212,255,0.12)"})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:12}}>📞 Call Strategy</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[
+                {label:"Icebreaker",        value:a.callStrategy.icebreaker,       color:"#00d4ff"},
+                {label:"Key Question",       value:a.callStrategy.keyQuestion,      color:"#e64dff"},
+                {label:"Main Pitch",         value:a.callStrategy.mainPitch,        color:"#7c3aed"},
+                {label:"Closing Ask",        value:a.callStrategy.closingAsk,       color:"#22c55e"},
+              ].map(item=>(
+                <div key={item.label} style={{padding:"12px 14px",borderRadius:10,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:item.color,marginBottom:5}}>{item.label}</div>
+                  <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.6}}>{item.value}</div>
+                </div>
+              ))}
+              <div style={{padding:"12px 14px",borderRadius:10,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#f87171",marginBottom:8}}>Objection Handling</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[
+                    {label:"Too expensive",         value:a.callStrategy.objectionHandling?.tooExpensive},
+                    {label:"Not interested",         value:a.callStrategy.objectionHandling?.notInterested},
+                    {label:"Already have something", value:a.callStrategy.objectionHandling?.alreadyHaveSomething},
+                  ].map(obj=>(
+                    <div key={obj.label}>
+                      <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.4)",marginBottom:2}}>"{obj.label}"</div>
+                      <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",lineHeight:1.5,paddingLeft:8,borderLeft:"2px solid rgba(248,113,113,0.3)"}}>{obj.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pain points + Strengths + Competitor intel */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={card({})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>😤 Pain Points</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {(a.painPoints||[]).map((p:string,i:number)=>(
+                <div key={i} style={{fontSize:12,color:"rgba(255,255,255,0.65)",padding:"7px 10px",background:"rgba(255,255,255,0.025)",borderRadius:8,lineHeight:1.5}}>• {p}</div>
+              ))}
+            </div>
+          </div>
+          <div style={card({})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>💪 Strengths</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {(a.strengths||[]).map((s:string,i:number)=>(
+                <div key={i} style={{fontSize:12,color:"rgba(255,255,255,0.65)",padding:"7px 10px",background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.1)",borderRadius:8,lineHeight:1.5}}>✓ {s}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Competitor intel + Missed opportunities */}
+        <div style={card({background:"rgba(124,58,237,0.03)",borderColor:"rgba(124,58,237,0.12)"})}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>🕵️ Competitor Intel</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.65)",lineHeight:1.7,marginBottom:14}}>{a.competitorIntel}</div>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:8}}>🚀 Missed Opportunities</div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {(a.missedOpportunities||[]).map((m:string,i:number)=>(
+              <div key={i} style={{fontSize:12,color:"rgba(255,255,255,0.6)",padding:"6px 10px",background:"rgba(124,58,237,0.05)",borderRadius:8,lineHeight:1.5}}>→ {m}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* Red flags */}
+        {a.redFlags?.length>0&&(
+          <div style={card({background:"rgba(239,68,68,0.04)",borderColor:"rgba(239,68,68,0.2)"})}>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#ef4444",marginBottom:8}}>🚩 Red Flags</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {a.redFlags.map((r:string,i:number)=>(
+                <div key={i} style={{fontSize:12,color:"rgba(255,255,255,0.6)",padding:"6px 10px",background:"rgba(239,68,68,0.06)",borderRadius:8,lineHeight:1.5}}>⚠️ {r}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>)}
     </div>
   );
 }
