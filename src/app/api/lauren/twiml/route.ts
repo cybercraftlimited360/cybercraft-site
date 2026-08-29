@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" timeout="8" speechTimeout="3" action="${actionUrl}&amp;stage=opening" method="POST">
+  <Gather input="speech" timeout="5" speechTimeout="1" action="${actionUrl}&amp;stage=opening" method="POST">
     <Play>${base}/api/lauren/tts?text=${encodeURIComponent(greeting)}</Play>
   </Gather>
   <Play>${base}/api/lauren/tts?text=${encodeURIComponent(noAnswer)}</Play>

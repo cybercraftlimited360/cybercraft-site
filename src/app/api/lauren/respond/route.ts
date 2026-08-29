@@ -199,7 +199,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
       name: "Cerebras",
       url: "https://api.cerebras.ai/v1/chat/completions",
       key: cerebrasKey,
-      models: ["gemma-4-31b", "gpt-oss-120b"],
+      models: ["llama-3.3-70b", "gemma-4-31b"],
     }] : []),
   ];
 
@@ -208,7 +208,7 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
   for (const provider of providers) {
     for (const model of provider.models) {
       for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 1000));
+        if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 400));
 
         const res = await fetch(provider.url, {
           method: "POST",
@@ -224,8 +224,8 @@ async function callLLM(messages: Message[], systemPrompt: string): Promise<strin
 
         if (res.status === 429) {
           const retryAfter = res.headers.get("retry-after");
-          const wait = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 1200;
-          await new Promise(r => setTimeout(r, Math.min(wait, 4000)));
+          const wait = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 600;
+          await new Promise(r => setTimeout(r, Math.min(wait, 3000)));
           continue;
         }
 
@@ -260,8 +260,8 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
   // Email readback turns have long spoken text — give extra silence timeout so Amy
   // isn't cut off while spelling out a long email address letter by letter
   const isEmailTurn = /\b[a-z]-[a-z]\b|dot com|at gmail|did I get that right/i.test(clean);
-  const speechTimeout = isEmailTurn ? "4" : "2";
-  const gatherTimeout = isEmailTurn ? "12" : "8";
+  const speechTimeout = isEmailTurn ? "3" : "1";
+  const gatherTimeout = isEmailTurn ? "10" : "5";
 
   if (shouldEnd) {
     return `<?xml version="1.0" encoding="UTF-8"?>
