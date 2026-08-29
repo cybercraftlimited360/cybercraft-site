@@ -159,7 +159,7 @@ async function postRespond(params: Record<string, string>, body: Record<string, 
     body: new URLSearchParams(body).toString(),
   });
   const text = await res.text();
-  const matches = [...text.matchAll(/\/api\/amy\/tts\?text=([^<"&]+)/g)];
+  const matches = [...text.matchAll(/api\/amy\/tts\?text=([^<"&\s]+)/g)];
   if (matches.length) return decodeURIComponent(matches[0][1]);
   return "[no speech]";
 }
