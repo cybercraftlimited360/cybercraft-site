@@ -362,21 +362,13 @@ export async function POST(req: NextRequest) {
 
       const introPrompt = `${nameNote} They're with ${company}. ${context}
 
-YOUR ONLY JOB RIGHT NOW: Give a one-line opener. Under 15 words. One sentence. End with a soft availability check.
+YOUR ONLY JOB RIGHT NOW: Give a one-line opener. One sentence. Use this exact greeting:
 
-Pick ONE of these styles — vary it, don't always use the same one:
-- "Hey, it's Amy from CyberCraft360 — good time?"
-- "Amy from CyberCraft — catch you at a bad time?"
-- "Hey, Amy here from CyberCraft360 — got a quick sec?"
-- "It's Amy from CyberCraft360 — you got a sec?"
-- "Hey — Amy from CyberCraft360. Bad time?"
-- "Amy calling from CyberCraft360 — is now an okay time?"
-- "Hey, this is Amy over at CyberCraft360 — catch you at a bad time?"
-- "Amy from CyberCraft — you free for two minutes?"
+"Hi, this is Amy over at CyberCraft360 — how are you?"
 
-If you know their name, you can optionally lead with it: "Hey [name] — Amy from CyberCraft360, good time?"
+If you know their name, lead with it: "Hi [name], this is Amy over at CyberCraft360 — how are you?"
 
-DO NOT ask about their business, challenges, or anything work-related yet. Just the availability check.`;
+DO NOT ask about their business, challenges, or anything work-related yet. Just this greeting, nothing more.`;
 
       history.push({ role: "user", content: `[CONTEXT: ${introPrompt}]` });
       // Don't inject learnings in opening — they push toward business questions too early
