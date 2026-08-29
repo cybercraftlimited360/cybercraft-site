@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Stage = "idle" | "form" | "calling" | "success" | "error";
 
-export default function LaurenCallDemo() {
+export default function AmyCallDemo() {
   const [stage, setStage] = useState<Stage>("idle");
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");

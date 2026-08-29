@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const monthStr = now.toISOString().slice(0, 7);
     const todayStr = now.toISOString().slice(0, 10);
 
-    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, laurenStats, dailyKeys, irisConvsRaw, laurenConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw, uniqueVisitorsDailyRaw, organicDailyRaw] =
+    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, amyStats, dailyKeys, irisConvsRaw, amyConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw, uniqueVisitorsDailyRaw, organicDailyRaw] =
       await Promise.all([
         getBookings(),
         redis.get<any[]>("leads:all"),
@@ -29,10 +29,10 @@ export async function GET(req: NextRequest) {
         redis.get<Task[]>("tasks:all"),
         redis.get<ActivityEvent[]>("activity:feed"),
         redis.hgetall("chat:stats"),
-        redis.hgetall("lauren:stats"),
+        redis.hgetall("amy:stats"),
         redis.keys("chat:daily:*"),
         redis.get<any[]>("iris:conversations"),
-        redis.get<any[]>("lauren:call-log"),
+        redis.get<any[]>("amy:call-log"),
         redis.get<any[]>("clients:offboarded"),
         redis.get<any[]>("visits:recent"),
         redis.hgetall("visits:daily"),
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     const tasks = toArr(tasksRaw);
     const activity = toArr(activityRaw);
     const irisConvs = toArr(irisConvsRaw);
-    const laurenConvs = toArr(laurenConvsRaw);
+    const amyConvs = toArr(amyConvsRaw);
     const recentVisits = toArr(recentVisitsRaw);
     const offboarded = toArr(offboardedRaw);
     const dKeys = Array.isArray(dailyKeys) ? dailyKeys : [];
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     const leadsThisMonth = leads.filter(l => (l.capturedAt ?? "").startsWith(monthStr));
     const leadSources = {
       iris: leads.filter(l => l.source === "iris" || !l.source).length,
-      lauren: leads.filter(l => l.source === "lauren").length,
+      amy: leads.filter(l => l.source === "amy").length,
       intake: leads.filter(l => l.source === "intake").length,
       ebook: leads.filter(l => l.source === "ebook").length,
     };
@@ -190,10 +190,10 @@ export async function GET(req: NextRequest) {
         bookingClicks: Number(chatStats?.bookingClicks ?? 0),
         daily,
       },
-      lauren: { totalCalls: Number(laurenStats?.totalCalls ?? 0) },
+      amy: { totalCalls: Number(amyStats?.totalCalls ?? 0) },
       conversations: {
         iris: irisConvs.slice(0, 50),
-        lauren: laurenConvs.slice(0, 50).map((c: any) => ({
+        amy: amyConvs.slice(0, 50).map((c: any) => ({
           ...c,
           messages: (Array.isArray(c.messages) ? c.messages : []).filter((m: any) => m.role !== "system"),
         })),

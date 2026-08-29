@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 function auth(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ due });
 }
 
-// POST — mark a lead follow-up as done or trigger Lauren call
+// POST — mark a lead follow-up as done or trigger Amy call
 export async function POST(req: NextRequest) {
   if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { action, leadName, leadCompany, phone, name, company, challenge } = await req.json();

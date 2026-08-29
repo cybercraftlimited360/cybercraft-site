@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 function auth(req: NextRequest) {
@@ -133,8 +133,8 @@ Return a JSON object: { "competitors": [ { "name": "...", "website": "...", "not
       }
     }
 
-    // Also scan Lauren call transcripts
-    const callLog = await redis.get<any[]>("lauren:call-log") ?? [];
+    // Also scan Amy call transcripts
+    const callLog = await redis.get<any[]>("amy:call-log") ?? [];
     for (const mention of mentions) {
       const comp = competitors.find((c: any) => c.id === mention.competitorId);
       if (!comp) continue;

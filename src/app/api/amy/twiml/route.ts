@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
   const isInbound = !hasName && !req.nextUrl.searchParams.has("company");
-  const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}${isInbound ? "&amp;inbound=true" : ""}`;
+  const actionUrl = `${base}/api/amy/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}${isInbound ? "&amp;inbound=true" : ""}`;
 
   const greeting = isInbound
     ? `Thank you for calling CyberCraft360, this is Amy! How can I help you today?`
@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" timeout="5" speechTimeout="1" action="${actionUrl}&amp;stage=opening" method="POST">
-    <Play>${base}/api/lauren/tts?text=${encodeURIComponent(greeting)}</Play>
+    <Play>${base}/api/amy/tts?text=${encodeURIComponent(greeting)}</Play>
   </Gather>
-  <Play>${base}/api/lauren/tts?text=${encodeURIComponent(noAnswer)}</Play>
+  <Play>${base}/api/amy/tts?text=${encodeURIComponent(noAnswer)}</Play>
   <Hangup/>
 </Response>`;
 

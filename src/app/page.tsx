@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
@@ -27,7 +27,7 @@ import ExitIntent from "@/components/ui/exit-intent";
 import ScrollTransition from "@/components/ui/scroll-transition";
 import BeforeAfter from "@/components/demo/BeforeAfter";
 import DemoIrisChat from "@/components/demo/DemoIrisChat";
-import LaurenCallDemo from "@/components/demo/LaurenCallDemo";
+import AmyCallDemo from "@/components/demo/AmyCallDemo";
 import HowItWorksModal from "@/components/demo/HowItWorksModal";
 import { trackEvent } from "@/lib/track";
 
@@ -859,8 +859,8 @@ export default function Home() {
       {/* Interactive IRIS Chat Demo */}
       <DemoIrisChat />
 
-      {/* Lauren Live Call Demo */}
-      <LaurenCallDemo />
+      {/* Amy Live Call Demo */}
+      <AmyCallDemo />
 
       {/* DEMO TAB END */}</>}
 

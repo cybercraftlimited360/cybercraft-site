@@ -1,12 +1,12 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","lauren","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","precall"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","amy","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","precall"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",lauren:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",precall:"🧠" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",lauren:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",precall:"Pre-Call Intel" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",amy:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",precall:"🧠" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",amy:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",precall:"Pre-Call Intel" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -71,7 +71,7 @@ const CARD_GROUPS = [
     cards: [
       { tab:"convos"     as Tab, icon:"💬", title:"Convos",      desc:"IRIS chat conversations" },
       { tab:"activity"   as Tab, icon:"🔔", title:"Activity",    desc:"Live feed of all events" },
-      { tab:"lauren"     as Tab, icon:"📞", title:"Amy",         desc:"AI voice agent & call logs" },
+      { tab:"amy"     as Tab, icon:"📞", title:"Amy",         desc:"AI voice agent & call logs" },
       { tab:"followups"  as Tab, icon:"🔁", title:"Follow-Ups",  desc:"Overdue leads sorted by score" },
     ],
   },
@@ -231,7 +231,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="tasks"      &&<TasksTab       data={data} token={token} onRefresh={()=>load(true)}/>}
             {tab==="convos"     &&<ConvosTab      data={data}/>}
             {tab==="activity"   &&<ActivityTab    data={data}/>}
-            {tab==="lauren"     &&<LaurenTab      data={data} token={token} h={h}/>}
+            {tab==="amy"     &&<AmyTab      data={data} token={token} h={h}/>}
             {tab==="analytics"  &&<AnalyticsTab   data={data}/>}
             {tab==="traffic"    &&<TrafficTab     token={token}/>}
             {tab==="calendar"   &&<CalendarTab    data={data}/>}
@@ -1003,11 +1003,11 @@ function TasksTab({data,token,onRefresh}:{data:any;token:string;onRefresh:()=>vo
 
 // ── Convos Tab ────────────────────────────────────────────────────────────────
 function ConvosTab({data}:{data:any}) {
-  const [filter,setFilter]=useState<"all"|"iris"|"lauren">("all");
+  const [filter,setFilter]=useState<"all"|"iris"|"amy">("all");
   const [expanded,setExpanded]=useState<string|null>(null);
   const irisConvs:any[]=data.conversations?.iris??[];
-  const laurenConvs:any[]=data.conversations?.lauren??[];
-  const allConvs=[...irisConvs.map((c:any)=>({...c,_source:"iris"})),...laurenConvs.map((c:any)=>({...c,_source:"lauren"}))].sort((a,b)=>b.date>a.date?1:-1);
+  const amyConvs:any[]=data.conversations?.amy??[];
+  const allConvs=[...irisConvs.map((c:any)=>({...c,_source:"iris"})),...amyConvs.map((c:any)=>({...c,_source:"amy"}))].sort((a,b)=>b.date>a.date?1:-1);
   const visible=allConvs.filter(c=>filter==="all"||c._source===filter);
   const sourceColor=(s:string)=>s==="iris"?"#7c3aed":"#e64dff";
   const sourceLabel=(s:string)=>s==="iris"?"IRIS":"Amy";
@@ -1016,12 +1016,12 @@ function ConvosTab({data}:{data:any}) {
     <div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
         <MiniStat label="IRIS Chats" value={irisConvs.length} accent="#7c3aed"/>
-        <MiniStat label="Amy Calls" value={laurenConvs.length} accent="#e64dff"/>
+        <MiniStat label="Amy Calls" value={amyConvs.length} accent="#e64dff"/>
         <MiniStat label="Chat Leads" value={data.chat?.totalLeads??0} accent="#00d4ff"/>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:14}}>
-        {(["all","iris","lauren"] as const).map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"7px 16px",borderRadius:20,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",background:filter===f?(f==="iris"?"#7c3aed":f==="lauren"?"#e64dff":"#00d4ff"):"rgba(255,255,255,0.06)",color:filter===f?"#fff":"rgba(255,255,255,0.4)",textTransform:"capitalize"}}>{f==="all"?`All (${allConvs.length})`:f==="iris"?`IRIS (${irisConvs.length})`:`Amy (${laurenConvs.length})`}</button>
+        {(["all","iris","amy"] as const).map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:"7px 16px",borderRadius:20,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",background:filter===f?(f==="iris"?"#7c3aed":f==="amy"?"#e64dff":"#00d4ff"):"rgba(255,255,255,0.06)",color:filter===f?"#fff":"rgba(255,255,255,0.4)",textTransform:"capitalize"}}>{f==="all"?`All (${allConvs.length})`:f==="iris"?`IRIS (${irisConvs.length})`:`Amy (${amyConvs.length})`}</button>
         ))}
       </div>
       <Card>
@@ -1058,7 +1058,7 @@ function ConvosTab({data}:{data:any}) {
                   {msgs.filter((m:any)=>m.role!=="system").map((m:any,mi:number)=>(
                     <div key={mi} style={{display:"flex",justifyContent:m.role==="user"||m.role==="caller"?"flex-end":"flex-start"}}>
                       <div style={{maxWidth:"80%",padding:"9px 12px",borderRadius:12,background:m.role==="user"||m.role==="caller"?"rgba(0,212,255,0.12)":"rgba(255,255,255,0.05)",border:`1px solid ${m.role==="user"||m.role==="caller"?"rgba(0,212,255,0.2)":"rgba(255,255,255,0.07)"}`}}>
-                        <p style={{margin:0,fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:3,textTransform:"uppercase",fontWeight:700,letterSpacing:"0.1em"}}>{m.role==="user"||m.role==="caller"?(c._source==="lauren"?"Caller":"Visitor"):(c._source==="lauren"?"Amy":"IRIS")}</p>
+                        <p style={{margin:0,fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:3,textTransform:"uppercase",fontWeight:700,letterSpacing:"0.1em"}}>{m.role==="user"||m.role==="caller"?(c._source==="amy"?"Caller":"Visitor"):(c._source==="amy"?"Amy":"IRIS")}</p>
                         <p style={{margin:0,fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.5}}>{String(m.content).slice(0,500)}</p>
                       </div>
                     </div>
@@ -1082,7 +1082,7 @@ function ActivityTab({data}:{data:any}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
         <MiniStat label="Conversations" value={data.chat.totalConversations} accent="#7c3aed"/>
         <MiniStat label="Chat Leads" value={data.chat.totalLeads} accent="#00d4ff"/>
-        <MiniStat label="Amy Calls" value={data.lauren.totalCalls} accent="#e64dff"/>
+        <MiniStat label="Amy Calls" value={data.amy?.totalCalls} accent="#e64dff"/>
       </div>
       <Card>
         {events.length>0?events.map((e,i)=>(
@@ -1099,8 +1099,8 @@ function ActivityTab({data}:{data:any}) {
   );
 }
 
-// ── Lauren Tab ────────────────────────────────────────────────────────────────
-function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof useAdminApi>}) {
+// ── Amy Tab ────────────────────────────────────────────────────────────────
+function AmyTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof useAdminApi>}) {
   const leads:any[]=data.leads?.recent??[];
   const [phone,setPhone]=useState(""); const [name,setName]=useState(""); const [company,setCompany]=useState(""); const [challenge,setChallenge]=useState("");
   const [calling,setCalling]=useState(false); const [result,setResult]=useState<{ok:boolean;message:string}|null>(null);
@@ -1323,7 +1323,7 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
       {/* Stats */}
       <div style={sectionStyle}>
         <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>📈 Call Stats</div>
-        <div style={{fontSize:28,fontWeight:800,color:accent}}>{data.lauren?.totalCalls??0}</div>
+        <div style={{fontSize:28,fontWeight:800,color:accent}}>{data.amy?.totalCalls??0}</div>
         <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginTop:4}}>Total calls placed by Amy</div>
       </div>
 
@@ -1357,11 +1357,11 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
                 {isOpen&&transcript.length>0&&(
                   <div style={{padding:"0 16px 16px",display:"flex",flexDirection:"column",gap:8}}>
                     {transcript.map((msg:any,mi:number)=>{
-                      const isLauren=msg.role==="assistant";
+                      const isAmy=msg.role==="assistant";
                       return (
-                        <div key={mi} style={{display:"flex",flexDirection:"column",alignItems:isLauren?"flex-start":"flex-end"}}>
-                          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:isLauren?"#e64dff":"#00d4ff",marginBottom:3}}>{isLauren?"Amy":"Caller"}</div>
-                          <div style={{maxWidth:"85%",padding:"9px 13px",borderRadius:isLauren?"4px 12px 12px 12px":"12px 4px 12px 12px",background:isLauren?"rgba(230,77,255,0.08)":"rgba(0,212,255,0.08)",border:`1px solid ${isLauren?"rgba(230,77,255,0.2)":"rgba(0,212,255,0.2)"}`,fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.5}}>{msg.content}</div>
+                        <div key={mi} style={{display:"flex",flexDirection:"column",alignItems:isAmy?"flex-start":"flex-end"}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:isAmy?"#e64dff":"#00d4ff",marginBottom:3}}>{isAmy?"Amy":"Caller"}</div>
+                          <div style={{maxWidth:"85%",padding:"9px 13px",borderRadius:isAmy?"4px 12px 12px 12px":"12px 4px 12px 12px",background:isAmy?"rgba(230,77,255,0.08)":"rgba(0,212,255,0.08)",border:`1px solid ${isAmy?"rgba(230,77,255,0.2)":"rgba(0,212,255,0.2)"}`,fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.5}}>{msg.content}</div>
                         </div>
                       );
                     })}
@@ -2678,7 +2678,7 @@ function ReportsTab({token}:{token:string}){
                         <p style={{fontSize:13,fontWeight:700,color:"#fff",margin:"0 0 3px"}}>Week of {r.weekEnding}</p>
                         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
                           <span style={{fontSize:11,color:"rgba(0,212,255,0.7)"}}>{s?.new_leads||0} leads</span>
-                          <span style={{fontSize:11,color:"rgba(230,77,255,0.7)"}}>{s?.lauren_calls||0} calls</span>
+                          <span style={{fontSize:11,color:"rgba(230,77,255,0.7)"}}>{s?.amy_calls||0} calls</span>
                           <span style={{fontSize:11,color:"rgba(34,197,94,0.7)"}}>${(s?.pipeline_value||0).toLocaleString()} pipeline</span>
                         </div>
                       </div>
@@ -2691,7 +2691,7 @@ function ReportsTab({token}:{token:string}){
                           {[
                             {l:"New Leads",v:s?.new_leads||0,c:"#00d4ff"},
                             {l:"Hot Leads",v:s?.hot_leads||0,c:"#ef4444"},
-                            {l:"Amy Calls",v:s?.lauren_calls||0,c:"#e64dff"},
+                            {l:"Amy Calls",v:s?.amy_calls||0,c:"#e64dff"},
                             {l:"Active Clients",v:s?.active_clients||0,c:"#22c55e"},
                             {l:"Pipeline",v:`$${(s?.pipeline_value||0).toLocaleString()}`,c:"#7c3aed"},
                             {l:"Pending $",v:`$${(s?.pending_invoices||0).toLocaleString()}`,c:"#f59e0b"},

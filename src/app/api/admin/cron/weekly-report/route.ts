@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     redis.get<any[]>("clients:all").catch(() => []),
     redis.get<any[]>("pipeline:all").catch(() => []),
     redis.get<any[]>("invoices:all").catch(() => []),
-    redis.get<any[]>("lauren:call-log").catch(() => []),
+    redis.get<any[]>("amy:call-log").catch(() => []),
     redis.get<any[]>("competitors:all").catch(() => []),
   ]);
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     week_ending: now.toLocaleDateString("en-US", { dateStyle: "long" }),
     new_leads: newLeads.length,
     hot_leads: hotLeads.length,
-    lauren_calls: newCalls.length,
+    amy_calls: newCalls.length,
     active_clients: clientsArr.filter((c: any) => c.status === "active").length,
     pipeline_value: pipelineValue,
     open_deals: openDeals.length,
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 
 Week ending: ${summary.week_ending}
 New leads this week: ${summary.new_leads} (${summary.hot_leads} hot, score 70+)
-Lauren AI calls made: ${summary.lauren_calls}
+Amy AI calls made: ${summary.amy_calls}
 Active clients: ${summary.active_clients}
 Open pipeline deals: ${summary.open_deals} worth $${summary.pipeline_value.toLocaleString()}
 Pending invoice value: $${summary.pending_invoices.toLocaleString()}
@@ -118,7 +118,7 @@ Keep it under 300 words total. Write like you're texting a smart summary to your
     ${[
       ["New Leads", summary.new_leads, "#0077cc"],
       ["Hot Leads", summary.hot_leads, "#ef4444"],
-      ["Lauren Calls", summary.lauren_calls, "#7c3aed"],
+      ["Amy Calls", summary.amy_calls, "#7c3aed"],
       ["Pipeline", `$${summary.pipeline_value.toLocaleString()}`, "#22c55e"],
     ].map(([label, val, color]) => `
       <div style="padding:14px;border-radius:10px;background:#fff;border:1px solid #e5e7eb;text-align:center;">

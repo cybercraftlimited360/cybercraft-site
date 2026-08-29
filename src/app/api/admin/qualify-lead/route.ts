@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
 function auth(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
@@ -43,7 +43,7 @@ Return a JSON object with exactly these fields:
   "one_line": "One punchy sentence summarizing this lead and their pain",
   "why_they_need_us": "1-2 sentences on the exact problem we solve for them",
   "red_flags": "Any concerns — vague request, no budget signals, unlikely to close — or 'None' if clean",
-  "opening_line": "The exact first thing Lauren or Saad should say when they call this person — reference their specific situation",
+  "opening_line": "The exact first thing Amy or Saad should say when they call this person — reference their specific situation",
   "estimated_deal_size": "$X/mo",
   "priority": "call today" | "call this week" | "nurture"
 }`,

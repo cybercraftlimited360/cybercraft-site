@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const leadChallenge = challenge || "";
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
-    const twimlUrl = `${baseUrl}/api/lauren/twiml?name=${encodeURIComponent(leadName)}&company=${encodeURIComponent(leadCompany)}&challenge=${encodeURIComponent(leadChallenge)}`;
+    const twimlUrl = `${baseUrl}/api/amy/twiml?name=${encodeURIComponent(leadName)}&company=${encodeURIComponent(leadCompany)}&challenge=${encodeURIComponent(leadChallenge)}`;
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls.json`;
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       From: fromNumber,
       Url: twimlUrl,
       Method: "GET",
-      StatusCallback: `${baseUrl}/api/lauren/status`,
+      StatusCallback: `${baseUrl}/api/amy/status`,
       StatusCallbackMethod: "POST",
     });
 

@@ -8,3 +8,4 @@ data/cipher-conversations.json
 data/pending-calls.json
 
 .vercel
+.env*

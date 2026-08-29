@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const text = req.nextUrl.searchParams.get("text") || "";

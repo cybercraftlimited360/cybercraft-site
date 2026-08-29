@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
@@ -254,8 +254,8 @@ function buildTwiml(spokenText: string, shouldEnd: boolean, actionUrl: string, f
     .replace(/\[BOOK_EMAIL:[^\]]*\]/gi, "")
     .trim();
 
-  const ttsUrl = (text: string) => `${base}/api/lauren/tts?text=${encodeURIComponent(text)}`;
-  const timeoutMsg = `${base}/api/lauren/tts?text=${encodeURIComponent(`Sorry about that — I didn't catch you. Feel free to call us back or visit cybercraft360.com. Have a great day!`)}`;
+  const ttsUrl = (text: string) => `${base}/api/amy/tts?text=${encodeURIComponent(text)}`;
+  const timeoutMsg = `${base}/api/amy/tts?text=${encodeURIComponent(`Sorry about that — I didn't catch you. Feel free to call us back or visit cybercraft360.com. Have a great day!`)}`;
 
   // Email readback turns have long spoken text — give extra silence timeout so Amy
   // isn't cut off while spelling out a long email address letter by letter
@@ -299,7 +299,7 @@ export async function POST(req: NextRequest) {
 
     const base = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
 
-    const historyKey = `lauren:call:${callSid}`;
+    const historyKey = `amy:call:${callSid}`;
 
     const [rawHistory, learningsContext] = await Promise.all([
       redis.get<Message[]>(historyKey),
@@ -318,7 +318,7 @@ export async function POST(req: NextRequest) {
         const reply = await callLLM(history, BASE_SYSTEM);
         const shouldEnd = /\[END_CALL\]/i.test(reply);
         history.push({ role: "assistant", content: reply });
-        const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}&amp;inbound=true`;
+        const actionUrl = `${base}/api/amy/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}&amp;inbound=true`;
         await redis.set(historyKey, history.filter(m => !m.content?.startsWith("[CONTEXT:")), { ex: 3600 });
         return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
       }
@@ -330,7 +330,7 @@ export async function POST(req: NextRequest) {
         const reply = `Oh sorry about that! Do you know when they might be available? Or I can try back another time.`;
         history.push({ role: "assistant", content: reply });
         await redis.set(historyKey, history, { ex: 3600 });
-        const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
+        const actionUrl = `${base}/api/amy/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
         return new NextResponse(buildTwiml(reply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
       }
 
@@ -348,7 +348,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
+      const actionUrl = `${base}/api/amy/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}`;
       const context = challenge ? `They mentioned interest in: ${challenge}.` : `They're with ${company}.`;
 
       const knownName = firstName && firstName.toLowerCase() !== "there";
@@ -380,7 +380,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
       return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
-    const actionUrl = `${base}/api/lauren/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}${isInbound ? "&amp;inbound=true" : ""}`;
+    const actionUrl = `${base}/api/amy/respond?name=${encodeURIComponent(name)}&amp;company=${encodeURIComponent(company)}&amp;challenge=${encodeURIComponent(challenge)}${isInbound ? "&amp;inbound=true" : ""}`;
 
     if (speechResult) {
       history.push({ role: "user", content: speechResult });
@@ -393,7 +393,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
     history.push({ role: "assistant", content: reply });
 
     // Track confirmed email and time preference across turns
-    const stateKey = `lauren:state:${callSid}`;
+    const stateKey = `amy:state:${callSid}`;
     const callState = await redis.get<{ email?: string; time?: string }>(stateKey) ?? {};
 
     // Parse email from user's speech (handles "saad at gmail dot com", "saad@gmail.com", etc.)
@@ -427,7 +427,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
     await redis.set(historyKey, history.slice(-24), { ex: 3600 });
 
     if (shouldEnd) {
-      redis.hincrby("lauren:stats", "totalCalls", 1).catch(() => {});
+      redis.hincrby("amy:stats", "totalCalls", 1).catch(() => {});
       saveCall(history, hasBooking, name, company).catch(() => {});
 
       // If LLM forgot to emit [BOOK_EMAIL] but we captured email during the call, book anyway
@@ -439,7 +439,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
         handleBooking(reply, name, company, callSid).catch(() => {});
       }
 
-      const log = await redis.get<any[]>("lauren:call-log") ?? [];
+      const log = await redis.get<any[]>("amy:call-log") ?? [];
       log.push({
         callSid, to: name, name, company, challenge,
         status: "completed",
@@ -448,7 +448,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
         booked: hasBooking,
         loggedAt: new Date().toISOString(),
       });
-      redis.set("lauren:call-log", log.slice(-500)).catch(() => {});
+      redis.set("amy:call-log", log.slice(-500)).catch(() => {});
     }
 
     return new NextResponse(buildTwiml(reply, shouldEnd, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
@@ -459,7 +459,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
     const fallbackText = encodeURIComponent("Hey, my connection's acting up — really sorry about that. Someone from CyberCraft360 will follow up with you shortly. Really appreciate your time!");
     return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Play>${fallbackBase}/api/lauren/tts?text=${fallbackText}</Play>
+  <Play>${fallbackBase}/api/amy/tts?text=${fallbackText}</Play>
   <Hangup/>
 </Response>`, { headers: { "Content-Type": "text/xml" } });
   }

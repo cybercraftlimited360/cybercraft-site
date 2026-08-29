@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 function verify(req: NextRequest) {
@@ -10,15 +10,15 @@ function verify(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   if (!verify(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = await redis.get<any[]>("lauren:call-log") ?? [];
+  const log = await redis.get<any[]>("amy:call-log") ?? [];
   return NextResponse.json(log.slice(-200).reverse());
 }
 
 export async function POST(req: NextRequest) {
-  // Internal use — no auth (called from Lauren respond route)
+  // Internal use — no auth (called from Amy respond route))
   const entry = await req.json();
-  const log = await redis.get<any[]>("lauren:call-log") ?? [];
+  const log = await redis.get<any[]>("amy:call-log") ?? [];
   log.push({ ...entry, loggedAt: new Date().toISOString() });
-  await redis.set("lauren:call-log", log.slice(-500));
+  await redis.set("amy:call-log", log.slice(-500));
   return NextResponse.json({ ok: true });
 }

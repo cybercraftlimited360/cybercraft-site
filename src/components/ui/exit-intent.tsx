@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,7 +42,7 @@ export default function ExitIntent() {
     };
   }, []);
 
-  async function handleLaurenCall() {
+  async function handleAmyCall() {
     if (!phone.trim()) { setCallError("Enter your phone number."); return; }
     setCalling(true); setCallError("");
     try {
@@ -96,7 +96,7 @@ export default function ExitIntent() {
             <div style={{ height: 3, background: "linear-gradient(90deg,#e64dff,#00d4ff,#7c3aed)" }} />
 
             <div style={{ padding: "28px 32px" }}>
-              {/* Lauren header */}
+              {/* Amy header */}
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
                 <motion.div
                   animate={{ scale: [1, 1.08, 1], boxShadow: ["0 0 0px rgba(230,77,255,0.3)", "0 0 24px rgba(230,77,255,0.6)", "0 0 0px rgba(230,77,255,0.3)"] }}
@@ -134,7 +134,7 @@ export default function ExitIntent() {
                         placeholder="+1 (832) 000-0000"
                         value={phone}
                         onChange={e => { setPhone(e.target.value); setCallError(""); }}
-                        onKeyDown={e => e.key === "Enter" && handleLaurenCall()}
+                        onKeyDown={e => e.key === "Enter" && handleAmyCall()}
                         style={{ width: "100%", padding: "13px 16px", borderRadius: 12, border: `1px solid ${callError ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.1)"}`, background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 15, outline: "none", fontFamily: "system-ui,sans-serif", letterSpacing: "0.04em" }}
                         autoFocus
                       />
@@ -142,7 +142,7 @@ export default function ExitIntent() {
                     </div>
 
                     <button
-                      onClick={handleLaurenCall}
+                      onClick={handleAmyCall}
                       disabled={calling}
                       style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: calling ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#e64dff,#7c3aed)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: calling ? "not-allowed" : "pointer", marginBottom: 10, letterSpacing: "0.04em", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                     >

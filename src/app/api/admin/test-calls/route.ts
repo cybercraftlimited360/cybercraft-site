@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 
 const BASE = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "https://cybercraft360.com";
 
-const RESPOND = `${BASE}/api/lauren/respond`;
+const RESPOND = `${BASE}/api/amy/respond`;
 
 const CALLS = [
   {
@@ -159,7 +159,7 @@ async function postRespond(params: Record<string, string>, body: Record<string, 
     body: new URLSearchParams(body).toString(),
   });
   const text = await res.text();
-  const matches = [...text.matchAll(/\/api\/lauren\/tts\?text=([^<"&]+)/g)];
+  const matches = [...text.matchAll(/\/api\/amy\/tts\?text=([^<"&]+)/g)];
   if (matches.length) return decodeURIComponent(matches[0][1]);
   return "[no speech]";
 }

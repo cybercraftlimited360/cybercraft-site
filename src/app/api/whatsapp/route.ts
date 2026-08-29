@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 const SITE_URL = "https://cybercraft360.com";
@@ -93,7 +93,7 @@ async function processLeadCommand(reply: string, session: WaSession, phone: stri
     }).catch(() => {});
   }
 
-  // Trigger Lauren voice call
+  // Trigger Amy voice call
   if (session.lead.phone) {
     fetch(`${LAUREN_URL}/make-call`, {
       method: "POST",

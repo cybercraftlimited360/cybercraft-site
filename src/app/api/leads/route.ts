@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import crypto from "crypto";
 
@@ -25,7 +25,7 @@ async function triggerAmyCall(lead: { name: string; company: string; challenge: 
     const data = await res.json();
     if (data.ok) {
       console.log(`Amy calling ${lead.name} (${lead.phone}) — callSid: ${data.callSid}`);
-      await redis.hincrby("lauren:stats", "totalCalls", 1);
+      await redis.hincrby("amy:stats", "totalCalls", 1);
     }
     return data;
   } catch (err) {
@@ -36,7 +36,7 @@ async function triggerAmyCall(lead: { name: string; company: string; challenge: 
 
 async function sendLeadEmail(
   lead: { name: string; company: string; phone?: string; challenge: string; capturedAt: string },
-  laurenCalling: boolean,
+  amyCalling: boolean,
 ) {
   const time = new Date(lead.capturedAt).toLocaleString("en-US", {
     dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago",
@@ -44,16 +44,16 @@ async function sendLeadEmail(
 
   const callSection = lead.phone ? `
     <tr><td style="padding:0 36px 28px;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:14px;background:${laurenCalling ? "rgba(34,197,94,0.05)" : "rgba(255,165,0,0.05)"};border:1px solid ${laurenCalling ? "rgba(34,197,94,0.2)" : "rgba(255,165,0,0.2)"};overflow:hidden;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:14px;background:${amyCalling ? "rgba(34,197,94,0.05)" : "rgba(255,165,0,0.05)"};border:1px solid ${amyCalling ? "rgba(34,197,94,0.2)" : "rgba(255,165,0,0.2)"};overflow:hidden;">
         <tr><td style="padding:20px 24px;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <span style="font-size:18px;">${laurenCalling ? "📞" : "⚠️"}</span>
-            <span style="font-size:13px;font-weight:700;color:${laurenCalling ? "#22c55e" : "#f59e0b"};">
-              ${laurenCalling ? "Amy is calling them now" : "No phone — Amy not triggered"}
+            <span style="font-size:18px;">${amyCalling ? "📞" : "⚠️"}</span>
+            <span style="font-size:13px;font-weight:700;color:${amyCalling ? "#22c55e" : "#f59e0b"};">
+              ${amyCalling ? "Amy is calling them now" : "No phone — Amy not triggered"}
             </span>
           </div>
           <span style="font-size:12px;color:rgba(255,255,255,0.4);">
-            ${laurenCalling
+            ${amyCalling
               ? `Calling ${lead.phone} · If no answer, Amy will retry in 30 min and 2 hours`
               : "Lead has no phone number on file"
             }
@@ -124,7 +124,7 @@ async function sendLeadEmail(
   const { sendEmail } = await import("@/lib/mailer");
   await sendEmail({
     to: NOTIFY_EMAIL,
-    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? (laurenCalling ? " 📞 Amy calling" : " (no answer yet)") : ""}`,
+    subject: `🎯 New Lead: ${lead.name} — ${lead.company}${lead.phone ? (amyCalling ? " 📞 Amy calling" : " (no answer yet)") : ""}`,
     html,
   });
 }
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
     await redis.set("leads:all", allLeads);
 
     // Auto-trigger Amy only if phone number is complete (10+ digits)
-    let laurenCalling = false;
+    let amyCalling = false;
     if (lead.phone && isValidPhone(lead.phone)) {
       triggerAmyCall({
         name: lead.name,
@@ -179,11 +179,11 @@ export async function POST(req: NextRequest) {
         challenge: lead.challenge,
         phone: lead.phone,
       }).catch(err => console.error("Amy trigger error:", err));
-      laurenCalling = true;
+      amyCalling = true;
     }
 
     // Send notification email (non-blocking)
-    sendLeadEmail(enriched, laurenCalling).catch(err => console.error("Email error:", err));
+    sendLeadEmail(enriched, amyCalling).catch(err => console.error("Email error:", err));
 
     import("@/lib/activity").then(({ logActivity }) =>
       logActivity({ type: "lead", title: `New lead — ${lead.name}`, detail: `${lead.company} · ${lead.challenge}`, clientName: lead.name })

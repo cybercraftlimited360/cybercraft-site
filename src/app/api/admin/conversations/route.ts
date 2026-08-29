@@ -11,9 +11,9 @@ function verifyToken(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!verifyToken(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [irisRaw, laurenRaw] = await Promise.all([
+  const [irisRaw, amyRaw] = await Promise.all([
     redis.get<any[]>("iris:conversations"),
-    redis.get<any[]>("lauren:call-log"),
+    redis.get<any[]>("amy:call-log"),
   ]);
 
   const iris = (irisRaw ?? []).map(c => ({
@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
     duration: null,
   })).reverse();
 
-  const lauren = (laurenRaw ?? []).map(c => ({
+  const amyMapped = (amyRaw ?? []).map(c => ({
     id: c.callSid || c.id,
     date: c.startTime || c.date,
-    source: "lauren",
+    source: "amy",
     outcome: c.outcome,
     duration: c.duration,
     phone: c.phone,
@@ -34,11 +34,11 @@ export async function GET(req: NextRequest) {
   })).reverse();
 
   // Merge and sort by date newest first
-  const all = [...iris, ...lauren].sort((a, b) =>
+  const all = [...iris, ...amyMapped].sort((a, b) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  return NextResponse.json({ iris, lauren, all });
+  return NextResponse.json({ iris, amy: amyMapped, all });
 }
 
 
