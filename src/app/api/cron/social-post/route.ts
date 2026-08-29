@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
-export const maxDuration = 300; // 5 minutes — covers DALL-E + Pexels + Instagram polling
+export const maxDuration = 300; // 5 minutes â€” covers DALL-E + Pexels + Instagram polling
 
 async function notifyFailure(step: string, detail: string) {
   await sendEmail({
-    to: "cybercraftlimited@gmail.com",
-    subject: `⚠️ Social Post FAILED — ${step}`,
+    to: "info@cybercraft360.com",
+    subject: `âš ï¸ Social Post FAILED â€” ${step}`,
     html: `<div style="font-family:sans-serif;padding:24px;"><h2 style="color:#dc2626;">Social Post Cron Failed</h2><p><strong>Step:</strong> ${step}</p><p><strong>Detail:</strong> ${detail}</p><p style="color:#6b7280;font-size:12px;">${new Date().toISOString()}</p></div>`,
   }).catch(() => {});
 }
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     const lv = String(layoutVariant ?? 1);
     // Newlines in hl cause %0A in the URL which Meta's crawler rejects
     const safeHl = (copy.headline ?? "").replace(/\n/g, " ");
-    // Instagram square: omit bd (body) to keep URL short — Meta's crawler rejects long URLs
+    // Instagram square: omit bd (body) to keep URL short â€” Meta's crawler rejects long URLs
     const squareParams = new URLSearchParams({
       ey: copy.eyebrow ?? "", hl: safeHl, ct: copy.cta ?? "",
       layout: lv, aspect: "square",
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
         const b64 = bufToBase64(buf);
         const id = Math.random().toString(36).slice(2, 18);
         await redis.set(`img:${id}`, b64, { ex: 86400 });
-        console.log(`[renderAndCache] cached ${buf.byteLength}b → /api/img/${id}`);
+        console.log(`[renderAndCache] cached ${buf.byteLength}b â†’ /api/img/${id}`);
         return `${siteUrl}/api/img/${id}`;
       } catch (e) {
         console.error("[renderAndCache] error:", String(e).slice(0, 200));
@@ -144,16 +144,16 @@ export async function GET(req: NextRequest) {
         results, source: "auto",
       });
       await redis.set("social:auto_posts", log.slice(0, 50));
-      console.log(`[social-cron] Posted: ${copy.headline} — IG:${igData?.ok} FB:${fbData?.ok} LI:${liData?.ok}`);
+      console.log(`[social-cron] Posted: ${copy.headline} â€” IG:${igData?.ok} FB:${fbData?.ok} LI:${liData?.ok}`);
 
       const platformLines = [
-        `<tr><td style="padding:8px 12px;font-weight:600;">Instagram</td><td style="padding:8px 12px;color:${igData?.ok ? "#16a34a" : "#dc2626"};">${igData?.ok ? "✅ Posted" : `❌ ${igData?.error ?? "Failed"}`}</td></tr>`,
-        `<tr><td style="padding:8px 12px;font-weight:600;">Facebook</td><td style="padding:8px 12px;color:${fbData?.ok ? "#16a34a" : "#dc2626"};">${fbData?.ok ? "✅ Posted" : `❌ ${fbData?.error ?? "Failed"}`}</td></tr>`,
-        `<tr><td style="padding:8px 12px;font-weight:600;">LinkedIn</td><td style="padding:8px 12px;color:${liData?.ok ? "#16a34a" : "#dc2626"};">${liData?.ok ? "✅ Posted" : `❌ ${liData?.error ?? "Failed"}`}</td></tr>`,
+        `<tr><td style="padding:8px 12px;font-weight:600;">Instagram</td><td style="padding:8px 12px;color:${igData?.ok ? "#16a34a" : "#dc2626"};">${igData?.ok ? "âœ… Posted" : `âŒ ${igData?.error ?? "Failed"}`}</td></tr>`,
+        `<tr><td style="padding:8px 12px;font-weight:600;">Facebook</td><td style="padding:8px 12px;color:${fbData?.ok ? "#16a34a" : "#dc2626"};">${fbData?.ok ? "âœ… Posted" : `âŒ ${fbData?.error ?? "Failed"}`}</td></tr>`,
+        `<tr><td style="padding:8px 12px;font-weight:600;">LinkedIn</td><td style="padding:8px 12px;color:${liData?.ok ? "#16a34a" : "#dc2626"};">${liData?.ok ? "âœ… Posted" : `âŒ ${liData?.error ?? "Failed"}`}</td></tr>`,
       ].join("");
       await sendEmail({
-        to: "cybercraftlimited@gmail.com",
-        subject: `✅ Social Post Live — ${copy.headline.replace(/\n/g, " ")}`,
+        to: "info@cybercraft360.com",
+        subject: `âœ… Social Post Live â€” ${copy.headline.replace(/\n/g, " ")}`,
         html: `<div style="font-family:sans-serif;padding:24px;max-width:600px;">
           <h2 style="color:#111;">Social Post Published</h2>
           <p><strong>Topic:</strong> ${topic}</p>
@@ -176,3 +176,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }
+

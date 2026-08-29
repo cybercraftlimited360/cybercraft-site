@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { EbookDocument } from "@/components/ebook/EbookDocument";
 import React from "react";
 
-const OWNER_EMAIL = "cybercraftlimited@gmail.com";
+const OWNER_EMAIL = "info@cybercraft360.com";
 
 function stripJsonFences(raw: string): string {
   return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
@@ -35,10 +35,10 @@ async function generateSocialContent(title: string, subtitle: string, chapters: 
   instagram: string[];
   emails: { subject: string; body: string }[];
 }> {
-  const summary = chapters.map((c, i) => `Chapter ${i + 1}: ${c.title}\n${c.content.slice(0, 300)}…`).join("\n\n");
+  const summary = chapters.map((c, i) => `Chapter ${i + 1}: ${c.title}\n${c.content.slice(0, 300)}â€¦`).join("\n\n");
   const prompt = `You are a social media and email marketing expert. Based on this eBook, create a content package for ${businessName} (${industry}).
 
-eBook: "${title}" — ${subtitle}
+eBook: "${title}" â€” ${subtitle}
 
 Chapter summaries:
 ${summary}
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
 
     const socialHtml = social ? `
       <div style="margin-top:28px;padding:20px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.07);">
-        <p style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#f97316;margin:0 0 14px;">🚀 Your Social Content Pack</p>
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#f97316;margin:0 0 14px;">ðŸš€ Your Social Content Pack</p>
         <p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 18px;line-height:1.6;">We turned your eBook into a full month of content. Copy, paste, and post.</p>
 
         <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;text-transform:uppercase;margin:0 0 10px;">LinkedIn Posts (5)</p>
@@ -153,26 +153,26 @@ export async function POST(req: NextRequest) {
     // Email PDF to client
     await sendEmail({
       to: email,
-      subject: `Your eBook is Ready — "${content.title}"`,
+      subject: `Your eBook is Ready â€” "${content.title}"`,
       html: `
 <div style="background:#0a0c12;padding:40px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
     <div style="height:3px;background:linear-gradient(90deg,#f97316,#ec4899);"></div>
     <div style="padding:36px;">
-      <p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin:0 0 12px;">CyberCraft360 · AI eBook Generator</p>
+      <p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin:0 0 12px;">CyberCraft360 Â· AI eBook Generator</p>
       <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 8px;">Your eBook is ready, ${name.split(" ")[0]}.</h1>
       <p style="font-size:14px;color:rgba(255,255,255,0.5);margin:0 0 20px;">
-        <strong style="color:#f97316;">"${content.title}"</strong> is attached as a PDF — ready to share, publish, or use as a lead magnet.
+        <strong style="color:#f97316;">"${content.title}"</strong> is attached as a PDF â€” ready to share, publish, or use as a lead magnet.
       </p>
       <p style="font-size:14px;color:rgba(255,255,255,0.45);line-height:1.6;margin:0 0 28px;">
-        This eBook was generated in seconds using CyberCraft360's AI content engine, trained specifically around your topic and audience. Share it freely — it's yours.
+        This eBook was generated in seconds using CyberCraft360's AI content engine, trained specifically around your topic and audience. Share it freely â€” it's yours.
       </p>
       <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-        Book a Free Strategy Call →
+        Book a Free Strategy Call â†’
       </a>
       ${socialHtml}
-      <p style="font-size:12px;color:rgba(255,255,255,0.2);margin:24px 0 0;">Want a full AI content engine for ${businessName}? We automate blog posts, social content, emails, and more — every week, hands-free.</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.15);margin:16px 0 0;">CyberCraft360 · Houston, TX · cybercraft360.com</p>
+      <p style="font-size:12px;color:rgba(255,255,255,0.2);margin:24px 0 0;">Want a full AI content engine for ${businessName}? We automate blog posts, social content, emails, and more â€” every week, hands-free.</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.15);margin:16px 0 0;">CyberCraft360 Â· Houston, TX Â· cybercraft360.com</p>
     </div>
   </div>
 </div>`,
@@ -187,20 +187,20 @@ export async function POST(req: NextRequest) {
     // Notify owner (non-blocking)
     sendEmail({
       to: OWNER_EMAIL,
-      subject: `📖 New eBook Generated — ${name} (${businessName})`,
+      subject: `ðŸ“– New eBook Generated â€” ${name} (${businessName})`,
       html: `
 <div style="background:#0a0c12;padding:32px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#0f1117;border-radius:14px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
     <div style="height:3px;background:linear-gradient(90deg,#f97316,#ec4899);"></div>
     <div style="padding:28px;">
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin:0 0 10px;">CyberCraft360 · eBook Lead</p>
-      <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 20px;">📖 New eBook generated & sent</h2>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin:0 0 10px;">CyberCraft360 Â· eBook Lead</p>
+      <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 20px;">ðŸ“– New eBook generated & sent</h2>
       <table style="width:100%;border-collapse:collapse;">
         ${[
           ["Name", name],
           ["Email", email],
           ["Business", businessName],
-          ["Industry", industry || "—"],
+          ["Industry", industry || "â€”"],
           ["Topic", topic],
           ["eBook Title", content.title],
         ].map(([label, value]) => `
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
           <td style="padding:9px 0;font-size:13px;font-weight:600;color:#f97316;">${value}</td>
         </tr>`).join("")}
       </table>
-      <a href="https://cybercraft360.com/admin" style="display:block;text-align:center;margin-top:20px;padding:11px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">View in Dashboard →</a>
+      <a href="https://cybercraft360.com/admin" style="display:block;text-align:center;margin-top:20px;padding:11px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">View in Dashboard â†’</a>
     </div>
   </div>
 </div>`,
@@ -240,3 +240,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

@@ -73,11 +73,11 @@ First, get their email. Something like "What's the best email for the calendar i
 
 Once they give it, read it back to confirm. Spell it out so there's no mistake: "So that's j-o-h-n at gmail dot com?" — then wait for them to say yes.
 
-After they confirm, ask about timing. Something casual like "Mornings or afternoons generally work better for you?" — wait for their answer.
+After they confirm, ask about timing. Get specific — something like "What day works best this week, and morning or afternoon?" — wait for their answer. If they say something vague like "mornings," follow up with "Got it — any particular day? Tuesday or Wednesday?" Get at least a day + time of day so Saad can send a real invite.
 
 Then check if they have anything else before you go. Keep it natural — "Anything else on your mind before I let you go?" — wait for their response.
 
-Once they're done, close it warmly. Something like "You're all set — I'm sending that confirmation over now. Saad does every call personally so you'll hear from him directly. Talk soon!" Then add [BOOK_EMAIL: their@email.com | morning/afternoon] [END_CALL] at the end.
+Once they're done, close it warmly. Something like "You're all set — I'm sending that confirmation over now. Saad does every call personally so you'll hear from him directly. Talk soon!" Then add [BOOK_EMAIL: their@email.com | day + time preference] [END_CALL] at the end.
 
 Important: ask ONE thing per response. Never stack questions. Never say goodbye and [END_CALL] before you've gotten their email, confirmed it, asked about timing, and checked for other questions.
 
@@ -150,34 +150,166 @@ async function saveCall(history: Message[], booked: boolean, name: string, compa
   } catch { /* non-critical */ }
 }
 
-async function handleBooking(reply: string, name: string, company: string, callSid: string) {
+async function generateCallSummary(history: Message[], name: string, company: string): Promise<string> {
+  try {
+    const cerebrasKey = process.env.CEREBRAS_API_KEY ?? "";
+    if (!cerebrasKey) return "";
+    const transcript = history
+      .filter(m => !m.content?.startsWith("[CONTEXT:"))
+      .map(m => `${m.role === "user" ? "Lead" : "Amy"}: ${m.content}`)
+      .join("\n");
+    const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cerebrasKey}` },
+      body: JSON.stringify({
+        model: "llama-3.3-70b",
+        messages: [{
+          role: "user",
+          content: `You are summarizing an AI sales call. The lead is ${name} at ${company}.\n\nTranscript:\n${transcript}\n\nWrite a 3-bullet summary for the salesperson (Saad) who will follow up:\n• What the lead does / their situation\n• What problem they mentioned or resonated with\n• Their attitude / how warm they are\n\nBe specific. 1 sentence per bullet. No intro, no outro.`,
+        }],
+        max_tokens: 180,
+        temperature: 0.3,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? "";
+  } catch { return ""; }
+}
+
+async function handleBooking(
+  reply: string,
+  name: string,
+  company: string,
+  callSid: string,
+  phone: string,
+  challenge: string,
+  history: Message[],
+) {
   try {
     const match = reply.match(/\[BOOK_EMAIL:\s*([^\|]+)\|([^\]]+)\]/i);
     if (!match) return;
     const email = match[1].trim();
     const timePreference = match[2].trim();
 
+    // Require at least email to save a booking
+    if (!email || !email.includes("@")) return;
+
     const booking: Booking = { name, company, email, timePreference, callSid, bookedAt: new Date().toISOString() };
     const bookings = await redis.get<Booking[]>("amy:bookings") ?? [];
     bookings.push(booking);
     await redis.set("amy:bookings", bookings.slice(-500));
 
+    // Also save to leads:all so Amy bookings appear in the leads dashboard
+    try {
+      const leads = await redis.get<any[]>("leads:all") ?? [];
+      const alreadyExists = leads.some((l: any) => l.email?.toLowerCase() === email.toLowerCase());
+      if (!alreadyExists) {
+        leads.push({
+          name: name || "Unknown",
+          company: company || "Unknown",
+          email,
+          phone,
+          challenge: challenge || `Amy booked — preferred time: ${timePreference}`,
+          source: "amy",
+          capturedAt: new Date().toISOString(),
+          score: 85,
+          followUpStatus: "pending",
+          callSid,
+        });
+        await redis.set("leads:all", leads);
+      }
+    } catch { /* non-critical */ }
+
+    // Track booking count in stats
+    redis.hincrby("amy:stats", "totalBookings", 1).catch(() => {});
+
+    // Generate call summary in parallel with email build
+    const summary = await generateCallSummary(history, name, company);
+
+    const ct = new Date().toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "full", timeStyle: "short" });
+    const isEmailOnly = /email only/i.test(timePreference);
+
     await sendEmail({
-      to: "cybercraftlimited@gmail.com",
-      subject: `📞 Amy Booked: ${name} — ${company}`,
-      html: `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0d0e13;color:#e4e6f0;padding:32px;border-radius:12px;">
-          <h2 style="color:#a78bfa;margin-bottom:4px;">New Booking via Amy</h2>
-          <p style="color:#8b8fa8;margin-top:0;">Collected on a live call — reach out to confirm the time.</p>
-          <table style="width:100%;border-collapse:collapse;margin-top:24px;">
-            <tr><td style="padding:10px 0;color:#8b8fa8;width:140px;">Name</td><td style="padding:10px 0;font-weight:600;">${name}</td></tr>
-            <tr><td style="padding:10px 0;color:#8b8fa8;">Company</td><td style="padding:10px 0;">${company}</td></tr>
-            <tr><td style="padding:10px 0;color:#8b8fa8;">Email</td><td style="padding:10px 0;"><a href="mailto:${email}" style="color:#38bdf8;">${email}</a></td></tr>
-            <tr><td style="padding:10px 0;color:#8b8fa8;">Availability</td><td style="padding:10px 0;">${timePreference}</td></tr>
-          </table>
-          <p style="margin-top:24px;font-size:12px;color:#8b8fa8;">Call SID: ${callSid} · ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT</p>
-        </div>
-      `,
+      to: "info@cybercraft360.com",
+      subject: `📞 ${isEmailOnly ? "Lead info" : "Booked"}: ${name} — ${company}`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
+<body style="margin:0;padding:0;background:#080c14;font-family:'Segoe UI',system-ui,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#080c14;padding:32px 16px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#0f1520;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;max-width:580px;">
+
+  <!-- Header bar -->
+  <tr><td style="height:4px;background:linear-gradient(90deg,#a78bfa,#38bdf8);"></td></tr>
+
+  <!-- Title -->
+  <tr><td style="padding:28px 32px 20px;">
+    <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);">CyberCraft360 · Amy</p>
+    <h1 style="margin:0;font-size:22px;font-weight:800;color:#fff;">
+      ${isEmailOnly ? "📧 Lead Captured" : "📅 Strategy Call Booked"}
+    </h1>
+    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.4);">${ct} CT</p>
+  </td></tr>
+
+  <!-- Divider -->
+  <tr><td style="padding:0 32px;"><div style="height:1px;background:rgba(255,255,255,0.06);"></div></td></tr>
+
+  <!-- Contact info -->
+  <tr><td style="padding:24px 32px 0;">
+    <p style="margin:0 0 14px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Contact</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;">
+      ${[
+        { label: "Name", value: name || "—", color: "#e4e6f0" },
+        { label: "Company", value: company || "—", color: "#a78bfa" },
+        { label: "Email", value: `<a href="mailto:${email}" style="color:#38bdf8;text-decoration:none;">${email}</a>`, color: "#38bdf8" },
+        ...(phone ? [{ label: "Phone", value: `<a href="tel:${phone}" style="color:#4ade80;text-decoration:none;">${phone}</a>`, color: "#4ade80" }] : []),
+        { label: isEmailOnly ? "Request" : "Availability", value: timePreference, color: "#f59e0b" },
+      ].map((row, i) => `
+      <tr style="${i > 0 ? "border-top:1px solid rgba(255,255,255,0.05);" : ""}">
+        <td style="padding:12px 18px;width:110px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.3);">${row.label}</td>
+        <td style="padding:12px 18px;font-size:14px;font-weight:600;color:${row.color};">${row.value}</td>
+      </tr>`).join("")}
+    </table>
+  </td></tr>
+
+  ${challenge ? `
+  <!-- Challenge / context -->
+  <tr><td style="padding:20px 32px 0;">
+    <p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Pre-Call Context</p>
+    <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6;">${challenge}</div>
+  </td></tr>` : ""}
+
+  ${summary ? `
+  <!-- AI call summary -->
+  <tr><td style="padding:20px 32px 0;">
+    <p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Call Summary (AI)</p>
+    <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,0.75);line-height:1.8;white-space:pre-line;">${summary}</div>
+  </td></tr>` : ""}
+
+  <!-- Next steps -->
+  <tr><td style="padding:20px 32px;">
+    <p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Your Next Steps</p>
+    <div style="background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.15);border-radius:10px;padding:14px 16px;">
+      ${isEmailOnly ? `
+      <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.7);">1. Send a quick intro email with your calendar link</p>
+      <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);">2. Follow up with a brief video or case study relevant to their business</p>
+      ` : `
+      <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.7);">1. Email <a href="mailto:${email}" style="color:#38bdf8;">${email}</a> with 2–3 specific time slots (${timePreference})</p>
+      <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.7);">2. ${phone ? `Call <a href="tel:${phone}" style="color:#4ade80;">${phone}</a> to confirm if no email reply within a few hours` : "Send a calendar invite once they confirm"}</p>
+      <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);">3. Review the call summary above before the call</p>
+      `}
+    </div>
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="padding:16px 32px 24px;border-top:1px solid rgba(255,255,255,0.05);">
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.18);">CyberCraft360 · Call SID: ${callSid}</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`,
     });
   } catch (e) {
     console.error("[Amy booking] failed to save/email:", e);
@@ -287,6 +419,8 @@ export async function POST(req: NextRequest) {
     const body = await req.formData();
     const speechResult = (body.get("SpeechResult") as string || "").trim();
     const callSid = body.get("CallSid") as string || "unknown";
+    // Twilio sends "To" = the number Amy dialed (lead's number) on outbound calls
+    const callerPhone = (body.get("To") as string || body.get("Called") as string || "").trim();
 
     const rawName = (req.nextUrl.searchParams.get("name") || "").trim();
     const hasName = rawName.length > 0 && rawName.toLowerCase() !== "there";
@@ -415,12 +549,16 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
     const parsedEmail = parseEmailFromSpeech(speechResult);
     if (parsedEmail) callState.email = parsedEmail;
 
-    // Detect time preference from user's message
+    // Detect time preference from user's message — capture day + time if mentioned
     const lastUser = speechResult.toLowerCase();
-    if (/morning/i.test(lastUser)) callState.time = "mornings";
-    else if (/afternoon/i.test(lastUser)) callState.time = "afternoons";
-    else if (/evening/i.test(lastUser)) callState.time = "evenings";
-    else if (/anytime|flexible|any time/i.test(lastUser)) callState.time = "flexible";
+    const dayMatch = lastUser.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/i);
+    const timeOfDay = /morning/i.test(lastUser) ? "morning" : /afternoon/i.test(lastUser) ? "afternoon" : /evening/i.test(lastUser) ? "evening" : null;
+    if (dayMatch || timeOfDay) {
+      const parts = [dayMatch?.[1], timeOfDay].filter(Boolean);
+      callState.time = parts.join(" ") || callState.time || "flexible";
+    } else if (/anytime|flexible|any time/i.test(lastUser)) {
+      callState.time = "flexible";
+    }
 
     await redis.set(stateKey, callState, { ex: 3600 });
 
@@ -433,10 +571,10 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
       // If LLM forgot to emit [BOOK_EMAIL] but we captured email during the call, book anyway
       if (!hasBooking && callState.email) {
         const syntheticReply = `[BOOK_EMAIL: ${callState.email} | ${callState.time ?? "flexible"}]`;
-        handleBooking(syntheticReply, name, company, callSid).catch(() => {});
+        handleBooking(syntheticReply, name, company, callSid, callerPhone, challenge, history).catch(() => {});
         hasBooking = true;
       } else if (hasBooking) {
-        handleBooking(reply, name, company, callSid).catch(() => {});
+        handleBooking(reply, name, company, callSid, callerPhone, challenge, history).catch(() => {});
       }
 
       const log = await redis.get<any[]>("amy:call-log") ?? [];
@@ -464,3 +602,4 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
 </Response>`, { headers: { "Content-Type": "text/xml" } });
   }
 }
+

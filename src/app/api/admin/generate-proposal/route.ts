@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
 function auth(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
@@ -16,7 +16,7 @@ async function groqProposal(apiKey: string, input: any): Promise<any> {
       messages: [
         {
           role: "system",
-          content: `You are Saad Imran, founder of CyberCraft360 — a premium AI agency in Houston TX. You write proposals that are sharp, confident, and specific. No filler. No corporate speak. You write like someone who has solved this exact problem 60+ times and knows exactly what the client needs. You never say "game-changer", "streamline", or "take your business to the next level".`,
+          content: `You are Saad Imran, founder of CyberCraft360 â€” a premium AI agency in Houston TX. You write proposals that are sharp, confident, and specific. No filler. No corporate speak. You write like someone who has solved this exact problem 60+ times and knows exactly what the client needs. You never say "game-changer", "streamline", or "take your business to the next level".`,
         },
         {
           role: "user",
@@ -33,12 +33,12 @@ Notes: ${input.notes || "None"}
 
 Return a JSON object with:
 {
-  "executive_summary": "2–3 paragraphs. Open with their specific pain, not a generic intro. Make them feel understood.",
-  "problem_statement": "1–2 paragraphs describing exactly what's costing them money right now.",
-  "proposed_solution": "2–3 paragraphs describing what we'll build for them specifically. Name the tools (AI phone agent, IRIS chatbot, etc.).",
+  "executive_summary": "2â€“3 paragraphs. Open with their specific pain, not a generic intro. Make them feel understood.",
+  "problem_statement": "1â€“2 paragraphs describing exactly what's costing them money right now.",
+  "proposed_solution": "2â€“3 paragraphs describing what we'll build for them specifically. Name the tools (AI phone agent, IRIS chatbot, etc.).",
   "deliverables": ["list", "of", "5-7", "specific", "deliverables"],
-  "timeline": [{"week": "Week 1–2", "milestone": "..."}, {"week": "Week 3–4", "milestone": "..."}, {"week": "Week 5–6", "milestone": "..."}],
-  "investment": "Pricing paragraph — monthly retainer, what's included, framed as ROI not cost.",
+  "timeline": [{"week": "Week 1â€“2", "milestone": "..."}, {"week": "Week 3â€“4", "milestone": "..."}, {"week": "Week 5â€“6", "milestone": "..."}],
+  "investment": "Pricing paragraph â€” monthly retainer, what's included, framed as ROI not cost.",
   "why_cybercraft": "2 paragraphs. Specific reasons we're the right choice. Reference Houston presence, custom builds, Saad's background.",
   "next_steps": "Short closing paragraph with a clear call to action."
 }`,
@@ -104,32 +104,32 @@ export async function POST(req: NextRequest) {
         React.createElement(View, { style: styles.accentBar }),
 
         // Header
-        React.createElement(Text, { style: styles.brand }, "CyberCraft360 · Proposal"),
+        React.createElement(Text, { style: styles.brand }, "CyberCraft360 Â· Proposal"),
         React.createElement(Text, { style: styles.title }, `AI Solution Proposal`),
-        React.createElement(Text, { style: styles.subtitle }, `Prepared for ${input.clientName} · ${input.businessName}`),
+        React.createElement(Text, { style: styles.subtitle }, `Prepared for ${input.clientName} Â· ${input.businessName}`),
         React.createElement(Text, { style: styles.date }, `${new Date().toLocaleDateString("en-US", { dateStyle: "long" })}`),
         React.createElement(View, { style: styles.divider }),
 
         // Executive Summary
-        section("01 · Overview", "Executive Summary",
+        section("01 Â· Overview", "Executive Summary",
           para(content.executive_summary),
         ),
 
         // Problem
-        section("02 · The Problem", "What's Costing You Right Now",
+        section("02 Â· The Problem", "What's Costing You Right Now",
           para(content.problem_statement),
         ),
 
         // Solution
-        section("03 · The Solution", "What We'll Build",
+        section("03 Â· The Solution", "What We'll Build",
           para(content.proposed_solution),
         ),
 
         // Deliverables
-        section("04 · Scope", "What's Included",
+        section("04 Â· Scope", "What's Included",
           React.createElement(View, null,
             ...(content.deliverables || []).map((d: string, i: number) =>
-              React.createElement(Text, { key: i, style: styles.bullet }, `✓  ${d}`)
+              React.createElement(Text, { key: i, style: styles.bullet }, `âœ“  ${d}`)
             )
           ),
         ),
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
         React.createElement(View, { style: styles.accentBar }),
 
         // Timeline
-        section("05 · Timeline", `Deployment: ${input.timeline || "4–6 Weeks"}`,
+        section("05 Â· Timeline", `Deployment: ${input.timeline || "4â€“6 Weeks"}`,
           React.createElement(View, null,
             ...(content.timeline || []).map((t: any, i: number) =>
               React.createElement(View, { key: i, style: styles.timelineRow },
@@ -151,12 +151,12 @@ export async function POST(req: NextRequest) {
         ),
 
         // Investment
-        section("06 · Investment", "Pricing & ROI",
+        section("06 Â· Investment", "Pricing & ROI",
           para(content.investment),
         ),
 
         // Why CyberCraft
-        section("07 · Why CyberCraft360", "Why We're the Right Partner",
+        section("07 Â· Why CyberCraft360", "Why We're the Right Partner",
           para(content.why_cybercraft),
         ),
 
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
 
         // Footer
         React.createElement(View, { style: styles.footer },
-          React.createElement(Text, { style: styles.footerText }, "CyberCraft360 · cybercraft360.com · Houston, TX · cybercraftlimited@gmail.com"),
+          React.createElement(Text, { style: styles.footerText }, "CyberCraft360 Â· cybercraft360.com Â· Houston, TX Â· info@cybercraft360.com"),
           React.createElement(Text, { style: styles.footerText }, `Prepared by Saad Imran, Founder`),
         ),
       ),
@@ -186,3 +186,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+

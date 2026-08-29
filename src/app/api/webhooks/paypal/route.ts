@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { logActivity } from "@/lib/activity";
 import { sendEmail } from "@/lib/mailer";
@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
       // Log to activity feed
       logActivity({
         type: "cancellation",
-        title: `Subscription cancelled — ${name || email}`,
-        detail: `Plan: ${planName} · ${eventType === "BILLING.SUBSCRIPTION.SUSPENDED" ? "Suspended" : "Cancelled"}`,
+        title: `Subscription cancelled â€” ${name || email}`,
+        detail: `Plan: ${planName} Â· ${eventType === "BILLING.SUBSCRIPTION.SUSPENDED" ? "Suspended" : "Cancelled"}`,
         clientName: name || email,
       }).catch(() => {});
 
@@ -29,12 +29,12 @@ export async function POST(req: NextRequest) {
 
       // Notify owner
       sendEmail({
-        to: "cybercraftlimited@gmail.com",
-        subject: `⚠️ Subscription Cancelled — ${name || email}`,
+        to: "info@cybercraft360.com",
+        subject: `âš ï¸ Subscription Cancelled â€” ${name || email}`,
         html: `<div style="font-family:system-ui;padding:24px;background:#0a0c12;border-radius:12px;max-width:500px;">
           <div style="height:3px;background:linear-gradient(90deg,#ef4444,#f59e0b);border-radius:2px;margin-bottom:20px;"></div>
           <p style="color:rgba(255,255,255,0.3);font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin:0 0 8px;">CyberCraft360</p>
-          <h2 style="color:#fff;margin:0 0 20px;font-size:18px;">⚠️ Client Subscription Cancelled</h2>
+          <h2 style="color:#fff;margin:0 0 20px;font-size:18px;">âš ï¸ Client Subscription Cancelled</h2>
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;width:100px;">Client</td><td style="padding:8px 0;color:#fff;font-size:13px;">${name || "Unknown"}</td></tr>
             <tr><td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;">Email</td><td style="padding:8px 0;color:#fff;font-size:13px;">${email}</td></tr>
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
       logActivity({
         type: "payment",
-        title: `Invoice paid — ${recipientEmail || invoiceId}`,
+        title: `Invoice paid â€” ${recipientEmail || invoiceId}`,
         detail: `$${amount} received`,
         amount: parseFloat(amount) || 0,
       }).catch(() => {});
@@ -75,3 +75,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

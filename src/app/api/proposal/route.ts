@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ProposalDocument } from "@/components/proposal/ProposalDocument";
 import React from "react";
@@ -35,7 +35,7 @@ Return ONLY valid JSON matching this exact shape:
     {"name": "Service Name", "why": "One sentence why this is right for their challenge", "price": "from $X/month"}
   ],
   "roiEstimate": "Specific ROI estimate e.g. '340% ROI within 90 days based on typical ${industry} deployments'",
-  "timeline": "e.g. 'Live within 4–6 weeks of your discovery call'",
+  "timeline": "e.g. 'Live within 4â€“6 weeks of your discovery call'",
   "nextStep": "One warm, direct sentence pushing them to book the free strategy session"
 }
 
@@ -56,7 +56,7 @@ Pick the 3 most relevant services from: Custom AI Chatbot ($500/mo), Voice AI Ag
   const data = await res.json();
   if (!res.ok || !data.choices?.[0]?.message?.content) {
     console.error("Groq proposal error:", JSON.stringify(data));
-    throw new Error(data.error?.message || "AI generation failed — please try again.");
+    throw new Error(data.error?.message || "AI generation failed â€” please try again.");
   }
   return JSON.parse(data.choices[0].message.content);
 }
@@ -64,8 +64,8 @@ Pick the 3 most relevant services from: Custom AI Chatbot ($500/mo), Voice AI Ag
 async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer) {
   const { sendEmail } = await import("@/lib/mailer");
   await sendEmail({
-    to: [to, "cybercraftlimited@gmail.com"],
-    subject: `Your Bespoke AI Proposal — ${company}`,
+    to: [to, "info@cybercraft360.com"],
+    subject: `Your Bespoke AI Proposal â€” ${company}`,
     html: `
 <div style="background:#0a0c12;padding:40px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
@@ -75,12 +75,12 @@ async function sendProposalEmail(to: string, company: string, pdfBuffer: Buffer)
       <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 16px;">Your AI Proposal is Ready</h1>
       <p style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.6;margin:0 0 28px;">
         We've put together a bespoke AI strategy document for <strong style="color:rgba(255,255,255,0.85);">${company}</strong>.
-        Your proposal is attached — it outlines the exact AI solutions we'd recommend and what you can expect in terms of ROI and timeline.
+        Your proposal is attached â€” it outlines the exact AI solutions we'd recommend and what you can expect in terms of ROI and timeline.
       </p>
       <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-        Book Your Free Strategy Call →
+        Book Your Free Strategy Call â†’
       </a>
-      <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:28px 0 0;">CyberCraft360 · Bespoke AI Agency · cybercraft360.com</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.2);margin:28px 0 0;">CyberCraft360 Â· Bespoke AI Agency Â· cybercraft360.com</p>
     </div>
   </div>
 </div>`,
@@ -122,3 +122,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

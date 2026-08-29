@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/mailer";
 
 export async function GET() {
@@ -8,13 +8,14 @@ export async function GET() {
     }
 
     await sendEmail({
-      to: "cybercraftlimited@gmail.com",
-      subject: "✅ CyberCraft360 Email Test",
+      to: "info@cybercraft360.com",
+      subject: "âœ… CyberCraft360 Email Test",
       html: "<p>Email is working correctly via Gmail.</p>",
     });
 
-    return NextResponse.json({ ok: true, message: "Test email sent to cybercraftlimited@gmail.com" });
+    return NextResponse.json({ ok: true, message: "Test email sent to info@cybercraft360.com" });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

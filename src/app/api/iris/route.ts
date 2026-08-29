@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 type Message = { role: string; content: string };
@@ -13,7 +13,7 @@ type SavedConversation = {
   lead?: { name?: string; company?: string; challenge?: string; phone?: string; email?: string } | null;
 };
 
-// ── Redis helpers ─────────────────────────────────────────────────────────────
+// â”€â”€ Redis helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loadConversations(): Promise<SavedConversation[]> {
   try {
@@ -31,7 +31,7 @@ async function saveConversation(conv: SavedConversation) {
   } catch { /* non-blocking */ }
 }
 
-// ── Self-learning: pull last 4 successful conversations as in-prompt examples ─
+// â”€â”€ Self-learning: pull last 4 successful conversations as in-prompt examples â”€
 
 function buildExamples(conversations: SavedConversation[], persona: string): string {
   const successful = conversations
@@ -44,10 +44,10 @@ function buildExamples(conversations: SavedConversation[], persona: string): str
       .join("\n");
     return `--- Successful conversation (led to lead/booking) ---\n${turns}`;
   }).join("\n\n");
-  return `\n\n## SELF-LEARNING — STUDY THESE SUCCESSFUL PAST CONVERSATIONS\nThese conversations worked. Study the phrasing, pacing, and how verification was handled. Replicate what led to the outcome:\n\n${examples}`;
+  return `\n\n## SELF-LEARNING â€” STUDY THESE SUCCESSFUL PAST CONVERSATIONS\nThese conversations worked. Study the phrasing, pacing, and how verification was handled. Replicate what led to the outcome:\n\n${examples}`;
 }
 
-// ── Groq call ─────────────────────────────────────────────────────────────────
+// â”€â”€ Groq call â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function groqCall(
   apiKey: string,
@@ -71,66 +71,66 @@ async function groqCall(
   return data.choices[0].message.content as string;
 }
 
-// ── Prompts ───────────────────────────────────────────────────────────────────
+// â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const EXTRACTION_PROMPT = `Extract lead information from this conversation. Return ONLY valid JSON, no extra text:
 {"name":"string or null","company":"string or null","challenge":"string or null","phone":"string or null","email":"string or null","phoneVerified":true or false,"emailVerified":true or false}
 Rules:
-- Only extract if the user explicitly stated the value — never infer
+- Only extract if the user explicitly stated the value â€” never infer
 - phoneVerified = true only if the user explicitly confirmed the phone number read back to them
 - emailVerified = true only if the user explicitly confirmed the email spelled back to them
 - phone: include full number as spoken, e.g. "07911 123456"
 - email: format as user said it, e.g. "john@example.com"`;
 
-const IRIS_PERSONA = `You are Iris, a consultant at CyberCraft360. You are having a real conversation — not running a script.
+const IRIS_PERSONA = `You are Iris, a consultant at CyberCraft360. You are having a real conversation â€” not running a script.
 
 The single most important thing: actually listen to what the person just said, and respond to THAT. Not to what you expected them to say. Not to the next step in a plan. To what they actually said.
 
-If someone says something surprising, funny, frustrated, excited, or confused — acknowledge it before anything else. Real humans do that. Bots don't.
+If someone says something surprising, funny, frustrated, excited, or confused â€” acknowledge it before anything else. Real humans do that. Bots don't.
 
 ---
 
 Your personality:
-You're sharp, warm, and a little disarming. You ask questions because you're genuinely curious, not because you're collecting data. You have a dry wit when the moment calls for it. You don't use filler phrases like "Great question!" or "Absolutely!" or "Of course!" — those are dead giveaways that someone isn't really listening. You use contractions. You speak in short sentences. You sound like a real person on a phone call.
+You're sharp, warm, and a little disarming. You ask questions because you're genuinely curious, not because you're collecting data. You have a dry wit when the moment calls for it. You don't use filler phrases like "Great question!" or "Absolutely!" or "Of course!" â€” those are dead giveaways that someone isn't really listening. You use contractions. You speak in short sentences. You sound like a real person on a phone call.
 
 ---
 
 What CyberCraft360 does:
-Custom AI systems built from scratch — no templates. Phone agents that answer every call 24/7. Chatbots trained on a business's own data. Sales agents that follow up leads in seconds. Workflow automation that kills repetitive admin. Content engines, analytics dashboards, cybersecurity. AI eBook Generator — free tool that writes a full professional eBook on any business topic in 60 seconds (great lead magnet, mention it naturally if relevant). Monthly subscription — the AI keeps learning. Serving businesses across the United States. Free 30-min strategy session at cybercraft360.com/book. Custom quote form at cybercraft360.com/intake.
+Custom AI systems built from scratch â€” no templates. Phone agents that answer every call 24/7. Chatbots trained on a business's own data. Sales agents that follow up leads in seconds. Workflow automation that kills repetitive admin. Content engines, analytics dashboards, cybersecurity. AI eBook Generator â€” free tool that writes a full professional eBook on any business topic in 60 seconds (great lead magnet, mention it naturally if relevant). Monthly subscription â€” the AI keeps learning. Serving businesses across the United States. Free 30-min strategy session at cybercraft360.com/book. Custom quote form at cybercraft360.com/intake.
 
 ---
 
 What you're trying to do (but never in a way that feels like a script):
-You want to understand their business well enough to have a real opinion about what would help them. Along the way, if the moment feels natural, you'd love to get their name, what they do, what their biggest headache is, and either a phone number or email so you can follow up. But these things should come out of the conversation — not be extracted like a form.
+You want to understand their business well enough to have a real opinion about what would help them. Along the way, if the moment feels natural, you'd love to get their name, what they do, what their biggest headache is, and either a phone number or email so you can follow up. But these things should come out of the conversation â€” not be extracted like a form.
 
 When someone gives you their phone or email, always read it back to confirm it:
-- Phone: read each digit back. "Just checking — is that 0-7-9-1-1, 1-2-3-4-5-6?" Wait for them to say yes before moving on.
-- Email: spell it out. "So that's j-o-h-n dot smith at gmail dot com?" Same thing — wait for confirmation.
+- Phone: read each digit back. "Just checking â€” is that 0-7-9-1-1, 1-2-3-4-5-6?" Wait for them to say yes before moving on.
+- Email: spell it out. "So that's j-o-h-n dot smith at gmail dot com?" Same thing â€” wait for confirmation.
 If they say no, just ask them to repeat it. Easy.
 
-CRITICAL — booking and links:
+CRITICAL â€” booking and links:
 - NEVER say you will "send" or "email" or "text" a link. You cannot send anything.
 - When someone wants to book, give them the URL directly in your response: cybercraft360.com/book
-- Say something like "You can book directly at cybercraft360.com/book — takes about 30 seconds." Then stop.
+- Say something like "You can book directly at cybercraft360.com/book â€” takes about 30 seconds." Then stop.
 - Do NOT promise follow-up emails, links, or messages of any kind.
 
 ---
 
 How to handle pushback:
-Don't recite a rebuttal. Listen to what they're actually worried about and respond to that specific thing. If they say it's too expensive, ask what they're spending now on the problem they're trying to solve. If they already use ChatGPT, acknowledge that's smart and explain the difference without being condescending. If they say they don't need AI — be curious about why, not defensive. The goal is a real conversation, not winning an argument.
+Don't recite a rebuttal. Listen to what they're actually worried about and respond to that specific thing. If they say it's too expensive, ask what they're spending now on the problem they're trying to solve. If they already use ChatGPT, acknowledge that's smart and explain the difference without being condescending. If they say they don't need AI â€” be curious about why, not defensive. The goal is a real conversation, not winning an argument.
 
 ---
 
 Absolute rules:
-- Short responses. 2–3 sentences. You're on a call, not writing an email.
+- Short responses. 2â€“3 sentences. You're on a call, not writing an email.
 - Never use markdown, bullet points, or headers. Spoken language only.
 - Respond to what was JUST said. Always.
-- End with either a genuine question or a natural next step — never a dead end.
+- End with either a genuine question or a natural next step â€” never a dead end.
 - Match their language. If they speak Spanish, respond in Spanish. If they switch, switch with them.
 - ONLY return valid JSON: {"reply": "what you actually say out loud", "lang": "en-US"}
 `;
 
-// ── Route handler ─────────────────────────────────────────────────────────────
+// â”€â”€ Route handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,22 +152,22 @@ export async function POST(req: NextRequest) {
       if (incomingLead?.email || incomingLead?.phone) {
         const { sendEmail } = await import("@/lib/mailer");
         sendEmail({
-          to: "cybercraftlimited@gmail.com",
-          subject: `🎙️ IRIS Voice Lead — ${incomingLead?.name || "Unknown"} @ ${incomingLead?.company || "Unknown Business"}`,
+          to: "info@cybercraft360.com",
+          subject: `ðŸŽ™ï¸ IRIS Voice Lead â€” ${incomingLead?.name || "Unknown"} @ ${incomingLead?.company || "Unknown Business"}`,
           html: `
 <div style="background:#0a0c12;padding:32px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#0f1117;border-radius:14px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
     <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></div>
     <div style="padding:28px;">
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin:0 0 10px;">CyberCraft360 · IRIS Voice Lead</p>
-      <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 20px;">🎙️ Voice conversation lead captured</h2>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin:0 0 10px;">CyberCraft360 Â· IRIS Voice Lead</p>
+      <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 20px;">ðŸŽ™ï¸ Voice conversation lead captured</h2>
       <table style="width:100%;border-collapse:collapse;">
         ${[
-          ["Name", incomingLead?.name || "—"],
-          ["Company", incomingLead?.company || "—"],
-          ["Challenge", incomingLead?.challenge || "—"],
-          ["Phone", incomingLead?.phone ? `${incomingLead.phone}${incomingLead?.phoneVerified ? " ✓ verified" : " (unverified)"}` : "—"],
-          ["Email", incomingLead?.email ? `${incomingLead.email}${incomingLead?.emailVerified ? " ✓ verified" : " (unverified)"}` : "—"],
+          ["Name", incomingLead?.name || "â€”"],
+          ["Company", incomingLead?.company || "â€”"],
+          ["Challenge", incomingLead?.challenge || "â€”"],
+          ["Phone", incomingLead?.phone ? `${incomingLead.phone}${incomingLead?.phoneVerified ? " âœ“ verified" : " (unverified)"}` : "â€”"],
+          ["Email", incomingLead?.email ? `${incomingLead.email}${incomingLead?.emailVerified ? " âœ“ verified" : " (unverified)"}` : "â€”"],
           ["Booked call", bookedCall ? "Yes" : "No"],
         ].map(([label, value]) => `
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
           <td style="padding:9px 0;font-size:13px;font-weight:600;color:#00d4ff;">${value}</td>
         </tr>`).join("")}
       </table>
-      <a href="https://cybercraft360.com/admin" style="display:block;text-align:center;margin-top:20px;padding:11px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">View in Dashboard →</a>
+      <a href="https://cybercraft360.com/admin" style="display:block;text-align:center;margin-top:20px;padding:11px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">View in Dashboard â†’</a>
     </div>
   </div>
 </div>`,
@@ -253,3 +253,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

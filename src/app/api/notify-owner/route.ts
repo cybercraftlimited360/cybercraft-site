@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
@@ -13,11 +13,11 @@ export async function POST(req: NextRequest) {
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/━+/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 12px 0;">')
+      .replace(/â”+/g, '<hr style="border: none; border-top: 1px solid #ccc; margin: 12px 0;">')
     }</pre>`;
 
     await sendEmail({
-      to: "cybercraftlimited@gmail.com",
+      to: "info@cybercraft360.com",
       subject,
       html,
     });
@@ -28,3 +28,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to send notification" }, { status: 500 });
   }
 }
+

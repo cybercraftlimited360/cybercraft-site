@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
@@ -15,11 +15,11 @@ const CHECKLIST_HTML = `
       ${[
         {
           q: "Are you missing calls when you're busy or after hours?",
-          why: "Every missed call is a lead that calls your competitor next. An AI receptionist answers instantly, 24/7, books the appointment, and sends a confirmation — without you touching the phone.",
+          why: "Every missed call is a lead that calls your competitor next. An AI receptionist answers instantly, 24/7, books the appointment, and sends a confirmation â€” without you touching the phone.",
         },
         {
           q: "Are you or your staff spending more than 2 hours a day on repetitive tasks?",
-          why: "Appointment reminders, data entry, follow-up emails, answering the same questions — these are the first things to automate. Most businesses reclaim 20–30 hours a week within the first month.",
+          why: "Appointment reminders, data entry, follow-up emails, answering the same questions â€” these are the first things to automate. Most businesses reclaim 20â€“30 hours a week within the first month.",
         },
         {
           q: "Do your leads go more than 5 minutes without a response?",
@@ -27,11 +27,11 @@ const CHECKLIST_HTML = `
         },
         {
           q: "Are you relying on manual follow-up to close deals?",
-          why: "Most sales happen on the 5th–8th touchpoint. Nobody has time to do that manually for every lead. An AI sales agent follows up automatically across SMS, email, and voicemail until they respond.",
+          why: "Most sales happen on the 5thâ€“8th touchpoint. Nobody has time to do that manually for every lead. An AI sales agent follows up automatically across SMS, email, and voicemail until they respond.",
         },
         {
           q: "Would adding 24/7 coverage meaningfully grow your revenue?",
-          why: "If even 20% of your revenue comes from after-hours opportunities you're currently missing — calls, form submissions, chat inquiries — AI pays for itself in weeks, not months.",
+          why: "If even 20% of your revenue comes from after-hours opportunities you're currently missing â€” calls, form submissions, chat inquiries â€” AI pays for itself in weeks, not months.",
         },
       ].map((item, i) => `
         <div style="margin-bottom:24px;padding:20px 22px;border-radius:12px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);">
@@ -46,17 +46,17 @@ const CHECKLIST_HTML = `
       <div style="margin-top:32px;padding:22px 24px;border-radius:12px;background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(124,58,237,0.08));border:1px solid rgba(0,212,255,0.2);">
         <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">What's your score?</div>
         <p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;line-height:1.6;">
-          <strong style="color:#00d4ff;">1–2 yes:</strong> You have one urgent gap — let's fix that first.<br/>
-          <strong style="color:#7c3aed;">3–4 yes:</strong> AI would make a meaningful difference in your business today.<br/>
+          <strong style="color:#00d4ff;">1â€“2 yes:</strong> You have one urgent gap â€” let's fix that first.<br/>
+          <strong style="color:#7c3aed;">3â€“4 yes:</strong> AI would make a meaningful difference in your business today.<br/>
           <strong style="color:#e64dff;">5 yes:</strong> You're leaving significant revenue on the table every single week.
         </p>
         <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 24px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:0.04em;">
-          Book a Free AI Audit →
+          Book a Free AI Audit â†’
         </a>
       </div>
 
       <p style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:28px;text-align:center;">
-        CyberCraft360 · cybercraft360.com · Houston, Texas
+        CyberCraft360 Â· cybercraft360.com Â· Houston, Texas
       </p>
     </div>
   </div>
@@ -83,13 +83,13 @@ export async function POST(req: NextRequest) {
     // Send checklist to user
     await sendEmail({
       to: email.trim(),
-      subject: "Your AI Readiness Checklist — CyberCraft360",
+      subject: "Your AI Readiness Checklist â€” CyberCraft360",
       html: CHECKLIST_HTML,
     });
 
     // Notify owner
     await sendEmail({
-      to: "cybercraftlimited@gmail.com",
+      to: "info@cybercraft360.com",
       subject: `New checklist lead: ${entry.email}`,
       html: `<p style="font-family:sans-serif;">New AI Readiness Checklist download from <strong>${entry.email}</strong><br/>Source blog post: ${entry.source}<br/>${entry.createdAt}</p>`,
     }).catch(() => null);
@@ -100,3 +100,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }
+

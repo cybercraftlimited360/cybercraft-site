@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const monthStr = now.toISOString().slice(0, 7);
     const todayStr = now.toISOString().slice(0, 10);
 
-    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, amyStats, dailyKeys, irisConvsRaw, amyConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw, uniqueVisitorsDailyRaw, organicDailyRaw] =
+    const [bookings, leadsRaw, invoicesRaw, pipelineRaw, tasksRaw, activityRaw, chatStats, amyStats, amyBookingsRaw, dailyKeys, irisConvsRaw, amyConvsRaw, offboardedRaw, recentVisitsRaw, visitsDailyRaw, uniqueVisitorsDailyRaw, organicDailyRaw] =
       await Promise.all([
         getBookings(),
         redis.get<any[]>("leads:all"),
@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         redis.get<ActivityEvent[]>("activity:feed"),
         redis.hgetall("chat:stats"),
         redis.hgetall("amy:stats"),
+        redis.get<any[]>("amy:bookings"),
         redis.keys("chat:daily:*"),
         redis.get<any[]>("iris:conversations"),
         redis.get<any[]>("amy:call-log"),
@@ -190,7 +191,11 @@ export async function GET(req: NextRequest) {
         bookingClicks: Number(chatStats?.bookingClicks ?? 0),
         daily,
       },
-      amy: { totalCalls: Number(amyStats?.totalCalls ?? 0) },
+      amy: {
+        totalCalls: Number(amyStats?.totalCalls ?? 0),
+        totalBookings: Number(amyStats?.totalBookings ?? 0),
+        bookings: (amyBookingsRaw ?? []).slice(-20).reverse(),
+      },
       conversations: {
         iris: irisConvs.slice(0, 50),
         amy: amyConvs.slice(0, 50).map((c: any) => ({

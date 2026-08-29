@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { sendEmail } from "@/lib/mailer";
 
-export const maxDuration = 300; // 5 minutes — blog gen + GitHub commit + social posting
+export const maxDuration = 300; // 5 minutes â€” blog gen + GitHub commit + social posting
 
 async function notifyFailure(step: string, detail: string) {
   await sendEmail({
-    to: "cybercraftlimited@gmail.com",
-    subject: `⚠️ Blog Post FAILED — ${step}`,
+    to: "info@cybercraft360.com",
+    subject: `âš ï¸ Blog Post FAILED â€” ${step}`,
     html: `<div style="font-family:sans-serif;padding:24px;"><h2 style="color:#dc2626;">Blog Post Cron Failed</h2><p><strong>Step:</strong> ${step}</p><p><strong>Detail:</strong> ${detail}</p><p style="color:#6b7280;font-size:12px;">${new Date().toISOString()}</p></div>`,
   }).catch(() => {});
 }
@@ -97,7 +97,7 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Slugs of existing published posts — used to inject internal links into new posts
+// Slugs of existing published posts â€” used to inject internal links into new posts
 const EXISTING_SLUGS = [
   { slug: "ai-receptionist-for-small-business",                          title: "AI Receptionist for Small Business" },
   { slug: "ai-chatbot-for-service-businesses-that-actually-boosts-bookings", title: "AI Chatbot for Service Businesses That Boosts Bookings" },
@@ -139,37 +139,37 @@ async function generatePost(keyword: string, linkSuggestions: string): Promise<{
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
-  const prompt = `You are Saad Imran, founder of CyberCraft360 — a boutique AI agency serving small and mid-size businesses across the United States. You build custom voice agents, chatbots, and workflow automation. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants nationwide. You are direct, specific, and allergic to corporate fluff.
+  const prompt = `You are Saad Imran, founder of CyberCraft360 â€” a boutique AI agency serving small and mid-size businesses across the United States. You build custom voice agents, chatbots, and workflow automation. You have worked with HVAC companies, dental offices, real estate teams, contractors, and restaurants nationwide. You are direct, specific, and allergic to corporate fluff.
 
 Write a thorough, authoritative blog post targeting this keyword: "${keyword}"
 
-CRITICAL — NEVER DISCLOSE TOOLS OR VENDORS:
-- NEVER name any specific software, platform, API, or vendor in the post — no matter what
+CRITICAL â€” NEVER DISCLOSE TOOLS OR VENDORS:
+- NEVER name any specific software, platform, API, or vendor in the post â€” no matter what
 - Instead use generic descriptions: "AI voice platform", "cloud telephony infrastructure", "large language model", "workflow automation software", "scheduling system", "AI chatbot builder", etc.
 - Do NOT mention: ElevenLabs, Twilio, Cerebras, OpenAI, GPT, Redis, Bland AI, Higgsfield, Vercel, Next.js, Shopify, Zapier, Make, n8n, HubSpot, Salesforce, or any other specific product
-- CyberCraft360 builds proprietary systems using best-in-class AI components — keep it at that level of abstraction
+- CyberCraft360 builds proprietary systems using best-in-class AI components â€” keep it at that level of abstraction
 
 VOICE & TONE:
-- Write like a founder who has seen hundreds of businesses — confident, conversational, occasionally blunt
+- Write like a founder who has seen hundreds of businesses â€” confident, conversational, occasionally blunt
 - Use real-world scenarios and specific dollar amounts, time savings, or business outcomes (e.g. "a plumbing company we worked with was missing 40% of inbound calls on weekends")
 - Never use: "in today's fast-paced world", "leverage", "revolutionize", "game-changer", "seamlessly", "cutting-edge", "dive in", "unlock", "empower", or "transform"
-- No motivational filler — every sentence must earn its place
+- No motivational filler â€” every sentence must earn its place
 - Write to a skeptical, time-poor business owner, not a tech enthusiast
 
 STRUCTURE (follow this exactly):
-- Hook paragraph: start mid-thought or with a specific real scenario — NOT a definition or "AI is changing everything"
-- 5–6 H2 sections, each answering a specific question a business owner would actually have
-- Each section: 3–4 solid paragraphs with specific examples, numbers, or outcomes
-- INTERNAL LINKS: naturally weave 2–3 of the following links into the body where they are genuinely relevant. Do NOT force them. Do NOT add a "Related reading" section — embed them inline as anchor text:
+- Hook paragraph: start mid-thought or with a specific real scenario â€” NOT a definition or "AI is changing everything"
+- 5â€“6 H2 sections, each answering a specific question a business owner would actually have
+- Each section: 3â€“4 solid paragraphs with specific examples, numbers, or outcomes
+- INTERNAL LINKS: naturally weave 2â€“3 of the following links into the body where they are genuinely relevant. Do NOT force them. Do NOT add a "Related reading" section â€” embed them inline as anchor text:
 ${linkSuggestions}
-- After the main sections: add an H2 "Common Questions" section with 3 real FAQs as H3s, each answered in 2–3 paragraphs
-- Close paragraph: CTA to book a free 30-minute strategy call at cybercraft360.com/book — feel like a natural next step, not a pitch
+- After the main sections: add an H2 "Common Questions" section with 3 real FAQs as H3s, each answered in 2â€“3 paragraphs
+- Close paragraph: CTA to book a free 30-minute strategy call at cybercraft360.com/book â€” feel like a natural next step, not a pitch
 - Link to the booking page at least once as: [Book a free strategy call](https://cybercraft360.com/book)
 
 SEO:
 - Title: under 70 characters, includes the keyword naturally, written like something a real person searches
 - Meta description: under 155 characters, specific benefit, no hype
-- Target length: 1,600–2,200 words — this is a definitive guide, not a quick read
+- Target length: 1,600â€“2,200 words â€” this is a definitive guide, not a quick read
 - Use the keyword and natural variations throughout, especially in the first 100 words and in at least 2 H2s
 
 Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
@@ -288,13 +288,13 @@ export async function GET(req: NextRequest) {
     // Generate post
     const post = await generatePost(keyword, linkSuggestions);
     if (!post) {
-      await notifyFailure("Content generation", `Keyword: ${keyword} — Groq returned null`);
+      await notifyFailure("Content generation", `Keyword: ${keyword} â€” Groq returned null`);
       return NextResponse.json({ ok: false, error: "Generation failed" }, { status: 500 });
     }
 
     const slug = slugify(post.title);
 
-    // Commit directly to GitHub — no review queue
+    // Commit directly to GitHub â€” no review queue
     const committed = await commitToGitHub(slug, post.content);
     if (!committed) {
       await notifyFailure("GitHub commit", `slug: ${slug}`);
@@ -326,7 +326,7 @@ export async function GET(req: NextRequest) {
           model: "gpt-4o",
           messages: [{
             role: "user",
-            content: `You are the social media voice of CyberCraft360 — a premium AI engineering company for small businesses.
+            content: `You are the social media voice of CyberCraft360 â€” a premium AI engineering company for small businesses.
 
 A new blog post was just published. Write social media captions to drive traffic to it.
 
@@ -374,7 +374,7 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
       const imageParams = new URLSearchParams({
         ey: "NEW BLOG POST",
         hl: post.title.toUpperCase().slice(0, 50).replace(/\n/g, " "),
-        ct: "READ ON THE BLOG →",
+        ct: "READ ON THE BLOG â†’",
         layout: "1",
         aspect: "square",
         ...(photoUrl ? { photo: photoUrl } : {}),
@@ -383,7 +383,7 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
       const landscapeParams = new URLSearchParams({
         ey: "NEW BLOG POST",
         hl: post.title.toUpperCase().slice(0, 50).replace(/\n/g, " "),
-        ct: "READ ON THE BLOG →",
+        ct: "READ ON THE BLOG â†’",
         layout: "1",
         aspect: "landscape",
         ...(photoUrl ? { photo: photoUrl } : {}),
@@ -445,8 +445,8 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
     const fbOk = (socialResults.facebook as any)?.ok;
     const liOk = (socialResults.linkedin as any)?.ok;
     await sendEmail({
-      to: "cybercraftlimited@gmail.com",
-      subject: `✅ Blog Post Published — ${post.title}`,
+      to: "info@cybercraft360.com",
+      subject: `âœ… Blog Post Published â€” ${post.title}`,
       html: `<div style="font-family:sans-serif;padding:24px;max-width:600px;">
         <h2 style="color:#111;">New Blog Post Live</h2>
         <p><strong>Title:</strong> ${post.title}</p>
@@ -456,9 +456,9 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
         <table style="border-collapse:collapse;width:100%;border:1px solid #e5e7eb;">
           <thead><tr style="background:#f9fafb;"><th style="padding:8px 12px;text-align:left;">Platform</th><th style="padding:8px 12px;text-align:left;">Result</th></tr></thead>
           <tbody>
-            <tr><td style="padding:8px 12px;font-weight:600;">Instagram</td><td style="padding:8px 12px;color:${igOk ? "#16a34a" : "#dc2626"};">${igOk ? "✅ Posted" : `❌ ${(socialResults.instagram as any)?.error ?? "Failed"}`}</td></tr>
-            <tr><td style="padding:8px 12px;font-weight:600;">Facebook</td><td style="padding:8px 12px;color:${fbOk ? "#16a34a" : "#dc2626"};">${fbOk ? "✅ Posted" : `❌ ${(socialResults.facebook as any)?.error ?? "Failed"}`}</td></tr>
-            <tr><td style="padding:8px 12px;font-weight:600;">LinkedIn</td><td style="padding:8px 12px;color:${liOk ? "#16a34a" : "#dc2626"};">${liOk ? "✅ Posted" : `❌ ${(socialResults.linkedin as any)?.error ?? "Failed"}`}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;">Instagram</td><td style="padding:8px 12px;color:${igOk ? "#16a34a" : "#dc2626"};">${igOk ? "âœ… Posted" : `âŒ ${(socialResults.instagram as any)?.error ?? "Failed"}`}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;">Facebook</td><td style="padding:8px 12px;color:${fbOk ? "#16a34a" : "#dc2626"};">${fbOk ? "âœ… Posted" : `âŒ ${(socialResults.facebook as any)?.error ?? "Failed"}`}</td></tr>
+            <tr><td style="padding:8px 12px;font-weight:600;">LinkedIn</td><td style="padding:8px 12px;color:${liOk ? "#16a34a" : "#dc2626"};">${liOk ? "âœ… Posted" : `âŒ ${(socialResults.linkedin as any)?.error ?? "Failed"}`}</td></tr>
           </tbody>
         </table>
         <p style="color:#6b7280;font-size:12px;margin-top:16px;">${new Date().toISOString()}</p>
@@ -472,3 +472,4 @@ Write 3 captions. Return ONLY valid JSON, no markdown fences:
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }
+

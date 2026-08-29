@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { X, Play, Pause, ChevronRight } from "lucide-react";
@@ -9,7 +9,7 @@ interface Props {
   service?: string;
 }
 
-/* ─── CSS injected once ─────────────────────────────────────────── */
+/* â”€â”€â”€ CSS injected once â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const CSS = `
 @keyframes slideUp   { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
 @keyframes slideIn   { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
@@ -41,7 +41,7 @@ function injectCSS() {
   document.head.appendChild(s);
 }
 
-/* ─── primitives ─────────────────────────────────────────────────── */
+/* â”€â”€â”€ primitives â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function Typed({ value, speed = 28, delay = 0 }: { value: string; speed?: number; delay?: number }) {
   const [typed, setTyped] = useState("");
   useEffect(() => {
@@ -171,21 +171,21 @@ function CheckItem({ text, color, delay = 0, done = true }: { text: string; colo
   );
 }
 
-/* ─── scene renderers ────────────────────────────────────────────── */
+/* â”€â”€â”€ scene renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function SceneAva(scene: number, tick: number, color: string) {
   const lines = [
-    { role: "ava",      text: "Thank you for calling Houston Dental! This is Ava — how can I help you?" },
+    { role: "ava",      text: "Thank you for calling Houston Dental! This is Ava â€” how can I help you?" },
     { role: "customer", text: "Hi, I need to book a cleaning." },
     { role: "ava",      text: "Of course! Mornings or afternoons?" },
     { role: "customer", text: "Mornings. Tuesday or Wednesday?" },
-    { role: "ava",      text: "Tuesday at 9am is open — can I get your name?" },
+    { role: "ava",      text: "Tuesday at 9am is open â€” can I get your name?" },
     { role: "customer", text: "Sarah Collins." },
-    { role: "ava",      text: "Done, Sarah! You're set for Tuesday 9am. Sending a confirmation text now! 😊" },
+    { role: "ava",      text: "Done, Sarah! You're set for Tuesday 9am. Sending a confirmation text now! ðŸ˜Š" },
   ];
   if (scene === 0) return (
     <div className="text-center space-y-5">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Incoming call · 2:14 AM · office is closed</div>
-      <Ring color={color} emoji="📞" />
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Incoming call Â· 2:14 AM Â· office is closed</div>
+      <Ring color={color} emoji="ðŸ“ž" />
       <div className="anim-slideUp text-white font-semibold" style={{ animationDelay: "200ms" }}>Ava answers in 0 seconds</div>
       <div className="flex justify-center gap-3 flex-wrap">
         <Tag text="0s wait time" color={color} pulse delay={300} />
@@ -196,15 +196,15 @@ function SceneAva(scene: number, tick: number, color: string) {
   );
   if (scene === 1) return (
     <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Live transcript · Houston Dental</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Live transcript Â· Houston Dental</div>
       {lines.slice(0, Math.min(tick + 1, lines.length)).map((l, i) => <Bubble key={i} {...l} color={color} delay={0} />)}
-      {tick < lines.length && <div className="flex gap-1 pl-9"><span className="text-xs text-gray-600 animate-pulse">Ava is typing…</span></div>}
+      {tick < lines.length && <div className="flex gap-1 pl-9"><span className="text-xs text-gray-600 animate-pulse">Ava is typingâ€¦</span></div>}
     </div>
   );
   if (scene === 2) return (
     <div className="space-y-3">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Calendar · auto-updated</div>
-      {[["Mon","Full",false],["Tue 9am","Sarah Collins ✓",true],["Tue 11am","James R.",false],["Wed 10am","Available",false]].map(([day, label, active], i) => (
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Calendar Â· auto-updated</div>
+      {[["Mon","Full",false],["Tue 9am","Sarah Collins âœ“",true],["Tue 11am","James R.",false],["Wed 10am","Available",false]].map(([day, label, active], i) => (
         <div key={i} className="anim-slideUp flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
           style={{ background: active ? `${color}1a` : "rgba(255,255,255,0.04)", border: `1px solid ${active ? color + "44" : "rgba(255,255,255,0.07)"}`, transform: active ? "scale(1.02)" : "scale(1)", animationDelay: `${i * 80}ms` }}>
           <span className="text-xs w-16 text-gray-500">{day}</span>
@@ -230,16 +230,16 @@ function SceneAva(scene: number, tick: number, color: string) {
 function SceneNova(scene: number, tick: number, color: string) {
   const lines = [
     { role: "customer", text: "My order hasn't arrived and it's been 8 days!" },
-    { role: "nova",     text: "I'm really sorry — let me pull up your order right now. Can I get your order number?" },
+    { role: "nova",     text: "I'm really sorry â€” let me pull up your order right now. Can I get your order number?" },
     { role: "customer", text: "CC-48821." },
-    { role: "nova",     text: "Found it! Carrier delay — arriving tomorrow by 6pm. And I'm adding a 15% discount to your next order right now." },
+    { role: "nova",     text: "Found it! Carrier delay â€” arriving tomorrow by 6pm. And I'm adding a 15% discount to your next order right now." },
     { role: "customer", text: "Oh wow, thanks. That's actually pretty helpful." },
     { role: "nova",     text: "Of course! Is there anything else I can do for you today?" },
   ];
   const issues = ["Order status inquiry", "Password reset", "Refund request", "Appointment change", "Product question"];
   if (scene === 0) return (
     <div className="space-y-2">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Support queue · Monday 7:42 AM · 47 tickets</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Support queue Â· Monday 7:42 AM Â· 47 tickets</div>
       {issues.map((item, i) => (
         <CheckItem key={item} text={item} color={color} delay={i * 300} done={tick > i} />
       ))}
@@ -270,8 +270,8 @@ function SceneNova(scene: number, tick: number, color: string) {
     <div className="space-y-4 text-center">
       <div className="anim-fadeIn text-xs text-gray-500 font-mono">Monthly cost comparison</div>
       <div className="grid grid-cols-2 gap-4">
-        {[["❌","Human team (3 agents)","$14,400 / mo","rgba(239,68,68,0.08)","rgba(239,68,68,0.2)"],
-          ["✅","Nova AI","~$800 / mo",`${color}12`,`${color}33`]].map(([icon,label,cost,bg,border]) => (
+        {[["âŒ","Human team (3 agents)","$14,400 / mo","rgba(239,68,68,0.08)","rgba(239,68,68,0.2)"],
+          ["âœ…","Nova AI","~$800 / mo",`${color}12`,`${color}33`]].map(([icon,label,cost,bg,border]) => (
           <div key={label as string} className="anim-popIn rounded-xl p-5" style={{ background: bg as string, border: `1px solid ${border}` }}>
             <div className="text-3xl mb-2">{icon as string}</div>
             <div className="text-xs text-gray-400 mb-1">{label as string}</div>
@@ -286,18 +286,18 @@ function SceneNova(scene: number, tick: number, color: string) {
 
 function SceneAtlas(scene: number, tick: number, color: string) {
   const lines = [
-    { role: "atlas", text: "Hey Marcus! Atlas here from Houston Roofing — you just requested an estimate, right?" },
+    { role: "atlas", text: "Hey Marcus! Atlas here from Houston Roofing â€” you just requested an estimate, right?" },
     { role: "lead",  text: "Yeah, filled out the form like 2 minutes ago." },
     { role: "atlas", text: "Perfect timing! Is this storm damage or a planned replacement?" },
-    { role: "lead",  text: "Storm damage — bad hail last week." },
-    { role: "atlas", text: "We do those a lot. Insurance claim situation — want me to get our estimator out to you tomorrow morning?" },
+    { role: "lead",  text: "Storm damage â€” bad hail last week." },
+    { role: "atlas", text: "We do those a lot. Insurance claim situation â€” want me to get our estimator out to you tomorrow morning?" },
     { role: "lead",  text: "Yeah, 9am works." },
     { role: "atlas", text: "9am is yours. Confirmation going to your phone now. See you tomorrow!" },
   ];
   if (scene === 0) return (
     <div className="text-center space-y-5">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Lead submitted · 11:47 PM</div>
-      <Ring color={color} emoji="⚡" />
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Lead submitted Â· 11:47 PM</div>
+      <Ring color={color} emoji="âš¡" />
       <div className="anim-slideUp space-y-1" style={{ animationDelay: "200ms" }}>
         <div className="text-white font-semibold text-lg">Atlas calls in 52 seconds</div>
         <div className="text-xs text-gray-500">Industry average response: 42 hours</div>
@@ -315,14 +315,14 @@ function SceneAtlas(scene: number, tick: number, color: string) {
   );
   if (scene === 1) return (
     <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Qualification call · live</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Qualification call Â· live</div>
       {lines.slice(0, Math.min(tick + 1, lines.length)).map((l, i) => <Bubble key={i} {...l} color={color} />)}
     </div>
   );
   if (scene === 2) return (
     <div className="space-y-2">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">CRM · auto-updated in real time</div>
-      {[["Name","Marcus Johnson"],["Status","Qualified → Appt Set"],["Meeting","Tomorrow 9:00 AM"],["Type","Insurance Claim"],["Lead Score","91 / 100"],["Source","Atlas AI Call"]].map(([k,v], i) => (
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">CRM Â· auto-updated in real time</div>
+      {[["Name","Marcus Johnson"],["Status","Qualified â†’ Appt Set"],["Meeting","Tomorrow 9:00 AM"],["Type","Insurance Claim"],["Lead Score","91 / 100"],["Source","Atlas AI Call"]].map(([k,v], i) => (
         <div key={k} className="anim-slideIn flex items-center gap-3 px-4 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", animationDelay: `${i * 80}ms` }}>
           <span className="text-xs text-gray-500 w-20 flex-shrink-0">{k}</span>
           <span className="text-sm text-white font-medium">{v}</span>
@@ -344,17 +344,17 @@ function SceneAtlas(scene: number, tick: number, color: string) {
 
 function SceneEcho(scene: number, tick: number, color: string) {
   const lines = [
-    { role: "echo",    text: "Hey there! 👋 Looking for anything specific or just browsing?" },
-    { role: "visitor", text: "Need a website for my restaurant — how much?" },
+    { role: "echo",    text: "Hey there! ðŸ‘‹ Looking for anything specific or just browsing?" },
+    { role: "visitor", text: "Need a website for my restaurant â€” how much?" },
     { role: "echo",    text: "Depends on the features! Do you need online ordering, reservations, or just an info site?" },
     { role: "visitor", text: "Reservations and a menu." },
-    { role: "echo",    text: "We've done a bunch of those — typically $1,200–2,000. Want a free custom quote?" },
+    { role: "echo",    text: "We've done a bunch of those â€” typically $1,200â€“2,000. Want a free custom quote?" },
     { role: "visitor", text: "Yeah, how do I get one?" },
     { role: "echo",    text: "Drop your email and I'll have someone send a breakdown within the hour. No obligation at all!" },
   ];
   if (scene === 0) return (
     <div className="text-center space-y-4">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Visitor arrives via Google · page loaded</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Visitor arrives via Google Â· page loaded</div>
       <div className="anim-slideUp mx-auto max-w-xs rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
         <div className="flex gap-1.5 px-3 py-2" style={{ background: "#1a1b24" }}>
           {["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />)}
@@ -368,7 +368,7 @@ function SceneEcho(scene: number, tick: number, color: string) {
             <div className="anim-floatUp flex items-end gap-2 pt-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: color, boxShadow: `0 0 12px ${color}66` }}>E</div>
               <div className="rounded-2xl px-3 py-2 text-xs" style={{ background: `${color}22`, border: `1px solid ${color}44`, color: "#e4e6f0" }}>
-                Hey! 👋 Can I help you find anything?
+                Hey! ðŸ‘‹ Can I help you find anything?
               </div>
             </div>
           )}
@@ -387,7 +387,7 @@ function SceneEcho(scene: number, tick: number, color: string) {
     <div className="space-y-3">
       <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Lead captured automatically</div>
       <div className="anim-popIn rounded-xl p-4" style={{ background: "#13141b", border: `1px solid ${color}44`, boxShadow: `0 0 20px ${color}22` }}>
-        {[["Intent","Restaurant site — reservations + menu"],["Budget","$1,200–2,000"],["Source","Google → Echo"],["Status","Quote requested"],["Time","12 seconds to capture"]].map(([k,v], i) => (
+        {[["Intent","Restaurant site â€” reservations + menu"],["Budget","$1,200â€“2,000"],["Source","Google â†’ Echo"],["Status","Quote requested"],["Time","12 seconds to capture"]].map(([k,v], i) => (
           <div key={k} className="anim-slideIn flex gap-3 py-1.5 border-b last:border-0" style={{ borderColor: "rgba(255,255,255,0.06)", animationDelay: `${i * 80}ms` }}>
             <span className="text-xs text-gray-500 w-20 flex-shrink-0">{k}</span>
             <span className="text-xs text-white">{v}</span>
@@ -414,25 +414,25 @@ function ScenePulse(scene: number, tick: number, color: string) {
   const beforeTasks = ["Check email & update CRM (45 min)","Send follow-up emails (20 min)","Generate weekly reports (40 min)","Data entry (60 min)","Invoice processing (30 min)"];
   const autoSteps = ["New inquiry email received","Contact added to CRM","Follow-up task created","Welcome email sent","Slack notification fired","Invoice queued in QuickBooks"];
   const workflows = [
-    "New lead → CRM entry → Follow-up email → Slack alert",
-    "Contract signed → Project created → Kickoff scheduled",
-    "Support ticket → Routed → SLA timer started → Team notified",
+    "New lead â†’ CRM entry â†’ Follow-up email â†’ Slack alert",
+    "Contract signed â†’ Project created â†’ Kickoff scheduled",
+    "Support ticket â†’ Routed â†’ SLA timer started â†’ Team notified",
   ];
   if (scene === 0) return (
     <div className="space-y-2">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Without Pulse · every single morning</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Without Pulse Â· every single morning</div>
       {beforeTasks.map((task, i) => (
         <div key={i} className="anim-slideIn flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.15)", animationDelay: `${i * 100}ms` }}>
-          <span className="text-red-400 text-xs flex-shrink-0">✗</span>
+          <span className="text-red-400 text-xs flex-shrink-0">âœ—</span>
           <span className="text-sm text-gray-300">{task}</span>
         </div>
       ))}
-      <div className="anim-popIn text-center text-xs text-gray-500 pt-1" style={{ animationDelay: "600ms" }}>3+ hours of manual work · every day · forever</div>
+      <div className="anim-popIn text-center text-xs text-gray-500 pt-1" style={{ animationDelay: "600ms" }}>3+ hours of manual work Â· every day Â· forever</div>
     </div>
   );
   if (scene === 1) return (
     <div className="space-y-2">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">With Pulse · triggered automatically</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">With Pulse Â· triggered automatically</div>
       {autoSteps.map((step, i) => <CheckItem key={step} text={step} color={color} delay={i * 500} done={tick > i} />)}
     </div>
   );
@@ -442,7 +442,7 @@ function ScenePulse(scene: number, tick: number, color: string) {
       {workflows.map((wf, i) => (
         <div key={i} className="anim-slideUp rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", animationDelay: `${i * 120}ms` }}>
           <div className="flex gap-1 items-center flex-wrap">
-            {wf.split("→").map((step, j, arr) => (
+            {wf.split("â†’").map((step, j, arr) => (
               <span key={j} className="flex items-center gap-1">
                 <span className="text-xs text-gray-300">{step.trim()}</span>
                 {j < arr.length - 1 && <ChevronRight size={10} className="text-gray-600 flex-shrink-0" />}
@@ -455,7 +455,7 @@ function ScenePulse(scene: number, tick: number, color: string) {
   );
   return (
     <div className="space-y-4">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Time & cost saved · per month</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Time & cost saved Â· per month</div>
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Hours automated" value="87 hrs" color={color} delay={100} bar={87} />
         <StatCard label="Tasks completed" value="1,240" color={color} delay={200} bar={94} />
@@ -469,16 +469,16 @@ function ScenePulse(scene: number, tick: number, color: string) {
 function SceneOrion(scene: number, tick: number, color: string) {
   const posts = [
     { platform: "LinkedIn", text: "Most homeowners don't realize their HVAC loses 15% efficiency every 5 years. Here's what to watch for before summer hits..." },
-    { platform: "Instagram", text: "We saved a Houston restaurant $2,400/month using AI inventory tracking. No new staff. Just smarter systems. 🤖" },
-    { platform: "Facebook", text: "❓ Quick poll: What's slowing your business down most right now?" },
+    { platform: "Instagram", text: "We saved a Houston restaurant $2,400/month using AI inventory tracking. No new staff. Just smarter systems. ðŸ¤–" },
+    { platform: "Facebook", text: "â“ Quick poll: What's slowing your business down most right now?" },
   ];
   if (scene === 0) return (
     <div className="space-y-4 text-center">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Content brief → Orion generates</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Content brief â†’ Orion generates</div>
       <div className="anim-slideUp mx-auto max-w-xs rounded-xl p-4 text-left" style={{ background: "#13141b", border: "1px solid rgba(255,255,255,0.07)" }}>
         <div className="text-xs text-gray-500 mb-2">Brief</div>
         <div className="text-sm text-gray-300 font-mono text-xs leading-relaxed">
-          <Typed value="HVAC company · Houston · Target: homeowners · Tone: helpful expert · Goal: book service calls" delay={200} />
+          <Typed value="HVAC company Â· Houston Â· Target: homeowners Â· Tone: helpful expert Â· Goal: book service calls" delay={200} />
         </div>
       </div>
       {tick > 1 && (
@@ -491,7 +491,7 @@ function SceneOrion(scene: number, tick: number, color: string) {
   );
   if (scene === 1) return (
     <div className="space-y-3">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Generated posts · ready to publish</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Generated posts Â· ready to publish</div>
       {posts.slice(0, Math.min(tick + 1, posts.length)).map((p, i) => (
         <div key={i} className="anim-floatUp rounded-xl p-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
           <div className="flex items-center gap-2 mb-1.5">
@@ -505,8 +505,8 @@ function SceneOrion(scene: number, tick: number, color: string) {
   );
   if (scene === 2) return (
     <div className="space-y-2">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Email campaign · auto-built</div>
-      {[["Subject","Is your AC ready for Houston summer?"],["Segment","Customers 2+ yrs no service"],["Send time","Tue 9am · peak open rate"],["Predicted open","34% (avg: 19%)"],["CTA","Book summer tune-up — $49 special"]].map(([k,v], i) => (
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Email campaign Â· auto-built</div>
+      {[["Subject","Is your AC ready for Houston summer?"],["Segment","Customers 2+ yrs no service"],["Send time","Tue 9am Â· peak open rate"],["Predicted open","34% (avg: 19%)"],["CTA","Book summer tune-up â€” $49 special"]].map(([k,v], i) => (
         <div key={k} className="anim-slideIn flex gap-3 px-4 py-2.5 rounded-lg" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", animationDelay: `${i * 100}ms` }}>
           <span className="text-xs text-gray-500 w-24 flex-shrink-0">{k}</span>
           <span className="text-xs text-white">{v}</span>
@@ -528,18 +528,18 @@ function SceneOrion(scene: number, tick: number, color: string) {
 
 function SceneAmy(scene: number, tick: number, color: string) {
   const lines = [
-    { role: "amy",  text: "Hey, it's Amy from CyberCraft360 — good time?" },
+    { role: "amy",  text: "Hey, it's Amy from CyberCraft360 â€” good time?" },
     { role: "lead", text: "Yeah, what's this about?" },
-    { role: "amy",  text: "Quick one — I saw Marcus Auto and wanted to ask what's eating the most time in your day?" },
+    { role: "amy",  text: "Quick one â€” I saw Marcus Auto and wanted to ask what's eating the most time in your day?" },
     { role: "lead", text: "Probably missing calls when we're heads-down on a car." },
-    { role: "amy",  text: "That's exactly what we fix — AI that answers every call 24/7. Want 30 minutes with Saad?" },
+    { role: "amy",  text: "That's exactly what we fix â€” AI that answers every call 24/7. Want 30 minutes with Saad?" },
     { role: "lead", text: "Sure, yeah." },
     { role: "amy",  text: "Perfect! What's the best email for the calendar invite?" },
   ];
   if (scene === 0) return (
     <div className="text-center space-y-5">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Lead submitted form · 47 seconds ago</div>
-      <Ring color={color} emoji="🎙️" />
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">Lead submitted form Â· 47 seconds ago</div>
+      <Ring color={color} emoji="ðŸŽ™ï¸" />
       <div className="anim-slideUp space-y-1" style={{ animationDelay: "250ms" }}>
         <div className="text-white font-semibold">Amy is calling Marcus</div>
         <div className="text-xs text-gray-500">+1 (713) 555-0182</div>
@@ -552,20 +552,20 @@ function SceneAmy(scene: number, tick: number, color: string) {
   );
   if (scene === 1) return (
     <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Live call transcript · Marcus Auto Repair</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Live call transcript Â· Marcus Auto Repair</div>
       {lines.slice(0, Math.min(tick + 1, lines.length)).map((l, i) => <Bubble key={i} {...l} color={color} />)}
     </div>
   );
   if (scene === 2) return (
     <div className="space-y-3">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Admin dashboard · live</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-2">Admin dashboard Â· live</div>
       <div className="anim-popIn rounded-xl p-4" style={{ background: "#13141b", border: `1px solid ${color}44`, boxShadow: `0 0 24px ${color}22` }}>
         <div className="flex justify-between items-start mb-4">
           <div>
             <div className="text-white font-semibold">Marcus Johnson</div>
             <div className="text-gray-400 text-xs">Marcus Auto Repair</div>
           </div>
-          <div className="anim-popIn" style={{ animationDelay: "300ms" }}><Tag text="Booked ✓" color="#22c55e" pulse /></div>
+          <div className="anim-popIn" style={{ animationDelay: "300ms" }}><Tag text="Booked âœ“" color="#22c55e" pulse /></div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <StatCard label="Duration" value="2m 14s" color={color} delay={200} />
@@ -580,10 +580,10 @@ function SceneAmy(scene: number, tick: number, color: string) {
       <div className="anim-fadeIn text-xs text-gray-500 font-mono">You receive this the moment Amy hangs up</div>
       <div className="anim-floatUp rounded-xl p-4" style={{ background: "#13141b", border: "1px solid rgba(34,197,94,0.4)", boxShadow: "0 0 20px rgba(34,197,94,0.15)" }}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-base" style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)" }}>📞</div>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-base" style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)" }}>ðŸ“ž</div>
           <div>
-            <div className="text-white text-sm font-semibold">Amy Booked: Marcus — Marcus Auto Repair</div>
-            <div className="text-green-500 text-xs">just now · cybercraftlimited@gmail.com</div>
+            <div className="text-white text-sm font-semibold">Amy Booked: Marcus â€” Marcus Auto Repair</div>
+            <div className="text-green-500 text-xs">just now Â· info@cybercraft360.com</div>
           </div>
         </div>
         {[["Email","marcus@marcusauto.com"],["Availability","Weekday mornings"],["Pain point","Missing calls during busy hours"]].map(([k,v], i) => (
@@ -599,7 +599,7 @@ function SceneAmy(scene: number, tick: number, color: string) {
 
 function SceneAegis(scene: number, tick: number, color: string) {
   const events = [
-    { time: "02:14:07", type: "Anomaly", detail: "Unusual login — Singapore IP", sev: "high" },
+    { time: "02:14:07", type: "Anomaly", detail: "Unusual login â€” Singapore IP", sev: "high" },
     { time: "02:14:08", type: "Auto-blocked", detail: "IP range blacklisted instantly", sev: "ok" },
     { time: "02:14:09", type: "MFA triggered", detail: "Account locked pending verify", sev: "ok" },
     { time: "02:14:11", type: "Alert sent", detail: "Owner notified via SMS", sev: "ok" },
@@ -607,18 +607,18 @@ function SceneAegis(scene: number, tick: number, color: string) {
   ];
   if (scene === 0) return (
     <div className="text-center space-y-5">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono">System monitor · 02:14 AM · you're asleep</div>
-      <Ring color={color} emoji="🛡️" />
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono">System monitor Â· 02:14 AM Â· you're asleep</div>
+      <Ring color={color} emoji="ðŸ›¡ï¸" />
       <div className="anim-slideUp space-y-1" style={{ animationDelay: "250ms" }}>
-        <div className="text-white font-semibold">Threat detected · responded in 1.2s</div>
+        <div className="text-white font-semibold">Threat detected Â· responded in 1.2s</div>
         <div className="text-xs" style={{ color }}>Neutralized before you woke up</div>
       </div>
-      <Tag text="Always watching · Zero downtime" color={color} pulse delay={400} />
+      <Tag text="Always watching Â· Zero downtime" color={color} pulse delay={400} />
     </div>
   );
   if (scene === 1) return (
     <div className="space-y-2">
-      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Incident response log · automated</div>
+      <div className="anim-fadeIn text-xs text-gray-500 font-mono mb-3">Incident response log Â· automated</div>
       {events.slice(0, Math.min(tick + 1, events.length)).map((e, i) => (
         <div key={i} className="anim-slideIn flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: e.sev === "high" ? "rgba(239,68,68,0.1)" : `${color}0e`, border: `1px solid ${e.sev === "high" ? "rgba(239,68,68,0.25)" : color + "30"}`, animationDelay: "0ms" }}>
           <span className="text-[10px] font-mono text-gray-600 flex-shrink-0 w-16">{e.time}</span>
@@ -646,7 +646,7 @@ function SceneAegis(scene: number, tick: number, color: string) {
     <div className="space-y-4">
       <div className="anim-fadeIn text-xs text-gray-500 font-mono">What Aegis protects</div>
       <div className="grid grid-cols-2 gap-3">
-        {[["🔐","Customer data","Always encrypted"],["🚫","Login attempts","Auto-blocked"],["⚡","API endpoints","Rate limited"],["📋","Compliance","Auto-reported"]].map(([icon,label,desc], i) => (
+        {[["ðŸ”","Customer data","Always encrypted"],["ðŸš«","Login attempts","Auto-blocked"],["âš¡","API endpoints","Rate limited"],["ðŸ“‹","Compliance","Auto-reported"]].map(([icon,label,desc], i) => (
           <div key={label as string} className="anim-popIn rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", animationDelay: `${i * 100}ms` }}>
             <div className="text-2xl mb-2">{icon as string}</div>
             <div className="text-xs text-gray-400 mb-1">{label as string}</div>
@@ -658,18 +658,18 @@ function SceneAegis(scene: number, tick: number, color: string) {
   );
 }
 
-/* ─── service registry ─────────────────────────────────────────── */
+/* â”€â”€â”€ service registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 interface ServiceDemo { color: string; emoji: string; scenes: { id: string; label: string; duration: number }[]; render: (s: number, t: number, c: string) => React.ReactNode }
 
 const DEMOS: Record<string, ServiceDemo> = {
-  Ava:   { color: "#00d4ff", emoji: "🤖", scenes: [{ id:"call",label:"Incoming call",duration:6000 },{ id:"convo",label:"Live conversation",duration:9000 },{ id:"cal",label:"Appointment booked",duration:6500 },{ id:"res",label:"30-day results",duration:6500 }], render: SceneAva },
-  Nova:  { color: "#7c3aed", emoji: "🎧", scenes: [{ id:"q",label:"Support queue",duration:7000 },{ id:"chat",label:"Live resolution",duration:9000 },{ id:"m",label:"CSAT improvement",duration:6500 },{ id:"cost",label:"Cost comparison",duration:6000 }], render: SceneNova },
-  Atlas: { color: "#a855f7", emoji: "💼", scenes: [{ id:"call",label:"52s response",duration:7000 },{ id:"convo",label:"Qualification call",duration:9000 },{ id:"crm",label:"CRM updated",duration:6500 },{ id:"pip",label:"Pipeline impact",duration:6000 }], render: SceneAtlas },
-  Echo:  { color: "#00d4ff", emoji: "💬", scenes: [{ id:"eng",label:"Visitor engages",duration:6500 },{ id:"chat",label:"Live chat",duration:9000 },{ id:"lead",label:"Lead captured",duration:6000 },{ id:"lift",label:"Conversion lift",duration:6000 }], render: SceneEcho },
-  Pulse: { color: "#10b981", emoji: "⚙️", scenes: [{ id:"bef",label:"Before Pulse",duration:6500 },{ id:"auto",label:"Automation fires",duration:9000 },{ id:"wf",label:"Sample workflows",duration:6000 },{ id:"sav",label:"Time saved",duration:6000 }], render: ScenePulse },
-  Orion: { color: "#f59e0b", emoji: "📈", scenes: [{ id:"brief",label:"Brief → content",duration:7000 },{ id:"posts",label:"Social posts",duration:8000 },{ id:"email",label:"Email campaign",duration:6500 },{ id:"out",label:"Monthly output",duration:6000 }], render: SceneOrion },
-  Amy:   { color: "#e64dff", emoji: "🎙️", scenes: [{ id:"call",label:"Amy calls lead",duration:6000 },{ id:"convo",label:"Sales conversation",duration:9000 },{ id:"dash",label:"Live dashboard",duration:6500 },{ id:"email",label:"Booking email",duration:6000 }], render: SceneAmy },
-  Aegis: { color: "#ef4444", emoji: "🛡️", scenes: [{ id:"det",label:"Threat detected",duration:6000 },{ id:"res",label:"Auto-response",duration:8500 },{ id:"rep",label:"Threat report",duration:6500 },{ id:"cov",label:"What's protected",duration:6000 }], render: SceneAegis },
+  Ava:   { color: "#00d4ff", emoji: "ðŸ¤–", scenes: [{ id:"call",label:"Incoming call",duration:6000 },{ id:"convo",label:"Live conversation",duration:9000 },{ id:"cal",label:"Appointment booked",duration:6500 },{ id:"res",label:"30-day results",duration:6500 }], render: SceneAva },
+  Nova:  { color: "#7c3aed", emoji: "ðŸŽ§", scenes: [{ id:"q",label:"Support queue",duration:7000 },{ id:"chat",label:"Live resolution",duration:9000 },{ id:"m",label:"CSAT improvement",duration:6500 },{ id:"cost",label:"Cost comparison",duration:6000 }], render: SceneNova },
+  Atlas: { color: "#a855f7", emoji: "ðŸ’¼", scenes: [{ id:"call",label:"52s response",duration:7000 },{ id:"convo",label:"Qualification call",duration:9000 },{ id:"crm",label:"CRM updated",duration:6500 },{ id:"pip",label:"Pipeline impact",duration:6000 }], render: SceneAtlas },
+  Echo:  { color: "#00d4ff", emoji: "ðŸ’¬", scenes: [{ id:"eng",label:"Visitor engages",duration:6500 },{ id:"chat",label:"Live chat",duration:9000 },{ id:"lead",label:"Lead captured",duration:6000 },{ id:"lift",label:"Conversion lift",duration:6000 }], render: SceneEcho },
+  Pulse: { color: "#10b981", emoji: "âš™ï¸", scenes: [{ id:"bef",label:"Before Pulse",duration:6500 },{ id:"auto",label:"Automation fires",duration:9000 },{ id:"wf",label:"Sample workflows",duration:6000 },{ id:"sav",label:"Time saved",duration:6000 }], render: ScenePulse },
+  Orion: { color: "#f59e0b", emoji: "ðŸ“ˆ", scenes: [{ id:"brief",label:"Brief â†’ content",duration:7000 },{ id:"posts",label:"Social posts",duration:8000 },{ id:"email",label:"Email campaign",duration:6500 },{ id:"out",label:"Monthly output",duration:6000 }], render: SceneOrion },
+  Amy:   { color: "#e64dff", emoji: "ðŸŽ™ï¸", scenes: [{ id:"call",label:"Amy calls lead",duration:6000 },{ id:"convo",label:"Sales conversation",duration:9000 },{ id:"dash",label:"Live dashboard",duration:6500 },{ id:"email",label:"Booking email",duration:6000 }], render: SceneAmy },
+  Aegis: { color: "#ef4444", emoji: "ðŸ›¡ï¸", scenes: [{ id:"det",label:"Threat detected",duration:6000 },{ id:"res",label:"Auto-response",duration:8500 },{ id:"rep",label:"Threat report",duration:6500 },{ id:"cov",label:"What's protected",duration:6000 }], render: SceneAegis },
 };
 
 const SERVICE_ORDER = ["Ava","Nova","Atlas","Echo","Pulse","Orion","Amy","Aegis"];
@@ -680,7 +680,7 @@ function useTick(active: boolean) {
   return tick;
 }
 
-/* ─── modal ─────────────────────────────────────────────────────── */
+/* â”€â”€â”€ modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function HowItWorksModal({ open, onClose, service }: Props) {
   const [activeSvc, setActiveSvc] = useState(service || "Amy");
   const [scene, setScene] = useState(0);
@@ -723,8 +723,8 @@ export default function HowItWorksModal({ open, onClose, service }: Props) {
         {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div>
-            <div className="text-[10px] font-bold tracking-[0.22em] uppercase mb-0.5" style={{ color: demo.color }}>CyberCraft360 · Live Demo</div>
-            <div className="text-white font-semibold text-sm">{demo.emoji} {activeSvc} — See it in action</div>
+            <div className="text-[10px] font-bold tracking-[0.22em] uppercase mb-0.5" style={{ color: demo.color }}>CyberCraft360 Â· Live Demo</div>
+            <div className="text-white font-semibold text-sm">{demo.emoji} {activeSvc} â€” See it in action</div>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"><X size={18} /></button>
         </div>
@@ -774,7 +774,7 @@ export default function HowItWorksModal({ open, onClose, service }: Props) {
               style={{ background: `${demo.color}22`, border: `1px solid ${demo.color}55`, color: demo.color, boxShadow: `0 0 8px ${demo.color}33` }}>
               {playing ? <Pause size={13} /> : <Play size={13} />}
             </button>
-            <span className="text-xs text-gray-500">{scene + 1}/{demo.scenes.length} · <span style={{ color: demo.color }}>{demo.scenes[scene]?.label}</span></span>
+            <span className="text-xs text-gray-500">{scene + 1}/{demo.scenes.length} Â· <span style={{ color: demo.color }}>{demo.scenes[scene]?.label}</span></span>
           </div>
           <div className="flex gap-2">
             {scene === demo.scenes.length - 1 && !playing && (
@@ -783,7 +783,7 @@ export default function HowItWorksModal({ open, onClose, service }: Props) {
             )}
             {scene < demo.scenes.length - 1 && (
               <button onClick={() => goScene(scene + 1)} className="text-xs font-semibold px-4 py-2 rounded-lg transition-all hover:opacity-80"
-                style={{ background: `linear-gradient(135deg, ${demo.color}cc, ${demo.color}88)`, color: "#fff" }}>Next →</button>
+                style={{ background: `linear-gradient(135deg, ${demo.color}cc, ${demo.color}88)`, color: "#fff" }}>Next â†’</button>
             )}
           </div>
         </div>
@@ -791,3 +791,4 @@ export default function HowItWorksModal({ open, onClose, service }: Props) {
     </div>
   );
 }
+

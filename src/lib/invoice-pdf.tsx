@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
@@ -61,12 +61,12 @@ function InvoiceDocument({
 }: InvoicePDFProps) {
   const total = setupFee + monthlyFee;
   const items = [
-    setupFee > 0 && { name: `${serviceName} — One-Time Setup Fee`, desc: "Initial configuration, onboarding & deployment", amount: setupFee },
-    monthlyFee > 0 && { name: `${serviceName} — Month 1 Subscription`, desc: "AI system management, monitoring, retraining & support", amount: monthlyFee },
+    setupFee > 0 && { name: `${serviceName} â€” One-Time Setup Fee`, desc: "Initial configuration, onboarding & deployment", amount: setupFee },
+    monthlyFee > 0 && { name: `${serviceName} â€” Month 1 Subscription`, desc: "AI system management, monitoring, retraining & support", amount: monthlyFee },
   ].filter(Boolean) as { name: string; desc: string; amount: number }[];
 
   return (
-    <Document title={`Invoice ${invoiceNumber} — CyberCraft360`} author="CyberCraft360">
+    <Document title={`Invoice ${invoiceNumber} â€” CyberCraft360`} author="CyberCraft360">
       <Page size="LETTER" style={styles.page}>
         <View style={styles.gradientBar} />
 
@@ -76,7 +76,7 @@ function InvoiceDocument({
             <Text style={styles.companyName}>CyberCraft360</Text>
             <Text style={styles.companyTagline}>AUTOMATE EVERYTHING. SECURE ANYTHING.</Text>
             <Text style={[styles.billDetail, { marginTop: 8 }]}>cybercraft360.com</Text>
-            <Text style={styles.billDetail}>cybercraftlimited@gmail.com</Text>
+            <Text style={styles.billDetail}>info@cybercraft360.com</Text>
             <Text style={styles.billDetail}>Houston, TX</Text>
           </View>
           <View style={styles.invoiceBlock}>
@@ -142,7 +142,7 @@ function InvoiceDocument({
 
         {/* Legal Disclaimers */}
         <View style={styles.disclaimerSection}>
-          <Text style={styles.disclaimerTitle}>Terms & Conditions — Please Read Carefully</Text>
+          <Text style={styles.disclaimerTitle}>Terms & Conditions â€” Please Read Carefully</Text>
 
           <Text style={styles.disclaimerText}>
             <Text style={styles.disclaimerBold}>1. PAYMENT TERMS. </Text>
@@ -151,7 +151,7 @@ function InvoiceDocument({
 
           <Text style={styles.disclaimerText}>
             <Text style={styles.disclaimerBold}>2. NO REFUND POLICY. </Text>
-            All services rendered by CyberCraft360 are non-refundable. Once work has commenced — including discovery, design, development, or deployment — no refunds will be issued. By making payment, Client acknowledges and agrees to this policy.
+            All services rendered by CyberCraft360 are non-refundable. Once work has commenced â€” including discovery, design, development, or deployment â€” no refunds will be issued. By making payment, Client acknowledges and agrees to this policy.
           </Text>
 
           <Text style={styles.disclaimerText}>
@@ -187,8 +187,8 @@ function InvoiceDocument({
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>CyberCraft360 · cybercraft360.com · Houston, TX</Text>
-          <Text style={styles.footerText}>Invoice #{invoiceNumber} · Confidential</Text>
+          <Text style={styles.footerText}>CyberCraft360 Â· cybercraft360.com Â· Houston, TX</Text>
+          <Text style={styles.footerText}>Invoice #{invoiceNumber} Â· Confidential</Text>
         </View>
       </Page>
     </Document>
@@ -199,3 +199,4 @@ export async function generateInvoicePDF(props: InvoicePDFProps): Promise<Buffer
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return renderToBuffer(React.createElement(InvoiceDocument, props) as any) as Promise<Buffer>;
 }
+

@@ -54,66 +54,56 @@ export default function AdminRoot() {
 }
 
 // ── Dashboard card groups ─────────────────────────────────────────────────────
-const CARD_GROUPS = [
+// Tabs still accessible even if not shown in the main grid
+const ALL_TAB_ICONS: Partial<Record<Tab,string>> = TAB_ICONS;
+
+const DAILY_TABS: { tab: Tab; icon: string; title: string; statKey?: string; statSuffix?: string; accent: string }[] = [
+  { tab:"overview",  icon:"📊", title:"Overview",    accent:"#00d4ff" },
+  { tab:"amy",       icon:"🎙️", title:"Amy",         accent:"#e64dff" },
+  { tab:"calendar",  icon:"📅", title:"Calendar",    accent:"#22c55e" },
+  { tab:"tasks",     icon:"✅", title:"Tasks",       accent:"#f59e0b" },
+  { tab:"followups", icon:"🔁", title:"Follow-Ups",  accent:"#a78bfa" },
+];
+
+const MAIN_GROUPS: { label: string; color: string; cards: { tab: Tab; icon: string; title: string; desc: string }[] }[] = [
   {
-    label: "Core", color: "#00d4ff",
+    label: "Sales", color: "#22c55e",
     cards: [
-      { tab:"overview"   as Tab, icon:"📊", title:"Overview",    desc:"Revenue, MRR, pipeline at a glance" },
-      { tab:"clients"    as Tab, icon:"👥", title:"Clients",     desc:"All active client accounts" },
-      { tab:"pipeline"   as Tab, icon:"📋", title:"Pipeline",    desc:"Deals & proposal stages" },
-      { tab:"finances"   as Tab, icon:"💰", title:"Finances",    desc:"Invoices, payments, cash flow" },
-      { tab:"tasks"      as Tab, icon:"✅", title:"Tasks",       desc:"To-dos, deadlines, priorities" },
-      { tab:"calendar"   as Tab, icon:"📅", title:"Calendar",    desc:"Upcoming bookings & calls" },
+      { tab:"clients",  icon:"👥", title:"Clients",        desc:"Accounts, notes & health status" },
+      { tab:"pipeline", icon:"📋", title:"Pipeline",       desc:"Deals from prospect to closed" },
+      { tab:"finances", icon:"💰", title:"Finances",       desc:"Invoices, MRR & cash flow" },
+      { tab:"precall",  icon:"🧠", title:"Pre-Call Intel", desc:"Full sales brief before you call" },
     ],
   },
   {
-    label: "Leads & Conversations", color: "#e64dff",
+    label: "Leads & Outreach", color: "#e64dff",
     cards: [
-      { tab:"convos"     as Tab, icon:"💬", title:"Convos",      desc:"IRIS chat conversations" },
-      { tab:"activity"   as Tab, icon:"🔔", title:"Activity",    desc:"Live feed of all events" },
-      { tab:"amy"     as Tab, icon:"📞", title:"Amy",         desc:"AI voice agent & call logs" },
-      { tab:"followups"  as Tab, icon:"🔁", title:"Follow-Ups",  desc:"Overdue leads sorted by score" },
+      { tab:"outreach", icon:"🎯", title:"Outreach",       desc:"Scraper, groups, message generator" },
+      { tab:"convos",   icon:"💬", title:"Convos",         desc:"IRIS website chat transcripts" },
+      { tab:"analytics",icon:"📈", title:"Analytics",      desc:"Funnel, lead sources & performance" },
+      { tab:"reports",  icon:"📬", title:"Reports",        desc:"Weekly AI report & proposal writer" },
     ],
   },
   {
-    label: "Marketing", color: "#f59e0b",
+    label: "Content", color: "#f59e0b",
     cards: [
-      { tab:"ads"        as Tab, icon:"🎯", title:"AI Ads",      desc:"Generate LinkedIn, Facebook & Instagram ads" },
-      { tab:"social"     as Tab, icon:"📲", title:"Social",      desc:"Auto-post to all 3 platforms — trigger manually or let the cron run" },
-      { tab:"ebooks"     as Tab, icon:"📖", title:"eBooks",      desc:"Lead magnet downloads & tracking" },
-      { tab:"website"    as Tab, icon:"🌐", title:"Website",     desc:"Live site stats & quick edits" },
-      { tab:"referrals"  as Tab, icon:"🤝", title:"Referrals",   desc:"Referral links & conversion tracking" },
+      { tab:"social",  icon:"📲", title:"Social Media",   desc:"Write & schedule posts to all platforms" },
+      { tab:"review",  icon:"🔍", title:"Review Queue",   desc:"Approve AI content before it goes live" },
     ],
   },
-  {
-    label: "Intelligence & Reports", color: "#22c55e",
-    cards: [
-      { tab:"analytics"  as Tab, icon:"📈", title:"Analytics",   desc:"Traffic, funnels & performance" },
-      { tab:"traffic"    as Tab, icon:"📡", title:"Traffic",     desc:"Social media traffic & UTM campaign tracking" },
-      { tab:"competitors" as Tab, icon:"🕵️", title:"Intel",      desc:"AI competitive analysis & counter-angles" },
-      { tab:"roi"        as Tab, icon:"📑", title:"ROI Report",  desc:"Generate branded client PDF reports" },
-      { tab:"reports"    as Tab, icon:"📬", title:"Reports",     desc:"Weekly AI report + proposal writer" },
-    ],
-  },
-  {
-    label: "Content Review", color: "#f59e0b",
-    cards: [
-      { tab:"review" as Tab, icon:"🔍", title:"Review Queue", desc:"Approve or edit AI-generated social & blog posts before they go live" },
-    ],
-  },
-  {
-    label: "Outreach", color: "#00d4ff",
-    cards: [
-      { tab:"outreach" as Tab, icon:"🎯", title:"Outreach", desc:"Lead scraper, Facebook groups, LinkedIn search, post monitor & message generator" },
-      { tab:"linkedin" as Tab, icon:"💼", title:"LinkedIn Bot", desc:"Auto-connect with business owners — trigger manually or runs daily at 9am" },
-    ],
-  },
-  {
-    label: "Sales Prep", color: "#f59e0b",
-    cards: [
-      { tab:"precall" as Tab, icon:"🧠", title:"Pre-Call Intel", desc:"Paste a website or business name — get a full sales brief before every call" },
-    ],
-  },
+];
+
+// Rarely-used tools — accessible but not cluttering the main grid
+const MORE_TOOLS: { tab: Tab; label: string }[] = [
+  { tab:"website",     label:"Website Stats" },
+  { tab:"ads",         label:"AI Ads" },
+  { tab:"competitors", label:"Competitor Intel" },
+  { tab:"ebooks",      label:"eBooks" },
+  { tab:"roi",         label:"ROI Report" },
+  { tab:"referrals",   label:"Referrals" },
+  { tab:"linkedin",    label:"LinkedIn Bot" },
+  { tab:"activity",    label:"Activity Feed" },
+  { tab:"traffic",     label:"Traffic / UTM" },
 ];
 
 // ── Dashboard Shell ───────────────────────────────────────────────────────────
@@ -140,7 +130,13 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
   useEffect(()=>{load();},[load]);
   const h=useAdminApi(token);
 
-  const activeCard=tab ? CARD_GROUPS.flatMap(g=>g.cards).find(c=>c.tab===tab) : null;
+  const allCards = MAIN_GROUPS.flatMap(g=>g.cards);
+  const activeCard = tab ? (
+    allCards.find(c=>c.tab===tab) ??
+    DAILY_TABS.find(c=>c.tab===tab) ??
+    MORE_TOOLS.map(t=>({tab:t.tab,icon:TAB_ICONS[t.tab]??"",title:TAB_LABELS[t.tab]??"",desc:""})).find(c=>c.tab===tab) ??
+    null
+  ) : null;
 
   return (
     <div style={{minHeight:"100dvh",background:"#080a10",fontFamily:"system-ui,sans-serif"}}>
@@ -178,18 +174,19 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
         {loading?(
           <div style={{textAlign:"center",padding:"80px 0"}}><Spinner inline/><p style={{color:"rgba(255,255,255,0.3)",fontSize:13,marginTop:16}}>Loading…</p></div>
         ) : !tab ? (
-          /* ── Home card grid ── */
+          /* ── Home grid (premium reorganized layout) ── */
           <div>
-            {/* Quick stats strip */}
+
+            {/* ── Live stats strip ── */}
             {data&&(
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:28}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:24}}>
                 {[
-                  {label:"MRR",      value:`$${(data.overview?.mrr||0).toLocaleString()}`,    color:"#00d4ff"},
-                  {label:"Clients",  value: data.overview?.totalClients||0,                   color:"#e64dff"},
-                  {label:"Pipeline", value:`$${(data.overview?.pipelineValue||0).toLocaleString()}`, color:"#7c3aed"},
-                  {label:"Tasks",    value: data.overview?.openTasks||0,                      color: data.overview?.overdueTasks>0?"#ef4444":"#f59e0b"},
+                  {label:"MRR",      value:`$${(data.overview?.mrr||0).toLocaleString()}`,         color:"#00d4ff"},
+                  {label:"Pipeline", value:`$${(data.overview?.pipelineValue||0).toLocaleString()}`,color:"#7c3aed"},
+                  {label:"Leads",    value: data.leads?.total||0,                                   color:"#e64dff"},
+                  {label:"Tasks",    value: data.overview?.openTasks||0,                            color: data.overview?.overdueTasks>0?"#ef4444":"#f59e0b"},
                 ].map(s=>(
-                  <div key={s.label} style={{padding:"10px 10px 9px",borderRadius:12,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
+                  <div key={s.label} style={{padding:"10px 8px 9px",borderRadius:10,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
                     <p style={{fontSize:"1rem",fontWeight:800,color:s.color,margin:"0 0 2px",lineHeight:1}}>{s.value}</p>
                     <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"rgba(255,255,255,0.25)",margin:0}}>{s.label}</p>
                   </div>
@@ -197,29 +194,72 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
               </div>
             )}
 
-            {CARD_GROUPS.map(group=>(
-              <div key={group.label} style={{marginBottom:28}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                  <div style={{width:3,height:16,borderRadius:2,background:group.color,flexShrink:0}}/>
-                  <p style={{fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>{group.label}</p>
+            {/* ── Daily strip ── */}
+            <div style={{marginBottom:28}}>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"rgba(255,255,255,0.2)",margin:"0 0 10px"}}>Daily</p>
+              <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
+                {DAILY_TABS.map(d=>{
+                  const amyCalls = d.tab==="amy" ? data?.amy?.totalCalls : undefined;
+                  const upcoming = d.tab==="calendar" ? data?.bookings?.upcoming : undefined;
+                  const openT    = d.tab==="tasks" ? data?.tasks?.open : undefined;
+                  const overdue  = d.tab==="followups" ? data?.overview?.overdueTasks : undefined;
+                  const stat = amyCalls!==undefined ? amyCalls : upcoming!==undefined ? upcoming : openT!==undefined ? openT : overdue!==undefined ? overdue : undefined;
+                  return (
+                    <button key={d.tab} onClick={()=>setTab(d.tab)}
+                      style={{flex:"0 0 auto",minWidth:90,padding:"12px 10px 10px",borderRadius:14,background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.07)`,textAlign:"center",cursor:"pointer",transition:"all 0.15s",position:"relative",overflow:"hidden"}}
+                      onMouseEnter={e=>{const b=e.currentTarget as HTMLButtonElement;b.style.background=`rgba(255,255,255,0.06)`;b.style.borderColor=`${d.accent}55`;}}
+                      onMouseLeave={e=>{const b=e.currentTarget as HTMLButtonElement;b.style.background="rgba(255,255,255,0.03)";b.style.borderColor="rgba(255,255,255,0.07)";}}>
+                      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:d.accent,opacity:0.7,borderRadius:"2px 2px 0 0"}}/>
+                      <div style={{fontSize:20,marginBottom:4}}>{d.icon}</div>
+                      {stat!==undefined&&<div style={{fontSize:13,fontWeight:800,color:d.accent,lineHeight:1,marginBottom:2}}>{stat}</div>}
+                      <div style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.5)",lineHeight:1.2}}>{d.title}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Main groups ── */}
+            {MAIN_GROUPS.map(group=>(
+              <div key={group.label} style={{marginBottom:26}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:11}}>
+                  <div style={{width:3,height:14,borderRadius:2,background:group.color,flexShrink:0}}/>
+                  <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",margin:0}}>{group.label}</p>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:9}}>
                   {group.cards.map(card=>(
                     <button key={card.tab} onClick={()=>setTab(card.tab)}
-                      style={{padding:"16px 14px",borderRadius:16,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.07)",textAlign:"left",cursor:"pointer",transition:"background 0.15s,border-color 0.15s",display:"flex",flexDirection:"column",gap:6}}
-                      onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,0.05)";(e.currentTarget as HTMLButtonElement).style.borderColor=`${group.color}44`;}}
-                      onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,0.025)";(e.currentTarget as HTMLButtonElement).style.borderColor="rgba(255,255,255,0.07)";}}>
+                      style={{padding:"14px 13px",borderRadius:14,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.07)",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:5,position:"relative",overflow:"hidden"}}
+                      onMouseEnter={e=>{const b=e.currentTarget as HTMLButtonElement;b.style.background="rgba(255,255,255,0.05)";b.style.borderColor=`${group.color}55`;}}
+                      onMouseLeave={e=>{const b=e.currentTarget as HTMLButtonElement;b.style.background="rgba(255,255,255,0.025)";b.style.borderColor="rgba(255,255,255,0.07)";}}>
+                      <div style={{position:"absolute",top:0,left:0,right:0,height:1.5,background:group.color,opacity:0.35}}/>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                        <span style={{fontSize:22}}>{card.icon}</span>
-                        <span style={{fontSize:14,color:"rgba(255,255,255,0.15)"}}>›</span>
+                        <span style={{fontSize:20}}>{card.icon}</span>
+                        <span style={{fontSize:13,color:"rgba(255,255,255,0.15)"}}>›</span>
                       </div>
-                      <p style={{fontSize:13,fontWeight:700,color:"#fff",margin:0,lineHeight:1.2}}>{card.title}</p>
-                      <p style={{fontSize:11,color:"rgba(255,255,255,0.3)",margin:0,lineHeight:1.4}}>{card.desc}</p>
+                      <p style={{fontSize:12,fontWeight:700,color:"#fff",margin:0,lineHeight:1.2}}>{card.title}</p>
+                      <p style={{fontSize:10,color:"rgba(255,255,255,0.3)",margin:0,lineHeight:1.4}}>{card.desc}</p>
                     </button>
                   ))}
                 </div>
               </div>
             ))}
+
+            {/* ── More tools ── */}
+            <div style={{marginTop:8,padding:"14px 16px",borderRadius:12,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"rgba(255,255,255,0.2)",margin:"0 0 10px"}}>More Tools</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"8px 16px"}}>
+                {MORE_TOOLS.map(t=>(
+                  <button key={t.tab} onClick={()=>setTab(t.tab)}
+                    style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.35)",fontSize:11,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:5,transition:"color 0.12s"}}
+                    onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.color="rgba(255,255,255,0.75)";}}
+                    onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.color="rgba(255,255,255,0.35)";}}>
+                    <span style={{fontSize:13}}>{TAB_ICONS[t.tab]}</span> {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
         ) : data ? (
           /* ── Section view ── */
@@ -1322,10 +1362,42 @@ function AmyTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof useAdm
 
       {/* Stats */}
       <div style={sectionStyle}>
-        <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>📈 Call Stats</div>
-        <div style={{fontSize:28,fontWeight:800,color:accent}}>{data.amy?.totalCalls??0}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginTop:4}}>Total calls placed by Amy</div>
+        <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>📈 Amy Stats</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{textAlign:"center",padding:"14px 10px",borderRadius:10,background:"rgba(255,255,255,0.02)"}}>
+            <div style={{fontSize:28,fontWeight:800,color:accent}}>{data.amy?.totalCalls??0}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:4}}>Total Calls</div>
+          </div>
+          <div style={{textAlign:"center",padding:"14px 10px",borderRadius:10,background:"rgba(255,255,255,0.02)"}}>
+            <div style={{fontSize:28,fontWeight:800,color:"#22c55e"}}>{data.amy?.totalBookings??0}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:4}}>Bookings</div>
+          </div>
+        </div>
+        {(data.amy?.totalCalls??0)>0&&<div style={{marginTop:10,fontSize:12,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>
+          Booking rate: <span style={{color:"#22c55e",fontWeight:700}}>{Math.round(((data.amy?.totalBookings??0)/(data.amy?.totalCalls??1))*100)}%</span>
+        </div>}
       </div>
+
+      {/* Amy Bookings */}
+      {(data.amy?.bookings??[]).length>0&&(
+        <div style={sectionStyle}>
+          <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#22c55e",marginBottom:14}}>📋 Leads Booked by Amy</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {(data.amy?.bookings??[]).map((b:any,i:number)=>(
+              <div key={i} style={{padding:"12px 14px",borderRadius:10,background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.15)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{b.name||"Unknown"} <span style={{color:"rgba(255,255,255,0.3)",fontWeight:400}}>· {b.company}</span></div>
+                    <div style={{fontSize:12,color:"#22c55e",marginTop:2}}>{b.email}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:2}}>⏰ {b.timePreference} · {b.bookedAt?new Date(b.bookedAt).toLocaleDateString():""}</div>
+                  </div>
+                  <a href={`mailto:${b.email}`} style={{padding:"5px 10px",borderRadius:7,background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.2)",color:"#22c55e",fontSize:11,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",flexShrink:0}}>Email →</a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Call Log */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -1347,8 +1419,11 @@ function AmyTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof useAdm
                     <Sub>{c.loggedAt?new Date(c.loggedAt).toLocaleString():""}</Sub>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                    <div style={{textAlign:"right"}}>
-                      <span style={{fontSize:10,fontWeight:700,color:c.status==="completed"?"#22c55e":c.status==="busy"||c.status==="no-answer"?"#f59e0b":"#64748b",textTransform:"uppercase"}}>{c.status||"placed"}</span>
+                    <div style={{textAlign:"right",display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+                      <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                        {c.booked&&<span style={{fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:4,background:"rgba(34,197,94,0.15)",color:"#22c55e",textTransform:"uppercase",letterSpacing:"0.08em"}}>Booked</span>}
+                        <span style={{fontSize:10,fontWeight:700,color:c.status==="completed"?"#22c55e":c.status==="busy"||c.status==="no-answer"?"#f59e0b":"#64748b",textTransform:"uppercase"}}>{c.status||"placed"}</span>
+                      </div>
                       <Sub>{transcript.length>0?`${transcript.length} turns`:`${c.messages||0} msgs`}</Sub>
                     </div>
                     {transcript.length>0&&<span style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>{isOpen?"▲":"▼"}</span>}
@@ -2662,7 +2737,7 @@ function ReportsTab({token}:{token:string}){
         <>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:16,padding:"8px 12px",borderRadius:10,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.1)"}}>
             <span style={{fontSize:12}}>🔄</span>
-            <p style={{fontSize:11,color:"rgba(34,197,94,0.6)",margin:0}}>Auto-generated every Monday 7am — delivered to cybercraftlimited@gmail.com and saved here.</p>
+            <p style={{fontSize:11,color:"rgba(34,197,94,0.6)",margin:0}}>Auto-generated every Monday 7am — delivered to info@cybercraft360.com and saved here.</p>
           </div>
           {loadingReports?<Spinner inline/>:reports.length===0?(
             <EmptyState>No reports yet — first one arrives Monday morning at 7am.</EmptyState>
@@ -4965,3 +5040,4 @@ function PreCallIntelTab({token}:{token:string}) {
     </div>
   );
 }
+

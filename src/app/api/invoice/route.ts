@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/mailer";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
 import { redis } from "@/lib/redis";
@@ -38,7 +38,7 @@ function buildInvoiceEmail({
     setupFee > 0 && `
       <tr>
         <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);">
-          <div style="font-size:14px;font-weight:600;color:#fff;">${serviceName} — One-Time Setup Fee</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;">${serviceName} â€” One-Time Setup Fee</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;">Initial configuration, onboarding & deployment</div>
         </td>
         <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:right;white-space:nowrap;vertical-align:top;">
@@ -48,7 +48,7 @@ function buildInvoiceEmail({
     monthlyFee > 0 && `
       <tr>
         <td style="padding:14px 20px;">
-          <div style="font-size:14px;font-weight:600;color:#fff;">${serviceName} — Month 1 Subscription</div>
+          <div style="font-size:14px;font-weight:600;color:#fff;">${serviceName} â€” Month 1 Subscription</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;">AI system management, monitoring, retraining & support</div>
         </td>
         <td style="padding:14px 20px;text-align:right;vertical-align:top;">
@@ -114,7 +114,7 @@ function buildInvoiceEmail({
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr><td align="center">
             <a href="${payLink}" style="display:inline-block;padding:16px 48px;border-radius:12px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:14px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-              Pay $${total.toLocaleString()} via PayPal →
+              Pay $${total.toLocaleString()} via PayPal â†’
             </a>
           </td></tr>
           <tr><td align="center" style="padding-top:12px;">
@@ -128,7 +128,7 @@ function buildInvoiceEmail({
       <tr><td style="background:#0f1117;border:1px solid rgba(255,255,255,0.07);border-top:none;padding:0 32px 20px;">
         <div style="padding:14px 18px;border-radius:10px;background:rgba(124,58,237,0.07);border:1px solid rgba(124,58,237,0.2);">
           <p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;margin:0;">
-            ↻ After this payment, you will receive a separate email to authorize your <strong style="color:rgba(255,255,255,0.7);">$${monthlyFee.toLocaleString()}/month</strong> recurring subscription starting Month 2. You may cancel at any time.
+            â†» After this payment, you will receive a separate email to authorize your <strong style="color:rgba(255,255,255,0.7);">$${monthlyFee.toLocaleString()}/month</strong> recurring subscription starting Month 2. You may cancel at any time.
           </p>
         </div>
       </td></tr>` : ""}
@@ -161,7 +161,7 @@ function buildInvoiceEmail({
       <tr><td style="background:#0f1117;border-radius:0 0 16px 16px;border:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(255,255,255,0.05);padding:18px 32px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <td><span style="font-size:10px;color:rgba(255,255,255,0.2);">CyberCraft360 · cybercraft360.com · Houston, TX</span></td>
+            <td><span style="font-size:10px;color:rgba(255,255,255,0.2);">CyberCraft360 Â· cybercraft360.com Â· Houston, TX</span></td>
             <td align="right"><span style="font-size:10px;color:rgba(255,255,255,0.2);">Questions? Reply to this email</span></td>
           </tr>
         </table>
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
     due.setDate(due.getDate() + 7);
     const dueDate = due.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-    const payLink = buildPayPalLink(total, `${serviceName} — CyberCraft360`);
+    const payLink = buildPayPalLink(total, `${serviceName} â€” CyberCraft360`);
 
     // Generate PDF
     const pdfBuffer = await generateInvoicePDF({
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
     // Send invoice to client with PDF attached
     await sendEmail({
       to: customerEmail,
-      subject: `Invoice ${invoiceNumber} — CyberCraft360 ($${total.toLocaleString()} due ${dueDate})`,
+      subject: `Invoice ${invoiceNumber} â€” CyberCraft360 ($${total.toLocaleString()} due ${dueDate})`,
       html,
       attachments: [{
         filename: `CyberCraft360-Invoice-${invoiceNumber}.pdf`,
@@ -250,20 +250,20 @@ export async function POST(req: NextRequest) {
     logActivity({
       type: "invoice",
       title: `Invoice sent to ${customerName}`,
-      detail: `${serviceName} · $${total.toLocaleString()}`,
+      detail: `${serviceName} Â· $${total.toLocaleString()}`,
       clientName: customerName,
       amount: total,
     }).catch(() => {});
 
     // Notify owner
     sendEmail({
-      to: "cybercraftlimited@gmail.com",
-      subject: `📄 Invoice Sent — ${customerName} · $${total.toLocaleString()} (${serviceName})`,
+      to: "info@cybercraft360.com",
+      subject: `ðŸ“„ Invoice Sent â€” ${customerName} Â· $${total.toLocaleString()} (${serviceName})`,
       html: `
         <div style="font-family:system-ui,sans-serif;background:#0a0c12;padding:32px;border-radius:12px;max-width:500px;margin:0 auto;">
           <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);border-radius:3px;margin-bottom:24px;"></div>
           <p style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin:0 0 8px;">CyberCraft360</p>
-          <h2 style="color:#fff;font-size:20px;margin:0 0 24px;">📄 Invoice Sent</h2>
+          <h2 style="color:#fff;font-size:20px;margin:0 0 24px;">ðŸ“„ Invoice Sent</h2>
           <table style="width:100%;border-collapse:collapse;">
             ${[
               ["Invoice #", invoiceNumber],
@@ -297,3 +297,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

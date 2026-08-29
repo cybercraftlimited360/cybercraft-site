@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   }).catch(() => {});
 
   sendEmail({
-    to: "cybercraftlimited@gmail.com",
+    to: "info@cybercraft360.com",
     subject: `ðŸ“¤ Client Offboarded â€” ${clientName}`,
     html: `<div style="font-family:system-ui;padding:24px;background:#0a0c12;border-radius:12px;max-width:480px;">
       <div style="height:3px;background:linear-gradient(90deg,#ef4444,#f59e0b);border-radius:2px;margin-bottom:20px;"></div>
@@ -43,5 +43,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
 
 

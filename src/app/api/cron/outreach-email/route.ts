@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { createTransport } from "nodemailer";
 import { Enrollment, SentEmail, Sequence, DEFAULT_SEQUENCES, personalizeEmail } from "@/lib/email-sequences";
@@ -8,7 +8,7 @@ export const maxDuration = 300;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cybercraft360.com";
 
 // Warmup ramp: gradually increase daily volume to build sender reputation
-// Week 1: 20/day (≈3/run), Week 2: 50/day (≈8/run), Week 3: 100/day (≈16/run), Week 4+: 150/day (25/run)
+// Week 1: 20/day (â‰ˆ3/run), Week 2: 50/day (â‰ˆ8/run), Week 3: 100/day (â‰ˆ16/run), Week 4+: 150/day (25/run)
 function getMaxPerRun(): number {
   const startKey = "outreach:warmup_start";
   // warmup_start is set on first send; calculated synchronously using a module-level cache
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
   <tbody>
     ${renderBodyLines}
     ${renderSigLines}
-    <tr><td style="padding-top:24px;border-top:1px solid #e8e8e8;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#aaa;letter-spacing:0.04em">CYBERCRAFT360 &nbsp;·&nbsp; <a href="${SITE}" style="color:#aaa;text-decoration:none">${SITE.replace("https://","")}</a></td></tr>
+    <tr><td style="padding-top:24px;border-top:1px solid #e8e8e8;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#aaa;letter-spacing:0.04em">CYBERCRAFT360 &nbsp;Â·&nbsp; <a href="${SITE}" style="color:#aaa;text-decoration:none">${SITE.replace("https://","")}</a></td></tr>
   </tbody>
 </table>
 <img src="${trackUrl}" width="1" height="1" style="display:none" alt="" />
@@ -225,13 +225,13 @@ export async function GET(req: NextRequest) {
       sent++;
       console.log(`[outreach-cron] Sent step ${enrollment.currentStep} to ${enrollment.leadEmail}`);
 
-      // Humanized delay between sends: 3-8 seconds (25 emails × 8s ≈ 200s, within 300s limit)
+      // Humanized delay between sends: 3-8 seconds (25 emails Ã— 8s â‰ˆ 200s, within 300s limit)
       if (due.indexOf(enrollment) < due.length - 1) {
         await randomDelay(3000, 8000);
       }
     } catch (e: any) {
       const errStr = String(e).toLowerCase();
-      // Hard bounce codes — permanently unsubscribe so we never retry
+      // Hard bounce codes â€” permanently unsubscribe so we never retry
       const isHardBounce = errStr.includes("550") || errStr.includes("551") || errStr.includes("552") ||
         errStr.includes("553") || errStr.includes("554") || errStr.includes("user unknown") ||
         errStr.includes("no such user") || errStr.includes("does not exist") ||
@@ -239,7 +239,7 @@ export async function GET(req: NextRequest) {
       if (isHardBounce) {
         const idx = updatedEnrollments.findIndex(e => e.id === enrollment.id);
         if (idx !== -1) updatedEnrollments[idx] = { ...updatedEnrollments[idx], status: "unsubscribed" };
-        console.log(`[outreach-cron] Hard bounce — removed ${enrollment.leadEmail}`);
+        console.log(`[outreach-cron] Hard bounce â€” removed ${enrollment.leadEmail}`);
       } else {
         console.error(`[outreach-cron] Failed to send to ${enrollment.leadEmail}:`, String(e).slice(0, 200));
       }
@@ -257,7 +257,7 @@ export async function GET(req: NextRequest) {
   // Send daily summary report to owner if any emails went out
   if (sent > 0) {
     try {
-      const OWNER_EMAIL = "cybercraftlimited@gmail.com";
+      const OWNER_EMAIL = "info@cybercraft360.com";
       const rows = newSentLogs.map(l =>
         `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0">${l.leadName}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#555">${l.leadEmail}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#555">Step ${l.step + 1}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#888;font-size:12px">${l.subject}</td></tr>`
       ).join("");
@@ -270,7 +270,7 @@ export async function GET(req: NextRequest) {
   </td></tr>
   <tr><td style="padding:28px 32px">
     <p style="margin:0 0 8px;font-size:28px;font-weight:700;color:#0f172a">${sent} email${sent === 1 ? "" : "s"} sent</p>
-    <p style="margin:0 0 24px;color:#64748b;font-size:14px">${new Date().toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })} &nbsp;·&nbsp; ${failed > 0 ? `${failed} failed` : "0 failures"} &nbsp;·&nbsp; Daily cap: ${dailyLimit}</p>
+    <p style="margin:0 0 24px;color:#64748b;font-size:14px">${new Date().toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })} &nbsp;Â·&nbsp; ${failed > 0 ? `${failed} failed` : "0 failures"} &nbsp;Â·&nbsp; Daily cap: ${dailyLimit}</p>
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#f8fafc">
         <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Business</th>
@@ -280,7 +280,7 @@ export async function GET(req: NextRequest) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">Sent from info@cybercraft360.com &nbsp;·&nbsp; <a href="https://cybercraft360.com/admin" style="color:#94a3b8">View Admin</a></p>
+    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">Sent from info@cybercraft360.com &nbsp;Â·&nbsp; <a href="https://cybercraft360.com/admin" style="color:#94a3b8">View Admin</a></p>
   </td></tr>
 </table>
 </body></html>`;
@@ -288,8 +288,8 @@ export async function GET(req: NextRequest) {
       await transport.sendMail({
         from: `CyberCraft360 Bot <${fromEmail}>`,
         to: OWNER_EMAIL,
-        subject: `[Outreach] ${sent} email${sent === 1 ? "" : "s"} sent today — ${new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" })}`,
-        text: `${sent} outreach email(s) sent today.\n\n${newSentLogs.map(l => `• ${l.leadName} <${l.leadEmail}> — Step ${l.step + 1}: ${l.subject}`).join("\n")}\n\nFailed: ${failed}. Daily cap: ${dailyLimit}.`,
+        subject: `[Outreach] ${sent} email${sent === 1 ? "" : "s"} sent today â€” ${new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" })}`,
+        text: `${sent} outreach email(s) sent today.\n\n${newSentLogs.map(l => `â€¢ ${l.leadName} <${l.leadEmail}> â€” Step ${l.step + 1}: ${l.subject}`).join("\n")}\n\nFailed: ${failed}. Daily cap: ${dailyLimit}.`,
         html: reportHtml,
       });
     } catch (e) {
@@ -299,3 +299,4 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ ok: true, sent, failed, due: due.length, dailyLimit, todaySent: todaySent + sent });
 }
+

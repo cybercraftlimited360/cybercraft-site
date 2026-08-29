@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ProposalDocument } from "@/components/proposal/ProposalDocument";
 import { sendEmail } from "@/lib/mailer";
 import React from "react";
 
-const OWNER_EMAIL = "cybercraftlimited@gmail.com";
+const OWNER_EMAIL = "info@cybercraft360.com";
 
 const SERVICE_PRICES: Record<string, string> = {
   "Custom AI Chatbot": "from $500/mo",
@@ -23,11 +23,11 @@ const SERVICE_PRICES: Record<string, string> = {
 };
 
 const WHY_AI_BULLETS = [
-  "The average business loses 6–10 hours per employee per week on tasks AI handles in seconds — answering FAQs, routing calls, updating CRMs, sending follow-ups.",
+  "The average business loses 6â€“10 hours per employee per week on tasks AI handles in seconds â€” answering FAQs, routing calls, updating CRMs, sending follow-ups.",
   "Missed calls cost businesses an average of $1,200 per missed lead. An AI phone agent answers every call, 24/7, for a fraction of that cost.",
-  "Human agents handle 50–80 queries per day. AI handles unlimited queries simultaneously — zero fatigue, zero sick days, zero overtime.",
+  "Human agents handle 50â€“80 queries per day. AI handles unlimited queries simultaneously â€” zero fatigue, zero sick days, zero overtime.",
   "AI follow-up contacts new leads within 60 seconds. Human follow-up averages 42 hours. Responding within 5 minutes increases conversions by 900%.",
-  "Most businesses that deploy AI in year one save $80,000–$300,000 in operational costs while simultaneously growing revenue.",
+  "Most businesses that deploy AI in year one save $80,000â€“$300,000 in operational costs while simultaneously growing revenue.",
 ];
 
 async function generateQuoteContent(
@@ -97,7 +97,7 @@ async function sendClientQuoteEmail(form: Record<string, unknown>, pdfBuffer: Bu
 
   await sendEmail({
     to: String(form.email),
-    subject: `Your AI Quote is Ready — ${company}`,
+    subject: `Your AI Quote is Ready â€” ${company}`,
     html: `
 <div style="background:#0a0c12;padding:40px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
@@ -109,15 +109,15 @@ async function sendClientQuoteEmail(form: Record<string, unknown>, pdfBuffer: Bu
         We reviewed your submission for <strong style="color:rgba(255,255,255,0.85);">${company}</strong> and put together a bespoke quote with recommended solutions, estimated ROI, and a clear deployment timeline.
       </p>
       <p style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.6;margin:0 0 28px;">
-        The PDF is attached — share it with your team. It explains exactly which AI solutions we recommend and why replacing manual work with AI will pay for itself within months.
+        The PDF is attached â€” share it with your team. It explains exactly which AI solutions we recommend and why replacing manual work with AI will pay for itself within months.
       </p>
       <a href="https://cybercraft360.com/book" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-        Book Your Free Strategy Call →
+        Book Your Free Strategy Call â†’
       </a>
       <p style="font-size:12px;color:rgba(255,255,255,0.25);margin:24px 0 0;line-height:1.6;">
-        45 minutes · No obligation · Walk away with a clear AI roadmap for ${company}
+        45 minutes Â· No obligation Â· Walk away with a clear AI roadmap for ${company}
       </p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.15);margin:20px 0 0;">CyberCraft360 · Houston, TX · cybercraft360.com</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.15);margin:20px 0 0;">CyberCraft360 Â· Houston, TX Â· cybercraft360.com</p>
     </div>
   </div>
 </div>`,
@@ -143,7 +143,7 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
         <span style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.25);">${label}</span>
       </td>
       <td style="padding:10px 20px;vertical-align:top;">
-        <span style="font-size:13px;font-weight:600;color:${color};">${value || "—"}</span>
+        <span style="font-size:13px;font-weight:600;color:${color};">${value || "â€”"}</span>
       </td>
     </tr>`;
 
@@ -155,7 +155,7 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
   <tr><td style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></td></tr>
   <tr><td style="padding:32px 36px 20px;">
     <span style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);">CyberCraft360</span><br/>
-    <span style="font-size:22px;font-weight:700;color:#ffffff;margin-top:6px;display:block;">📋 New Quote Request — PDF Sent to Client</span>
+    <span style="font-size:22px;font-weight:700;color:#ffffff;margin-top:6px;display:block;">ðŸ“‹ New Quote Request â€” PDF Sent to Client</span>
   </td></tr>
   <tr><td style="padding:0 36px 16px;">
     <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
@@ -177,7 +177,7 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
   ${((form.servicesInterested as string[]) || []).length ? `<tr><td style="padding:0 36px 16px;">
     <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 20px;">
       <p style="margin:0 0 8px;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Services Requested</p>
-      <p style="margin:0;font-size:12px;color:#00d4ff;font-weight:600;">${((form.servicesInterested as string[]) || []).join(" · ")}</p>
+      <p style="margin:0;font-size:12px;color:#00d4ff;font-weight:600;">${((form.servicesInterested as string[]) || []).join(" Â· ")}</p>
     </div>
   </td></tr>` : ""}
   ${form.biggestChallenge ? `<tr><td style="padding:0 36px 16px;">
@@ -188,11 +188,11 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
   </td></tr>` : ""}
   <tr><td style="padding:0 36px 28px;">
     <a href="https://cybercraft360.com/admin" style="display:inline-block;padding:13px 28px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">
-      View in Dashboard →
+      View in Dashboard â†’
     </a>
   </td></tr>
   <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.05);">
-    <span style="font-size:11px;color:rgba(255,255,255,0.15);">CyberCraft360 · Intake Form · ${time} · PDF sent to client ✓</span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.15);">CyberCraft360 Â· Intake Form Â· ${time} Â· PDF sent to client âœ“</span>
   </td></tr>
 </table>
 </td></tr></table>
@@ -200,7 +200,7 @@ async function sendOwnerNotificationEmail(form: Record<string, unknown>) {
 
   await sendEmail({
     to: OWNER_EMAIL,
-    subject: `📋 New Quote Request: ${form.name} — ${form.businessName} (${form.industry})`,
+    subject: `ðŸ“‹ New Quote Request: ${form.name} â€” ${form.businessName} (${form.industry})`,
     html,
   });
 }
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
       console.error("Owner notification error:", err)
     );
 
-    // Generate AI quote → PDF → email to client (awaited so Vercel doesn't kill it)
+    // Generate AI quote â†’ PDF â†’ email to client (awaited so Vercel doesn't kill it)
     try {
       const content = await generateQuoteContent(
         String(form.businessName),
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
 
       // Append why-AI bullets to executive summary
       const whyAI = "\n\nWhy AI replaces human overhead:\n" +
-        WHY_AI_BULLETS.map(b => `• ${b}`).join("\n");
+        WHY_AI_BULLETS.map(b => `â€¢ ${b}`).join("\n");
 
       const proposalData = {
         company: String(form.businessName),
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
       await sendClientQuoteEmail(form, pdfBuffer);
       console.log(`[intake] Quote PDF sent to ${form.email}`);
     } catch (err) {
-      // Log but don't fail the whole request — client already submitted successfully
+      // Log but don't fail the whole request â€” client already submitted successfully
       console.error("[intake] Quote PDF/email error:", err);
     }
 
@@ -280,3 +280,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+

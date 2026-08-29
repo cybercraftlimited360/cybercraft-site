@@ -2,7 +2,7 @@
 import { redis } from "@/lib/redis";
 import crypto from "crypto";
 
-const NOTIFY_EMAIL = "cybercraftlimited@gmail.com";
+const NOTIFY_EMAIL = "info@cybercraft360.com";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://cybercraft360.com";
 
 function isValidPhone(phone: string): boolean {
@@ -155,6 +155,14 @@ export async function POST(req: NextRequest) {
   try {
     const lead = await req.json();
 
+    // Reject incomplete leads — must have at minimum a name and either email or phone
+    const hasName = lead.name && String(lead.name).trim().length > 1;
+    const hasContact = (lead.email && String(lead.email).includes("@")) || (lead.phone && isValidPhone(lead.phone));
+    const hasCompany = lead.company && String(lead.company).trim().length > 1 && lead.company.toLowerCase() !== "your business";
+    if (!hasName || !hasContact || !hasCompany) {
+      return NextResponse.json({ ok: false, error: "Lead rejected: missing name, company, or contact info" }, { status: 400 });
+    }
+
     // Deduplicate using Redis
     const key = `lead:${lead.name?.toLowerCase()}:${lead.company?.toLowerCase()}`;
     const exists = await redis.get(key);
@@ -200,3 +208,4 @@ export async function GET() {
   const leads = await redis.get<any[]>("leads:all") ?? [];
   return NextResponse.json(leads.reverse());
 }
+

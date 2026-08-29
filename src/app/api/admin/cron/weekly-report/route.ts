@@ -144,10 +144,11 @@ Keep it under 300 words total. Write like you're texting a smart summary to your
 </div>`;
 
   await sendEmail({
-    to: "cybercraftlimited@gmail.com",
+    to: "info@cybercraft360.com",
     subject: `📊 Weekly Report — ${summary.week_ending}`,
     html: emailHtml,
   });
 
   return NextResponse.json({ ok: true, report: reportEntry });
 }
+

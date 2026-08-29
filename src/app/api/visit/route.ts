@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 type Session = {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // ── If this is a behavior event ping (no page), just update the session ──
+    // â”€â”€ If this is a behavior event ping (no page), just update the session â”€â”€
     if (event && sessionId && !page) {
       if (sessionId) {
         const sessions = await redis.get<Session[]>("visits:sessions") ?? [];
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // ── Vercel edge geo headers ──
+    // â”€â”€ Vercel edge geo headers â”€â”€
     const vercelCity    = req.headers.get("x-vercel-ip-city") ?? "";
     const vercelRegion  = req.headers.get("x-vercel-ip-country-region") ?? "";
     const vercelCountry = req.headers.get("x-vercel-ip-country") ?? "";
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Always fetch org/ISP from ip-api.com (non-blocking, used for company identification)
-    // Falls back gracefully — Vercel geo handles location accuracy
+    // Falls back gracefully â€” Vercel geo handles location accuracy
     let orgName = "";
     if (ip && ip !== "unknown" && ip !== "127.0.0.1" && !ip.startsWith("192.168")) {
       try {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         const geoData = await geoRes.json();
         if (geoData.status === "success") {
           orgName = geoData.org || geoData.isp || "";
-          // Strip ASN prefix: "AS1234 Comcast" → "Comcast"
+          // Strip ASN prefix: "AS1234 Comcast" â†’ "Comcast"
           orgName = orgName.replace(/^AS\d+\s+/i, "").trim();
           if (!vercelCountry) {
             geo = {
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       sessionId: sessionId || "",
     };
 
-    // ── Session tracking ──
+    // â”€â”€ Session tracking â”€â”€
     if (sessionId) {
       const sessions = await redis.get<Session[]>("visits:sessions") ?? [];
       const idx = sessions.findIndex(s => s.id === sessionId);
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Classify traffic source ──
+    // â”€â”€ Classify traffic source â”€â”€
     const SEARCH_ENGINES = ["google", "bing", "yahoo", "duckduckgo", "baidu", "yandex", "ecosia"];
     const referrerHost = referrer ? new URL(referrer.startsWith("http") ? referrer : "https://" + referrer).hostname.replace("www.", "") : "";
     const isSearchOrganic = !utm_source && SEARCH_ENGINES.some(e => referrerHost.includes(e));
@@ -158,17 +158,17 @@ export async function POST(req: NextRequest) {
     const isReferral = !utm_source && !!referrer && !isSearchOrganic;
     const trafficSource = utm_source || (isSearchOrganic ? "organic" : isDirect ? "direct" : "referral");
 
-    // ── Skip datacenter/bot traffic from all counters ──
+    // â”€â”€ Skip datacenter/bot traffic from all counters â”€â”€
     if (isDatacenter) {
       return NextResponse.json({ ok: true });
     }
 
-    // ── Save to recent visits list (keep last 200) ──
+    // â”€â”€ Save to recent visits list (keep last 200) â”€â”€
     const existing = await redis.get<typeof visit[]>("visits:recent") ?? [];
     existing.unshift({ ...visit, trafficSource, isOrganic: isSearchOrganic });
     await redis.set("visits:recent", existing.slice(0, 200));
 
-    // ── Count unique visitors by session (not page views) ──
+    // â”€â”€ Count unique visitors by session (not page views) â”€â”€
     const isNewSession = sessionId && !existing.slice(1).some((v: any) => v.sessionId === sessionId);
     if (isNewSession || !sessionId) {
       // Unique visitor counters
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       if (utm_source) await redis.hincrby("visitors:paid:daily", dateKey, 1);
     }
 
-    // ── Always count page views (separate from unique visitors) ──
+    // â”€â”€ Always count page views (separate from unique visitors) â”€â”€
     await redis.hincrby("visits:daily", dateKey, 1);
 
     // Track UTM source stats
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
       await redis.hincrby("traffic:sources", "organic_search", 1);
     }
 
-    // Throttled email notification — max 1 per 5 minutes
+    // Throttled email notification â€” max 1 per 5 minutes
     const throttleKey = "visits:last_notified";
     const lastNotified = await redis.get<string>(throttleKey);
     const fiveMinAgo = Date.now() - 5 * 60 * 1000;
@@ -204,15 +204,15 @@ export async function POST(req: NextRequest) {
 
       const { sendEmail } = await import("@/lib/mailer");
       await sendEmail({
-        to: "cybercraftlimited@gmail.com",
-        subject: `👀 Someone is on cybercraft360.com — ${page || "/"}`,
+        to: "info@cybercraft360.com",
+        subject: `ðŸ‘€ Someone is on cybercraft360.com â€” ${page || "/"}`,
         html: `
 <div style="background:#0a0c12;padding:32px 20px;font-family:'Inter',system-ui,sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#0f1117;border-radius:14px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
     <div style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></div>
     <div style="padding:28px 28px 24px;">
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin:0 0 10px;">CyberCraft360 · Live Visitor</p>
-      <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 20px;">👀 Someone just landed on your site</h2>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin:0 0 10px;">CyberCraft360 Â· Live Visitor</p>
+      <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 20px;">ðŸ‘€ Someone just landed on your site</h2>
       <table style="width:100%;border-collapse:collapse;">
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);width:90px;">Page</td>
@@ -220,11 +220,11 @@ export async function POST(req: NextRequest) {
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Location</td>
-          <td style="padding:9px 0;font-size:13px;font-weight:600;color:#a78bfa;">${vercelFlag ? vercelFlag + " " : ""}${location}${vercelTz ? ` · ${vercelTz}` : ""}</td>
+          <td style="padding:9px 0;font-size:13px;font-weight:600;color:#a78bfa;">${vercelFlag ? vercelFlag + " " : ""}${location}${vercelTz ? ` Â· ${vercelTz}` : ""}</td>
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Organization</td>
-          <td style="padding:9px 0;font-size:13px;color:${orgName ? "#22c55e" : "rgba(255,255,255,0.4)"};">${orgName || isp || "—"}</td>
+          <td style="padding:9px 0;font-size:13px;color:${orgName ? "#22c55e" : "rgba(255,255,255,0.4)"};">${orgName || isp || "â€”"}</td>
         </tr>
         <tr style="border-top:1px solid rgba(255,255,255,0.05);">
           <td style="padding:9px 0;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);">IP</td>
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
           <td style="padding:9px 0;font-size:13px;color:rgba(255,255,255,0.5);">${now.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Chicago" })} CT</td>
         </tr>
       </table>
-      <a href="https://cybercraft360.com/admin" style="display:block;text-align:center;margin-top:20px;padding:11px 20px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">Open Dashboard →</a>
+      <a href="https://cybercraft360.com/admin" style="display:block;text-align:center;margin-top:20px;padding:11px 20px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;font-size:12px;font-weight:700;letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;">Open Dashboard â†’</a>
     </div>
   </div>
 </div>`,
@@ -256,3 +256,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false });
   }
 }
+

@@ -1,9 +1,11 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
-    user: "cybercraftlimited@gmail.com",
+    user: "info@cybercraft360.com",
     pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
@@ -15,7 +17,7 @@ export async function sendEmail(options: {
   attachments?: { filename: string; content: string | Buffer; encoding?: string; contentType?: string }[];
 }) {
   return transporter.sendMail({
-    from: '"CyberCraft360" <cybercraftlimited@gmail.com>',
+    from: '"CyberCraft360" <info@cybercraft360.com>',
     to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
     subject: options.subject,
     html: options.html,
