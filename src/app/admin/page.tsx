@@ -1110,10 +1110,57 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
   const [schedMode,setSchedMode]=useState(false);
   const [schedDate,setSchedDate]=useState(""); const [schedTime,setSchedTime]=useState("");
   const [schedStatus,setSchedStatus]=useState<string|null>(null);
+  const [queue,setQueue]=useState<any[]>([]);
+  const [showQueue,setShowQueue]=useState(false);
+  const [intel,setIntel]=useState<any|null>(null);
+  const [intelLoading,setIntelLoading]=useState(false);
+  const [activeView,setActiveView]=useState<"manual"|"queue">("manual");
 
-  useEffect(()=>{h.get("/api/admin/call-log").then(d=>{if(Array.isArray(d))setCallLog(d);});},[]);
+  useEffect(()=>{h.get("/api/admin/call-log").then(d=>{if(Array.isArray(d))setCallLog(d);});},[]); // eslint-disable-line
 
-  function fillFromLead(lead:any){setPhone(lead.phone||"");setName(lead.name||"");setCompany(lead.company||"");setChallenge(lead.challenge||"");setResult(null);}
+  useEffect(()=>{
+    h.get("/api/admin/autodial").then((d:any)=>{if(Array.isArray(d?.queue))setQueue(d.queue);});
+  },[]);
+
+  function fillFromLead(lead:any){
+    setPhone(lead.phone||"");setName(lead.name||"");setCompany(lead.company||"");setChallenge(lead.challenge||"");
+    setResult(null);setIntel(null);
+    if(lead.company||lead.website){fetchIntel(lead);}
+  }
+
+  async function fetchIntel(lead:any){
+    if(!lead.company)return;
+    setIntelLoading(true);setIntel(null);
+    try{
+      const res=await fetch("/api/admin/precall",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({businessName:lead.company,website:lead.website||"",city:lead.city||""})});
+      const d=await res.json();
+      setIntel(d);
+      if(d.analysis){
+        const top=d.analysis.weaknesses?.[0];
+        const svc=d.analysis.recommendedServices?.[0];
+        if(top||svc){
+          const brief=[top?`${top.issue} — ${top.impact}`:"",svc?`Lead with: ${svc.name} — ${svc.whyNow}`:""].filter(Boolean).join(". ");
+          setChallenge(brief);
+        }
+      }
+    }catch{/* silent */}finally{setIntelLoading(false);}
+  }
+
+  async function addLeadsToQueue(newLeads:any[]){
+    const res=await fetch("/api/admin/autodial",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"add",leads:newLeads})});
+    const d=await res.json();
+    if(d.ok){const q=await h.get("/api/admin/autodial");if(Array.isArray(q?.queue))setQueue(q.queue);}
+  }
+
+  async function removeFromQueue(id:string){
+    await fetch("/api/admin/autodial",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"remove",id})});
+    setQueue(q=>q.filter(e=>e.id!==id));
+  }
+
+  async function clearQueue(){
+    await fetch("/api/admin/autodial",{method:"POST",headers:{"Content-Type":"application/json","x-admin-token":token},body:JSON.stringify({action:"clear"})});
+    setQueue([]);
+  }
 
   async function dial(){
     if(!phone)return; setCalling(true);setResult(null);
@@ -1148,13 +1195,51 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
         </div>
       </div>
 
-      {/* Mode toggle */}
+      {/* View toggle */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        <button onClick={()=>setSchedMode(false)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:!schedMode?"linear-gradient(135deg,#e64dff,#7c3aed)":"rgba(255,255,255,0.04)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📞 Call Now</button>
-        <button onClick={()=>setSchedMode(true)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:schedMode?"linear-gradient(135deg,#e64dff,#7c3aed)":"rgba(255,255,255,0.04)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗓️ Schedule</button>
+        <button onClick={()=>setActiveView("manual")} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:activeView==="manual"?"linear-gradient(135deg,#e64dff,#7c3aed)":"rgba(255,255,255,0.04)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📞 Manual Call</button>
+        <button onClick={()=>setActiveView("queue")} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:activeView==="queue"?"linear-gradient(135deg,#00d4ff,#0ea5e9)":"rgba(255,255,255,0.04)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>🤖 Auto-Queue {queue.filter(e=>e.status==="pending").length>0?`(${queue.filter(e=>e.status==="pending").length} pending)`:""}</button>
       </div>
 
-      <div style={sectionStyle}>
+      {/* Mode sub-toggle for manual */}
+      {activeView==="manual"&&<div style={{display:"flex",gap:8,marginBottom:16}}>
+        <button onClick={()=>setSchedMode(false)} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:!schedMode?"rgba(230,77,255,0.15)":"rgba(255,255,255,0.03)",color:!schedMode?"#e64dff":"rgba(255,255,255,0.4)",fontSize:11,fontWeight:700,cursor:"pointer"}}>📞 Call Now</button>
+        <button onClick={()=>setSchedMode(true)} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:schedMode?"rgba(230,77,255,0.15)":"rgba(255,255,255,0.03)",color:schedMode?"#e64dff":"rgba(255,255,255,0.4)",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗓️ Schedule</button>
+      </div>}
+
+      {activeView==="queue"&&(
+        <div style={sectionStyle}>
+          <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#00d4ff",marginBottom:14}}>🤖 Auto-Dial Queue</div>
+          <div style={{padding:"12px 16px",borderRadius:10,background:"rgba(245,158,11,0.08)",border:"1px solid rgba(245,158,11,0.2)",fontSize:12,color:"#f59e0b",marginBottom:14}}>
+            ⚠️ Auto-dial is <strong>OFF</strong> — calls will only fire when you activate it. Add leads to the queue now and enable when ready.
+          </div>
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            <button onClick={()=>addLeadsToQueue(leads.filter((l:any)=>l.phone).slice(0,10).map((l:any)=>({phone:l.phone,name:l.name,company:l.company,website:l.website,city:l.city,rating:l.rating,reviewCount:l.reviewCount,hasWebsite:l.hasWebsite,hasBooking:l.hasBooking,hasChatbot:l.hasChatbot,hasReviews:l.hasReviews})))} style={{flex:1,padding:"9px",borderRadius:9,border:"none",background:"rgba(0,212,255,0.1)",color:"#00d4ff",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add 10 Leads from Scraper</button>
+            <button onClick={clearQueue} style={{padding:"9px 14px",borderRadius:9,border:"none",background:"rgba(239,68,68,0.08)",color:"#ef4444",fontSize:12,fontWeight:700,cursor:"pointer"}}>Clear</button>
+          </div>
+          {queue.length===0?<div style={{textAlign:"center",padding:"20px",color:"rgba(255,255,255,0.2)",fontSize:13}}>Queue is empty — add leads above</div>:(
+            <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:320,overflowY:"auto"}}>
+              {queue.map((entry:any,i:number)=>(
+                <div key={entry.id||i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{entry.name||"Unknown"} · {entry.company||""}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{entry.phone} {entry.rating?`· ⭐ ${entry.rating} (${entry.reviewCount} reviews)`:""}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    <span style={{fontSize:10,fontWeight:700,textTransform:"uppercase",color:entry.status==="called"?"#22c55e":entry.status==="error"?"#ef4444":"#f59e0b"}}>{entry.status}</span>
+                    {entry.status==="pending"&&<button onClick={()=>removeFromQueue(entry.id)} style={{padding:"4px 8px",borderRadius:6,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:11,cursor:"pointer"}}>✕</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{marginTop:14,padding:"10px 14px",borderRadius:9,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+            ⏰ Scheduled: weekdays at 10am CT · Max 10 calls/day · Enable by setting <code style={{color:"#00d4ff"}}>autodial:enabled=true</code> in Redis
+          </div>
+        </div>
+      )}
+
+      {activeView==="manual"&&<div style={sectionStyle}>
         <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:accent,marginBottom:16}}>{schedMode?"🗓️ Schedule a Call":"📞 Place a Call"}</div>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div><label style={labelStyle}>Phone Number *</label><input style={inp} placeholder="+18321234567" value={phone} onChange={e=>{setPhone(e.target.value);setResult(null);}}/></div>
@@ -1173,10 +1258,52 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
           {result&&<div style={{padding:"12px 16px",borderRadius:10,background:result.ok?"rgba(34,197,94,0.08)":"rgba(239,68,68,0.08)",border:`1px solid ${result.ok?"rgba(34,197,94,0.2)":"rgba(239,68,68,0.2)"}`,fontSize:13,color:result.ok?"#22c55e":"#ef4444"}}>{result.message}</div>}
           {schedStatus&&<div style={{padding:"12px 16px",borderRadius:10,background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",fontSize:13,color:"#22c55e"}}>{schedStatus}</div>}
         </div>
-      </div>
+      </div>}
+
+      {/* Pre-Call Intel Panel */}
+      {activeView==="manual"&&(intelLoading||intel)&&(
+        <div style={{...sectionStyle,border:"1px solid rgba(0,212,255,0.2)",background:"rgba(0,212,255,0.03)"}}>
+          <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#00d4ff",marginBottom:12}}>🧠 Pre-Call Intel — {company||"Business"}</div>
+          {intelLoading&&<div style={{fontSize:13,color:"rgba(255,255,255,0.4)"}}>Analyzing business…</div>}
+          {intel&&!intelLoading&&<>
+            {intel.gmaps&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+              <div style={{padding:"10px",borderRadius:9,background:"rgba(255,255,255,0.03)",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:800,color:"#f59e0b"}}>{intel.gmaps.rating??"—"}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:2}}>Rating</div>
+              </div>
+              <div style={{padding:"10px",borderRadius:9,background:"rgba(255,255,255,0.03)",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:800,color:"#fff"}}>{intel.gmaps.reviewCount??"—"}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:2}}>Reviews</div>
+              </div>
+              <div style={{padding:"10px",borderRadius:9,background:"rgba(255,255,255,0.03)",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:800,color:intel.hasWebsite?"#22c55e":"#ef4444"}}>{intel.hasWebsite?"✓":"✗"}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:2}}>Website</div>
+              </div>
+            </div>}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+              {[{label:"Booking",val:intel.hasBooking},{label:"Chatbot",val:intel.hasChatbot},{label:"Reviews Widget",val:intel.hasReviewWidget},{label:"Social",val:intel.hasSocial}].map(({label,val})=>(
+                <span key={label} style={{fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:20,background:val?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",color:val?"#22c55e":"#ef4444"}}>{val?"✓":"✗"} {label}</span>
+              ))}
+            </div>
+            {intel.analysis?.weaknesses?.slice(0,3).map((w:any,i:number)=>(
+              <div key={i} style={{padding:"9px 12px",borderRadius:9,background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.15)",marginBottom:6}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#ef4444",marginBottom:2}}>{w.issue}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{w.impact}</div>
+              </div>
+            ))}
+            {intel.analysis?.callStrategy?.icebreaker&&(
+              <div style={{marginTop:10,padding:"9px 12px",borderRadius:9,background:"rgba(0,212,255,0.06)",border:"1px solid rgba(0,212,255,0.15)"}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#00d4ff",marginBottom:4}}>Icebreaker</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontStyle:"italic"}}>"{intel.analysis.callStrategy.icebreaker}"</div>
+              </div>
+            )}
+            {intel.aiError&&<div style={{fontSize:11,color:"#f59e0b",marginTop:8}}>⚠️ AI analysis partial: {intel.aiError}</div>}
+          </>}
+        </div>
+      )}
 
       {/* Quick dial */}
-      {leads.filter((l:any)=>l.phone).length>0&&(
+      {activeView==="manual"&&leads.filter((l:any)=>l.phone).length>0&&(
         <div style={sectionStyle}>
           <div style={{fontSize:12,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:14}}>⚡ Quick Dial</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1184,7 +1311,7 @@ function LaurenTab({data,token,h}:{data:any;token:string;h:ReturnType<typeof use
               <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
                 <div>
                   <div style={{fontSize:13,fontWeight:600,color:"#fff"}}>{lead.name||"Unknown"}</div>
-                  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{lead.company||""} · {lead.phone}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{lead.company||""} · {lead.phone} {lead.rating?`· ⭐${lead.rating} (${lead.reviewCount??0} reviews)`:""}</div>
                 </div>
                 <button onClick={()=>fillFromLead(lead)} style={{padding:"7px 14px",borderRadius:8,border:`1px solid ${accent}40`,background:`${accent}10`,color:accent,fontSize:12,fontWeight:700,cursor:"pointer"}}>Fill →</button>
               </div>
