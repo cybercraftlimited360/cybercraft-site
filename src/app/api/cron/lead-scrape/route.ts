@@ -101,19 +101,27 @@ export async function GET(req: NextRequest) {
         for (const place of (searchData.results ?? []).slice(0, 20)) {
           if (seen.has(place.place_id) || contactedIds.has(place.place_id)) continue;
           seen.add(place.place_id);
+          // Skip chains and franchises — they have corporate gatekeepers, not local owners
+          if (/\b(inc\.|llc\.|corp\.|franchise|national|corporate|headquarters|group of)\b/i.test(place.name)) continue;
 
           const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,website,rating,user_ratings_total,formatted_address,opening_hours,reviews&key=${apiKey}`;
           const detail = ((await (await fetch(detailUrl)).json()).result) ?? {};
           const reviewTexts = (detail.reviews ?? []).map((r: any) => r.text ?? "");
 
+          const phone = detail.formatted_phone_number ?? null;
+          const website = detail.website ?? null;
+          const reviewCount = detail.user_ratings_total ?? place.user_ratings_total ?? 0;
+          // Skip ghost listings — no phone, no website, zero reviews = likely closed or bot
+          if (!phone && !website && reviewCount === 0) continue;
+
           leads.push({
             id: place.place_id,
             name: detail.name ?? place.name,
-            phone: detail.formatted_phone_number ?? null,
-            website: detail.website ?? null,
+            phone,
+            website,
             address: detail.formatted_address ?? place.formatted_address,
             rating: detail.rating ?? place.rating ?? null,
-            reviewCount: detail.user_ratings_total ?? place.user_ratings_total ?? 0,
+            reviewCount,
             industry: target.industry,
             city,
             score: scoreLead(detail, reviewTexts, weights),
@@ -138,23 +146,25 @@ export async function GET(req: NextRequest) {
   const merged = [...newLeads, ...existing].slice(0, 500);
   await redis.set("outreach:leads", merged);
 
-  // Fake/placeholder domains that should never be emailed
+  // Domains that are never valid business emails
   const BLOCKED_DOMAINS = new Set([
     "example.com", "domain.com", "test.com", "email.com", "placeholder.com",
     "yourdomain.com", "yourcompany.com", "company.com", "business.com",
     "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com", "icloud.com",
+    "live.com", "msn.com", "me.com", "mac.com", "protonmail.com", "zoho.com",
   ]);
 
+  // Local-part prefixes that are role addresses, not individual inboxes
+  const ROLE_ADDRESS = /^(noreply|no-reply|donotreply|do-not-reply|admin|webmaster|support|help|contact|info|hello|sales|marketing|team|staff|office|service|services|privacy|legal|abuse|dmca|billing|invoice|careers|jobs|hr|recruiting|newsletter|unsubscribe|feedback|press|media|pr|customerservice|customer-service|enquiries|enquiry|general)$/i;
+
   function isValidBusinessEmail(email: string): boolean {
-    if (!email) return false;
+    if (!email || typeof email !== "string") return false;
     const lower = email.toLowerCase().trim();
-    // Must match basic email format
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lower)) return false;
-    const domain = lower.split("@")[1];
-    // Block fake/placeholder/personal domains
+    const [local, domain] = lower.split("@");
     if (BLOCKED_DOMAINS.has(domain)) return false;
-    // Block obviously fake local parts
-    if (/^(user|test|example|noreply|no-reply|info@example)/.test(lower.split("@")[0]) && BLOCKED_DOMAINS.has(domain)) return false;
+    if (ROLE_ADDRESS.test(local)) return false; // role inboxes don't reach a decision-maker
+    if (local.length > 64 || domain.length > 255) return false;
     return true;
   }
 

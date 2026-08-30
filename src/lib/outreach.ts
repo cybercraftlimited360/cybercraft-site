@@ -103,16 +103,16 @@ export function getFlags(detail: any, reviewTexts: string[]): string[] {
 
 // Enrichment: scrape website for email, owner name, social links
 const JUNK_EMAIL_PATTERNS = [
-  /noreply/i, /no-reply/i, /donotreply/i, /wordpress/i, /sentry/i,
+  /noreply/i, /no-reply/i, /donotreply/i, /do-not-reply/i, /wordpress/i, /sentry/i,
   /example\./i, /wix\.com/i, /squarespace\.com/i, /godaddy/i, /hostgator/i,
-  /mailer/i, /bounce/i, /support@/i, /admin@/i, /webmaster@/i,
-  /test@/i, /demo@/i, /user@/i, /email@/i, /mail@/i,
+  /mailer/i, /bounce/i,
+  /^(support|admin|webmaster|test|demo|user|email|mail|help|sales|marketing|team|staff|office|service|services|hello|contact|general|enquir|feedback|press|media|pr|newsletter|unsubscribe|customerservice|customer-service|recruiting)@/i,
   /placeholder/i, /yourdomain/i, /domain\.com/i, /company\.com/i,
   /\.png$/i, /\.jpg$/i, /\.gif$/i, /\.svg$/i, /\.css$/i, /\.js$/i,
   /sampleemail/i, /myemail/i, /yourname/i, /someone@/i,
   /2x\./i, /1x\./i, // image srcset artifacts
-  /privacy@/i, /legal@/i, /dmca@/i, /abuse@/i, /spam@/i,
-  /careers@/i, /jobs@/i, /hr@/i, /billing@/i, /invoice@/i,
+  /^(privacy|legal|dmca|abuse|spam|careers|jobs|hr|billing|invoice)@/i,
+  /@(gmail|yahoo|hotmail|outlook|aol|icloud|live|msn|protonmail)\.com$/i, // personal inboxes
 ];
 
 // Only accept emails found in mailto: links or visible contact sections — not just anywhere in HTML
