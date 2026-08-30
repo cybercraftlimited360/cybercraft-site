@@ -25,12 +25,14 @@ async function getDailyLimit(redis: any): Promise<number> {
     return 4; // first run: very conservative
   }
   const daysSinceStart = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
-  if (daysSinceStart < 7)  return 20;   // Week 1
-  if (daysSinceStart < 14) return 50;   // Week 2
-  if (daysSinceStart < 21) return 100;  // Week 3
-  if (daysSinceStart < 28) return 150;  // Week 4
-  if (daysSinceStart < 42) return 200;  // Week 5-6
-  return 300;                            // Week 7+: full speed
+  if (daysSinceStart < 7)  return 10;   // Week 1: very gentle (new domain)
+  if (daysSinceStart < 14) return 20;   // Week 2
+  if (daysSinceStart < 21) return 30;   // Week 3
+  if (daysSinceStart < 28) return 40;   // Week 4
+  if (daysSinceStart < 35) return 60;   // Week 5
+  if (daysSinceStart < 42) return 80;   // Week 6
+  if (daysSinceStart < 56) return 100;  // Weeks 7-8
+  return 150;                            // Week 9+: full speed
 }
 
 // Track how many emails sent today (resets at midnight UTC)

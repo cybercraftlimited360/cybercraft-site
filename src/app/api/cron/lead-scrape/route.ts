@@ -59,7 +59,21 @@ export async function GET(req: NextRequest) {
     : USA_CITIES.slice(0, BATCH);
   await redis.set("outreach:city_cursor", (cursor + BATCH) % USA_CITIES.length);
 
-  const existing = await redis.get<any[]>("outreach:leads") ?? [];
+  let existing = await redis.get<any[]>("outreach:leads") ?? [];
+  // Fix any %20-prefixed emails left by the old scraper (leading whitespace → URL-encoded)
+  let cleanedCount = 0;
+  existing = existing.map((l: any) => {
+    if (l.email && l.email.includes("%20")) {
+      const fixed = decodeURIComponent(l.email).trim().toLowerCase();
+      cleanedCount++;
+      return { ...l, email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(fixed) ? fixed : null };
+    }
+    return l;
+  });
+  if (cleanedCount > 0) {
+    await redis.set("outreach:leads", existing);
+    console.log(`[lead-scrape-cron] Cleaned ${cleanedCount} %20-prefixed emails from existing leads`);
+  }
   const existingIds = new Set(existing.map((l: any) => l.id));
   const contactedIds = new Set(existing.filter((l: any) => l.messaged).map((l: any) => l.id));
   const weights = await redis.get<Record<string, number>>("outreach:score_weights") ?? {};

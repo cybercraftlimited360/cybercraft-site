@@ -120,8 +120,15 @@ function extractEmailsFromHtml(html: string): string[] {
   const emails: string[] = [];
 
   // Priority 1: mailto: links (most reliable — these are real clickable contacts)
-  const mailtoMatches = [...html.matchAll(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,8})/g)];
-  for (const m of mailtoMatches) emails.push(m[1].toLowerCase());
+  const mailtoMatches = [...html.matchAll(/mailto:([^\s"'?#>]+)/g)];
+  for (const m of mailtoMatches) {
+    try {
+      const decoded = decodeURIComponent(m[1]).trim().toLowerCase();
+      if (/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,8}$/.test(decoded)) {
+        emails.push(decoded);
+      }
+    } catch { /* skip malformed encoding */ }
+  }
 
   // Priority 2: emails near contact keywords in visible text sections
   // Strip scripts, styles, and attributes first to reduce noise
@@ -133,7 +140,7 @@ function extractEmailsFromHtml(html: string): string[] {
   const contactSection = stripped.match(/(?:contact|email us|reach us|get in touch|write to us|email:?|e-mail:?)[\s\S]{0,300}/i);
   if (contactSection) {
     const inSection = [...contactSection[0].matchAll(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,8})/g)];
-    for (const m of inSection) emails.push(m[1].toLowerCase());
+    for (const m of inSection) emails.push(m[1].trim().toLowerCase());
   }
 
   return emails;
@@ -181,7 +188,7 @@ export async function enrichLead(website: string): Promise<Partial<{
       // MX check — only send to domains that can actually receive email
       const hasMx = await domainHasMx(email);
       if (!hasMx) continue;
-      result.email = email;
+      result.email = email.trim();
       break;
     }
 
