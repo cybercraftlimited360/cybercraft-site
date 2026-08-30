@@ -25,14 +25,17 @@ async function getDailyLimit(redis: any): Promise<number> {
     return 4; // first run: very conservative
   }
   const daysSinceStart = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
-  if (daysSinceStart < 7)  return 10;   // Week 1: very gentle (new domain)
+  if (daysSinceStart < 7)  return 10;   // Week 1
   if (daysSinceStart < 14) return 20;   // Week 2
   if (daysSinceStart < 21) return 30;   // Week 3
   if (daysSinceStart < 28) return 40;   // Week 4
   if (daysSinceStart < 35) return 60;   // Week 5
   if (daysSinceStart < 42) return 80;   // Week 6
-  if (daysSinceStart < 56) return 100;  // Weeks 7-8
-  return 150;                            // Week 9+: full speed
+  if (daysSinceStart < 49) return 100;  // Week 7
+  if (daysSinceStart < 56) return 130;  // Week 8
+  if (daysSinceStart < 63) return 160;  // Week 9
+  if (daysSinceStart < 70) return 200;  // Week 10
+  return 250;                            // Week 11+: full speed (Google Workspace limit is 2000/day)
 }
 
 // Track how many emails sent today (resets at midnight UTC)
