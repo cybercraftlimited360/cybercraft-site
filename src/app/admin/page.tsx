@@ -4060,7 +4060,7 @@ function EnrollmentsList({token}:{token:string}) {
 
 function OutreachTab({token}:{token:string}) {
   const h = {"x-admin-token":token};
-  const [section, setSection] = useState<"leads"|"groups"|"monitor"|"sequences"|"stats">("leads");
+  const [section, setSection] = useState<"leads"|"groups"|"monitor"|"sequences"|"stats"|"review-monitor">("leads");
 
   // Lead scraper state
   const [industry, setIndustry] = useState("HVAC");
@@ -4103,6 +4103,14 @@ function OutreachTab({token}:{token:string}) {
   const [outreachPassword, setOutreachPassword] = useState("");
   const [outreachName, setOutreachName] = useState("Saad");
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Review monitor state
+  const [rmLeads, setRmLeads] = useState<any[]>([]);
+  const [rmStats, setRmStats] = useState<any>(null);
+  const [rmLoading, setRmLoading] = useState(false);
+  const [rmRunning, setRmRunning] = useState(false);
+  const [rmResult, setRmResult] = useState<any>(null);
+  const [rmFilter, setRmFilter] = useState<"all"|"week"|"converted">("all");
 
   const s = (v:string) => ({ padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box" as const });
   const btn = (col="#00d4ff") => ({ padding:"10px 18px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${col},${col}cc)`,color:"#000",fontSize:13,fontWeight:700,cursor:"pointer" });
@@ -4182,9 +4190,30 @@ function OutreachTab({token}:{token:string}) {
     setCopiedId(id); setTimeout(()=>setCopiedId(null),2000);
   }
 
+  async function loadReviewMonitor() {
+    setRmLoading(true);
+    const res = await fetch("/api/admin/outreach/review-monitor",{headers:h});
+    const d = await res.json();
+    setRmLeads(d.triggered ?? []); setRmStats(d.stats ?? null); setRmLoading(false);
+  }
+
+  async function runReviewCheck(leadId?: string) {
+    setRmRunning(true); setRmResult(null);
+    const res = await fetch("/api/admin/outreach/review-monitor",{method:"POST",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({leadId})});
+    const d = await res.json(); setRmResult(d); setRmRunning(false);
+    if (d.ok) loadReviewMonitor();
+  }
+
+  async function markRmConverted(id: string, converted: boolean) {
+    await fetch("/api/admin/outreach/review-monitor",{method:"PATCH",headers:{...h,"Content-Type":"application/json"},body:JSON.stringify({id,converted})});
+    setRmLeads(l => l.map((x:any) => x.id===id ? {...x, converted, convertedAt: converted ? new Date().toISOString() : undefined} : x));
+    if (rmStats) setRmStats((s:any) => ({...s, converted: s.converted + (converted ? 1 : -1)}));
+  }
+
   useEffect(()=>{ loadLeads(); },[industry, filterMessaged]);
   useEffect(()=>{ if(section==="groups") loadGroups(); },[section, groupIndustry]);
   useEffect(()=>{ if(section==="monitor") loadAlerts(); },[section]);
+  useEffect(()=>{ if(section==="review-monitor") loadReviewMonitor(); },[section]);
 
   const card = {background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:20,marginBottom:14};
   const tag = (col:string) => ({fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:`rgba(${col},0.12)`,color:`rgb(${col})`,display:"inline-block"});
@@ -4202,6 +4231,7 @@ function OutreachTab({token}:{token:string}) {
           {id:"stats",label:"📊 Stats & Sent"},
           {id:"groups",label:"👥 Groups & LinkedIn"},
           {id:"monitor",label:"👁 Post Monitor"},
+          {id:"review-monitor",label:"🔔 Review Alerts"},
         ] as const).map(({id,label})=>(
           <button key={id} onClick={()=>setSection(id as any)}
             style={{padding:"8px 18px",borderRadius:20,border:`1px solid ${section===id?"#00d4ff":"rgba(255,255,255,0.1)"}`,background:section===id?"rgba(0,212,255,0.1)":"none",color:section===id?"#00d4ff":"rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
@@ -4669,6 +4699,139 @@ function OutreachTab({token}:{token:string}) {
 
           {/* Enrollment list with controls */}
           {emailStats && <EnrollmentsList token={token} />}
+        </div>
+      )}
+
+      {/* ── Review Monitor Section ── */}
+      {section==="review-monitor" && (
+        <div>
+          {/* Header + Run Now */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+            <div>
+              <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 4px"}}>Google Review Monitor</p>
+              <p style={{fontSize:12,color:"rgba(255,255,255,0.35)",margin:0}}>Pain-triggered outreach — sent automatically when a lead gets a bad review mentioning missed calls.</p>
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <button onClick={loadReviewMonitor} disabled={rmLoading} style={{...btn("#7c3aed"),fontSize:12,padding:"8px 16px",opacity:rmLoading?0.5:1}}>
+                {rmLoading?"Loading…":"↻ Refresh"}
+              </button>
+              <button onClick={()=>runReviewCheck()} disabled={rmRunning} style={{...btn(),fontSize:12,padding:"8px 16px",opacity:rmRunning?0.5:1}}>
+                {rmRunning?"Checking…":"▶ Run Check Now"}
+              </button>
+            </div>
+          </div>
+
+          {/* Run result */}
+          {rmResult && (
+            <div style={{...card,marginBottom:14,borderColor:rmResult.ok?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)",background:rmResult.ok?"rgba(34,197,94,0.04)":"rgba(239,68,68,0.04)"}}>
+              <p style={{fontSize:13,fontWeight:700,color:rmResult.ok?"#22c55e":"#ef4444",margin:"0 0 6px"}}>
+                {rmResult.ok ? `✓ Checked ${rmResult.checked} leads — ${rmResult.triggered} pain-triggered email(s) sent` : `Error: ${rmResult.error}`}
+              </p>
+              {rmResult.results && rmResult.results.length > 0 && (
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {rmResult.results.map((r:any,i:number)=>(
+                    <p key={i} style={{fontSize:12,color:r.sent?"rgba(34,197,94,0.8)":"rgba(255,255,255,0.3)",margin:0}}>
+                      {r.sent ? `✓ Sent to ${r.name} (${r.email}) — signal: "${r.signal}"` : `○ ${r.name} — no new pain reviews found${r.error?` (${r.error})`:""}`}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Stats row */}
+          {rmStats && (
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:10,marginBottom:20}}>
+              {[
+                {label:"Total Triggered",value:rmStats.total,color:"#00d4ff"},
+                {label:"This Week",value:rmStats.thisWeek,color:"#a78bfa"},
+                {label:"Converted",value:rmStats.converted,color:"#22c55e"},
+                {label:"Conv. Rate",value:`${rmStats.conversionRate}%`,color:"#f59e0b"},
+                {label:"Candidates Left",value:rmStats.candidates,color:"rgba(255,255,255,0.5)"},
+              ].map(s=>(
+                <div key={s.label} style={{...card,padding:"14px 16px",textAlign:"center"}}>
+                  <p style={{fontSize:22,fontWeight:800,color:s.color,margin:"0 0 4px"}}>{s.value}</p>
+                  <p style={{fontSize:11,color:"rgba(255,255,255,0.35)",margin:0,textTransform:"uppercase",letterSpacing:"0.08em"}}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Filter tabs */}
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            {(["all","week","converted"] as const).map(f=>(
+              <button key={f} onClick={()=>setRmFilter(f)}
+                style={{padding:"6px 14px",borderRadius:20,border:`1px solid ${rmFilter===f?"#00d4ff":"rgba(255,255,255,0.1)"}`,background:rmFilter===f?"rgba(0,212,255,0.1)":"none",color:rmFilter===f?"#00d4ff":"rgba(255,255,255,0.4)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>
+                {f==="week"?"This Week":f==="converted"?"Converted":"All"}
+              </button>
+            ))}
+          </div>
+
+          {/* Triggered leads list */}
+          {rmLoading ? (
+            <div style={{textAlign:"center",padding:40}}><Spinner inline/></div>
+          ) : rmLeads.length === 0 ? (
+            <div style={{...card,textAlign:"center",padding:40}}>
+              <p style={{fontSize:32,margin:"0 0 12px"}}>🔔</p>
+              <p style={{fontSize:14,color:"rgba(255,255,255,0.5)",margin:"0 0 8px",fontWeight:600}}>No review-triggered emails yet</p>
+              <p style={{fontSize:12,color:"rgba(255,255,255,0.3)",margin:"0 0 16px"}}>The system checks your leads daily. Click "Run Check Now" to check immediately.</p>
+              <p style={{fontSize:11,color:"rgba(255,255,255,0.25)",margin:0}}>{rmStats?.candidates ?? 0} leads are currently eligible for monitoring.</p>
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {rmLeads
+                .filter((l:any)=>{
+                  if(rmFilter==="week"){const w=Date.now()-7*24*60*60*1000;return new Date(l.reviewTriggeredAt??0).getTime()>w;}
+                  if(rmFilter==="converted") return l.converted;
+                  return true;
+                })
+                .map((lead:any)=>(
+                  <div key={lead.id} style={{...card,borderColor:lead.converted?"rgba(34,197,94,0.25)":"rgba(255,255,255,0.07)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                          <p style={{fontSize:14,fontWeight:700,color:"#fff",margin:0}}>{lead.name}</p>
+                          {lead.converted && <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:"rgba(34,197,94,0.15)",color:"#22c55e"}}>✓ Converted</span>}
+                          {lead.industry && <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:"rgba(0,212,255,0.1)",color:"#00d4ff"}}>{lead.industry}</span>}
+                        </div>
+                        <p style={{fontSize:12,color:"rgba(255,255,255,0.4)",margin:"0 0 4px"}}>{lead.city}</p>
+                        <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",margin:"0 0 4px"}}>
+                          📧 <span style={{color:"rgba(255,255,255,0.7)"}}>{lead.email}</span>
+                        </p>
+                        <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:6}}>
+                          <span style={{fontSize:11,color:"rgba(239,68,68,0.8)"}}>
+                            🔴 Signal: <strong style={{color:"#f87171"}}>"{lead.reviewSignal}"</strong>
+                          </span>
+                          <span style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+                            Sent {lead.reviewTriggeredAt ? new Date(lead.reviewTriggeredAt).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "—"}
+                          </span>
+                          {lead.convertedAt && <span style={{fontSize:11,color:"rgba(34,197,94,0.6)"}}>Converted {new Date(lead.convertedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>}
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
+                        {lead.phone && <a href={`tel:${lead.phone}`} style={{fontSize:11,color:"rgba(255,255,255,0.4)",textDecoration:"none",padding:"6px 10px",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8}}>📞 {lead.phone}</a>}
+                        {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:"#00d4ff",padding:"6px 10px",border:"1px solid rgba(0,212,255,0.2)",borderRadius:8,textDecoration:"none"}}>🌐 Site</a>}
+                        <button
+                          onClick={()=>markRmConverted(lead.id,!lead.converted)}
+                          style={{fontSize:11,fontWeight:700,padding:"6px 12px",borderRadius:8,border:"none",cursor:"pointer",
+                            background:lead.converted?"rgba(239,68,68,0.15)":"rgba(34,197,94,0.15)",
+                            color:lead.converted?"#f87171":"#22c55e"}}>
+                          {lead.converted?"✗ Undo":"✓ Converted"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+              {rmLeads.filter((l:any)=>{
+                if(rmFilter==="week"){const w=Date.now()-7*24*60*60*1000;return new Date(l.reviewTriggeredAt??0).getTime()>w;}
+                if(rmFilter==="converted") return l.converted;
+                return true;
+              }).length === 0 && (
+                <p style={{textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13,padding:24}}>No leads match this filter.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
