@@ -38,7 +38,7 @@ export const WEEKLY_TARGETS = [
 ];
 
 // Pain signals detected in Google reviews
-const MISSED_CALL_SIGNALS = [
+export const MISSED_CALL_SIGNALS = [
   "busy", "no answer", "voicemail", "didn't call back", "never called back",
   "hard to reach", "waited", "slow response", "took forever", "left a message",
   "no one picked up", "couldn't get through", "keep calling",
