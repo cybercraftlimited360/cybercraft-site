@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   // Rotate through USA cities (5 per run)
   const cursor = await redis.get<number>("outreach:city_cursor") ?? 0;
-  const BATCH = 10;
+  const BATCH = 5;
   const citiesToScrape = USA_CITIES.slice(cursor, cursor + BATCH).length > 0
     ? USA_CITIES.slice(cursor, cursor + BATCH)
     : USA_CITIES.slice(0, BATCH);
@@ -63,6 +63,15 @@ export async function GET(req: NextRequest) {
   const existingIds = new Set(existing.map((l: any) => l.id));
   const contactedIds = new Set(existing.filter((l: any) => l.messaged).map((l: any) => l.id));
   const weights = await redis.get<Record<string, number>>("outreach:score_weights") ?? {};
+
+  // Don't scrape new leads if there are already 100+ unemailed leads queued — use existing stock first
+  const unemailed = existing.filter((l: any) => !l.messaged && l.email).length;
+  if (unemailed >= 100) {
+    return NextResponse.json({
+      ok: true, skipped: true,
+      message: `Scrape paused — ${unemailed} unemailed leads already queued. Will resume when queue drops below 100.`,
+    });
+  }
 
   const queries = INDUSTRIES[target.industry] ?? [];
   const seen = new Set<string>();
