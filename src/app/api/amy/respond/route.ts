@@ -595,7 +595,7 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
       }
 
       // Send transcript email for ALL calls (booked or not) so every conversation is visible
-      if (!hasBooking && history.filter(m => !m.content?.startsWith("[CONTEXT:")).length >= 2) {
+      if (!hasBooking) {
         const cleanHistory = history.filter(m => !m.content?.startsWith("[CONTEXT:"));
         const ct = new Date().toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "full", timeStyle: "short" });
         const summary = await generateCallSummary(history, name, company).catch(() => "");
