@@ -6,14 +6,21 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.formData();
     const callStatus = (body.get("CallStatus") as string || "").toLowerCase();
-    const to = body.get("To") as string || "";       // lead's number
-    const from = body.get("From") as string || "";   // our Twilio number
+    const direction = (body.get("Direction") as string || "").toLowerCase();
+    const to = body.get("To") as string || "";
+    const from = body.get("From") as string || "";
 
     if (!to || !from) return new NextResponse("ok");
 
-    // Send SMS for all outbound call outcomes except "in-progress"
+    // Only send SMS for outbound calls — inbound callers called us, no cold SMS needed
+    if (!direction.startsWith("outbound")) return new NextResponse("ok");
+
+    // Send SMS for all outbound call outcomes except "in-progress" and "initiated"
     const shouldSms = ["completed", "no-answer", "busy", "failed"].includes(callStatus);
     if (!shouldSms) return new NextResponse("ok");
+
+    // On outbound calls, "To" is the lead's number
+    const leadPhone = to;
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -24,7 +31,7 @@ export async function POST(req: NextRequest) {
       : `Hi, this is Amy from CyberCraft360 — I tried calling about some opportunities I spotted for your business (Google reviews, online bookings). Happy to share what I found — just reply here and I'll send it over!`;
 
     const form = new URLSearchParams({
-      To: to,
+      To: leadPhone,
       From: from,
       Body: smsBody,
     });

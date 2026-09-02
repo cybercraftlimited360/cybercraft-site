@@ -23,13 +23,18 @@ export async function GET(req: NextRequest) {
     ? `Hey ${firstName}, this is Amy calling from CyberCraft360. I took a look at ${company} and noticed a few things that could be costing you leads — specifically around your online reviews and booking setup. Really worth a quick 5-minute chat. Give us a call back or I'll try you again soon. Have a great day!`
     : `Hey, this is Amy calling from CyberCraft360. I took a quick look at your business online and noticed a couple of things worth a quick conversation — mainly around Google reviews and getting more leads on autopilot. Give us a call back whenever works for you. Talk soon!`;
 
+  // For inbound calls, if no speech detected just hang up gracefully (caller hung up)
+  // For outbound calls, play a personalized voicemail when nobody answers
+  const fallbackTwiml = isInbound
+    ? `<Hangup/>`
+    : `<Play>${base}/api/amy/tts?text=${encodeURIComponent(voicemailText)}</Play><Hangup/>`;
+
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" timeout="5" speechTimeout="1" action="${actionUrl}&amp;stage=opening" method="POST">
     <Play>${base}/api/amy/tts?text=${encodeURIComponent(greeting)}</Play>
   </Gather>
-  <Play>${base}/api/amy/tts?text=${encodeURIComponent(voicemailText)}</Play>
-  <Hangup/>
+  ${fallbackTwiml}
 </Response>`;
 
   return new NextResponse(twiml, {

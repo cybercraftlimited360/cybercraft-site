@@ -2,7 +2,7 @@
 import { redis } from "@/lib/redis";
 import { DialQueueEntry } from "@/app/api/admin/autodial/route";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // ── DISABLED BY DEFAULT ───────────────────────────────────────────────────────
 // This cron will not place any calls unless autodial:enabled is set to "true" in Redis.
@@ -114,11 +114,12 @@ export async function GET(req: NextRequest) {
       if (l.website) {
         try {
           const ctrl = new AbortController();
-          setTimeout(() => ctrl.abort(), 6000);
+          const timer = setTimeout(() => ctrl.abort(), 6000);
           const r = await fetch(l.website.startsWith("http") ? l.website : `https://${l.website}`, {
             signal: ctrl.signal,
             headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
           });
+          clearTimeout(timer);
           if (r.ok) {
             const html = await r.text();
             hasBooking = /book\s*now|schedule|appointment|calendly|acuityscheduling|setmore/i.test(html);
