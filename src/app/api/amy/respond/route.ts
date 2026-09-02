@@ -594,6 +594,58 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
         handleBooking(reply, name, company, callSid, callerPhone, challenge, history).catch(() => {});
       }
 
+      // Send transcript email for ALL calls (booked or not) so every conversation is visible
+      if (!hasBooking && history.filter(m => !m.content?.startsWith("[CONTEXT:")).length >= 2) {
+        const cleanHistory = history.filter(m => !m.content?.startsWith("[CONTEXT:"));
+        const ct = new Date().toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "full", timeStyle: "short" });
+        const summary = await generateCallSummary(history, name, company).catch(() => "");
+        sendEmail({
+          to: "info@cybercraft360.com",
+          subject: `📞 Call Transcript: ${name || "Unknown"} — ${company}`,
+          html: `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
+<body style="margin:0;padding:0;background:#080c14;font-family:'Segoe UI',system-ui,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#080c14;padding:32px 16px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#0f1520;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;max-width:580px;">
+  <tr><td style="height:4px;background:linear-gradient(90deg,#a78bfa,#38bdf8);"></td></tr>
+  <tr><td style="padding:28px 32px 20px;">
+    <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);">CyberCraft360 · Amy</p>
+    <h1 style="margin:0;font-size:22px;font-weight:800;color:#fff;">📞 Call Transcript</h1>
+    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.4);">${ct} CT</p>
+  </td></tr>
+  <tr><td style="padding:0 32px;"><div style="height:1px;background:rgba(255,255,255,0.06);"></div></td></tr>
+  <tr><td style="padding:20px 32px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;">
+      <tr><td style="padding:12px 18px;width:110px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Name</td><td style="padding:12px 18px;font-size:14px;font-weight:600;color:#e4e6f0;">${name || "—"}</td></tr>
+      <tr style="border-top:1px solid rgba(255,255,255,0.05);"><td style="padding:12px 18px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Company</td><td style="padding:12px 18px;font-size:14px;font-weight:600;color:#a78bfa;">${company || "—"}</td></tr>
+      <tr style="border-top:1px solid rgba(255,255,255,0.05);"><td style="padding:12px 18px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Phone</td><td style="padding:12px 18px;font-size:14px;font-weight:600;color:#4ade80;">${callerPhone || "—"}</td></tr>
+      <tr style="border-top:1px solid rgba(255,255,255,0.05);"><td style="padding:12px 18px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Outcome</td><td style="padding:12px 18px;font-size:14px;font-weight:600;color:#f59e0b;">No booking</td></tr>
+    </table>
+  </td></tr>
+  ${challenge ? `<tr><td style="padding:16px 32px 0;"><p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Pre-Call Context</p><div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6;">${challenge}</div></td></tr>` : ""}
+  ${summary ? `<tr><td style="padding:16px 32px 0;"><p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Call Summary (AI)</p><div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,0.75);line-height:1.8;white-space:pre-line;">${summary}</div></td></tr>` : ""}
+  <tr><td style="padding:16px 32px 0;">
+    <p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Full Transcript</p>
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;overflow:hidden;">
+      ${cleanHistory.map((m, i) => {
+        const isAmy = m.role === "assistant";
+        const cleanContent = m.content.replace(/\[END_CALL\]/gi, "").replace(/\[BOOK_EMAIL:[^\]]*\]/gi, "").trim();
+        if (!cleanContent) return "";
+        return `<div style="padding:10px 16px;${i > 0 ? "border-top:1px solid rgba(255,255,255,0.04);" : ""}background:${isAmy ? "rgba(230,77,255,0.04)" : "rgba(0,212,255,0.04)"};">
+          <div style="font-size:9px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:${isAmy ? "#e64dff" : "#00d4ff"};margin-bottom:4px;">${isAmy ? "Amy" : "Caller"}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5;">${cleanContent}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  </td></tr>
+  <tr><td style="padding:16px 32px 24px;border-top:1px solid rgba(255,255,255,0.05);margin-top:16px;"><p style="margin:0;font-size:11px;color:rgba(255,255,255,0.18);">CyberCraft360 · Call SID: ${callSid}</p></td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`,
+        }).catch(() => {});
+      }
+
       const log = await redis.get<any[]>("amy:call-log") ?? [];
       log.push({
         callSid, to: name, name, company, challenge,
