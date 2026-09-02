@@ -18,14 +18,17 @@ export async function GET(req: NextRequest) {
     : hasName
       ? `Hi, may I speak with ${firstName}?`
       : `Hey, who am I speaking with?`;
-  const noAnswer = `Hey, this is Amy from CyberCraft360 — I'll try you again soon. You can also visit cybercraft360.com whenever you're ready. Have a great day!`;
+  // Personalized voicemail — left when nobody answers
+  const voicemailText = hasName
+    ? `Hey ${firstName}, this is Amy calling from CyberCraft360. I took a look at ${company} and noticed a few things that could be costing you leads — specifically around your online reviews and booking setup. Really worth a quick 5-minute chat. Give us a call back or I'll try you again soon. Have a great day!`
+    : `Hey, this is Amy calling from CyberCraft360. I took a quick look at your business online and noticed a couple of things worth a quick conversation — mainly around Google reviews and getting more leads on autopilot. Give us a call back whenever works for you. Talk soon!`;
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" timeout="5" speechTimeout="1" action="${actionUrl}&amp;stage=opening" method="POST">
     <Play>${base}/api/amy/tts?text=${encodeURIComponent(greeting)}</Play>
   </Gather>
-  <Play>${base}/api/amy/tts?text=${encodeURIComponent(noAnswer)}</Play>
+  <Play>${base}/api/amy/tts?text=${encodeURIComponent(voicemailText)}</Play>
   <Hangup/>
 </Response>`;
 

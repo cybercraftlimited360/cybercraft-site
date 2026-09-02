@@ -90,6 +90,15 @@ export function scoreLead(
   return score;
 }
 
+// Competitor keywords — businesses that mention bad experiences with these are poaching targets
+const COMPETITOR_SIGNALS = [
+  "webfx", "hibu", "yodle", "thryv", "scorpion", "dex media", "dexmedia",
+  "podium", "birdeye", "broadly", "vendasta", "chatmeter", "reputation.com",
+  "digital agency", "marketing agency", "seo company", "web design company",
+  "disappointed with", "switched from", "left my previous", "fired our agency",
+  "waste of money", "overcharged", "no results", "didn't deliver", "poor service",
+];
+
 export function getFlags(detail: any, reviewTexts: string[]): string[] {
   const flags: string[] = [];
   if (!detail.website) flags.push("No website");
@@ -98,6 +107,8 @@ export function getFlags(detail: any, reviewTexts: string[]): string[] {
   const rText = reviewTexts.join(" ").toLowerCase();
   if (MISSED_CALL_SIGNALS.some(s => rText.includes(s))) flags.push("Missed call signals");
   if ((detail.user_ratings_total ?? 0) < 20) flags.push("Very few reviews");
+  // Competitor poaching — unhappy with another agency/tool
+  if (COMPETITOR_SIGNALS.some(s => rText.includes(s))) flags.push("Competitor dissatisfied");
   return flags;
 }
 

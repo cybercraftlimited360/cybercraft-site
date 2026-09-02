@@ -87,8 +87,20 @@ export async function GET(req: NextRequest) {
     const needed = remaining - pending.length;
     const allLeads: any[] = await redis.get("outreach:leads") ?? [];
     const calledPhones = new Set(queue.map(e => e.phone).filter(Boolean));
+    // Prioritize warm leads — those who opened our cold emails
+    const enrollments: any[] = await redis.get("outreach:enrollments") ?? [];
+    const warmEmails = new Set(
+      enrollments.filter(e => e.openedSteps?.length > 0).map(e => e.leadEmail?.toLowerCase()).filter(Boolean)
+    );
+
     const candidates = allLeads
       .filter(l => l.phone && !calledPhones.has(l.phone))
+      .sort((a, b) => {
+        // Priority: competitor dissatisfied > warm email opener > cold
+        const aScore = (warmEmails.has((a.email || "").toLowerCase()) ? 2 : 0) + (a.flags?.includes("Competitor dissatisfied") ? 3 : 0);
+        const bScore = (warmEmails.has((b.email || "").toLowerCase()) ? 2 : 0) + (b.flags?.includes("Competitor dissatisfied") ? 3 : 0);
+        return bScore - aScore;
+      })
       .slice(0, needed);
 
     const fresh: DialQueueEntry[] = [];

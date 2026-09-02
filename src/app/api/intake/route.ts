@@ -239,6 +239,16 @@ export async function POST(req: NextRequest) {
       console.error("Owner notification error:", err)
     );
 
+    // Instantly have Amy call the lead if they provided a phone number
+    if (form.phone) {
+      const challenge = `New intake form lead. Services interested: ${((form.servicesInterested as string[]) || []).join(", ") || "AI automation"}. Challenge: ${form.biggestChallenge || "business automation"}. Budget: ${form.budget || "unknown"}.`;
+      fetch(`${baseUrl}/api/call`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": Buffer.from(`cc360:${process.env.ADMIN_SECRET}:v2`).toString("base64") },
+        body: JSON.stringify({ phone: form.phone, name: form.name, company: form.businessName, challenge }),
+      }).catch(err => console.error("[intake] Amy call error:", err));
+    }
+
     // Generate AI quote â†’ PDF â†’ email to client (awaited so Vercel doesn't kill it)
     try {
       const content = await generateQuoteContent(
