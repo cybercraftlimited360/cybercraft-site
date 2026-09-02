@@ -79,11 +79,81 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true, reason: `Daily limit of ${dailyLimit} calls already reached.` });
   }
 
-  const queue = await redis.get<DialQueueEntry[]>("autodial:queue") ?? [];
-  const pending = queue.filter(e => e.status === "pending");
+  let queue = await redis.get<DialQueueEntry[]>("autodial:queue") ?? [];
+  let pending = queue.filter(e => e.status === "pending");
+
+  // Auto-refill queue from outreach:leads — only pull exactly what's needed
+  if (pending.length < remaining) {
+    const needed = remaining - pending.length;
+    const allLeads: any[] = await redis.get("outreach:leads") ?? [];
+    const calledPhones = new Set(queue.map(e => e.phone).filter(Boolean));
+    const candidates = allLeads
+      .filter(l => l.phone && !calledPhones.has(l.phone))
+      .slice(0, needed);
+
+    const fresh: DialQueueEntry[] = [];
+    for (const l of candidates) {
+      // Live website scrape to detect gaps before queuing
+      let hasBooking = l.hasBooking ?? false;
+      let hasChatbot = l.hasChatbot ?? false;
+      let hasReviews = l.hasReviews ?? false;
+      let hasWebsite = !!l.website;
+
+      if (l.website) {
+        try {
+          const ctrl = new AbortController();
+          setTimeout(() => ctrl.abort(), 6000);
+          const r = await fetch(l.website.startsWith("http") ? l.website : `https://${l.website}`, {
+            signal: ctrl.signal,
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+          });
+          if (r.ok) {
+            const html = await r.text();
+            hasBooking = /book\s*now|schedule|appointment|calendly|acuityscheduling|setmore/i.test(html);
+            hasChatbot = /intercom|drift|tidio|livechat|zendesk|freshchat|crisp|tawk\.to|chatbot/i.test(html);
+            hasReviews = /google\s*review|trustpilot|yelp|reviews\.io|birdeye|podium/i.test(html);
+            hasWebsite = true;
+          }
+        } catch { /* skip on timeout */ }
+      }
+
+      // Build AI briefing from detected gaps — no extra API calls beyond what's needed
+      const gaps: string[] = [];
+      if (!hasWebsite) gaps.push("no website");
+      if ((l.reviewCount ?? 0) < 10) gaps.push(`only ${l.reviewCount ?? 0} Google reviews`);
+      if ((l.rating ?? 5) < 4.0) gaps.push(`low ${l.rating}/5 rating`);
+      if (!hasBooking) gaps.push("no online booking");
+      if (!hasChatbot) gaps.push("no chat widget");
+      if (!hasReviews) gaps.push("no review widget on site");
+
+      fresh.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        phone: l.phone,
+        name: l.ownerName || l.name || "",
+        company: l.name || l.company || "",
+        website: l.website || "",
+        city: l.city || "",
+        rating: l.rating,
+        reviewCount: l.reviewCount,
+        hasWebsite,
+        hasBooking,
+        hasChatbot,
+        hasReviews,
+        challenge: gaps.length ? gaps.join("; ") : "Interested in AI automation",
+        status: "pending",
+        addedAt: new Date().toISOString(),
+      });
+    }
+
+    if (fresh.length > 0) {
+      queue = [...queue, ...fresh];
+      await redis.set("autodial:queue", queue);
+      pending = queue.filter(e => e.status === "pending");
+    }
+  }
 
   if (pending.length === 0) {
-    return NextResponse.json({ ok: true, skipped: true, reason: "No pending leads in queue." });
+    return NextResponse.json({ ok: true, skipped: true, reason: "No pending leads in queue and no new leads with phone numbers available." });
   }
 
   const batch = pending.slice(0, remaining);
