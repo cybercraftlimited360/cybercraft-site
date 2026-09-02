@@ -286,6 +286,23 @@ async function handleBooking(
     <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,0.75);line-height:1.8;white-space:pre-line;">${summary}</div>
   </td></tr>` : ""}
 
+  <!-- Full transcript -->
+  ${history.filter(m => !m.content?.startsWith("[CONTEXT:")).length > 0 ? `
+  <tr><td style="padding:20px 32px 0;">
+    <p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Full Call Transcript</p>
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;overflow:hidden;">
+      ${history.filter(m => !m.content?.startsWith("[CONTEXT:")).map((m, i) => {
+        const isAmy = m.role === "assistant";
+        const cleanContent = m.content.replace(/\[END_CALL\]/gi, "").replace(/\[BOOK_EMAIL:[^\]]*\]/gi, "").trim();
+        if (!cleanContent) return "";
+        return `<div style="padding:10px 16px;${i > 0 ? "border-top:1px solid rgba(255,255,255,0.04);" : ""}background:${isAmy ? "rgba(230,77,255,0.04)" : "rgba(0,212,255,0.04)"};">
+          <div style="font-size:9px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:${isAmy ? "#e64dff" : "#00d4ff"};margin-bottom:4px;">${isAmy ? "Amy" : "Caller"}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5;">${cleanContent}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  </td></tr>` : ""}
+
   <!-- Next steps -->
   <tr><td style="padding:20px 32px;">
     <p style="margin:0 0 10px;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Your Next Steps</p>
