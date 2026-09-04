@@ -676,6 +676,23 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
       redis.hincrby("amy:stats", "totalCalls", 1).catch(() => {});
       saveCall(history, hasBooking, name, company).catch(() => {});
 
+      // Write to amy:call-log so transcripts appear on the admin page
+      const cleanForLog = history.filter(m => !m.content?.startsWith("[CONTEXT:"));
+      const callLogEntry = {
+        callSid,
+        startTime: new Date().toISOString(),
+        outcome: hasBooking ? "booked" : "no-booking",
+        phone: callerPhone || "",
+        lead: { name: name || "Unknown", company: company || "Unknown" },
+        messages: cleanForLog.map(m => ({
+          role: m.role,
+          content: m.content.replace(/\[END_CALL\]/gi, "").replace(/\[BOOK_EMAIL:[^\]]*\]/gi, "").trim(),
+        })).filter(m => m.content),
+      };
+      const callLog = await redis.get<any[]>("amy:call-log") ?? [];
+      callLog.push({ ...callLogEntry, loggedAt: new Date().toISOString() });
+      redis.set("amy:call-log", callLog.slice(-500)).catch(() => {});
+
       // If LLM forgot to emit [BOOK_EMAIL] but we captured email during the call, book anyway
       if (!hasBooking && callState.email) {
         const syntheticReply = `[BOOK_EMAIL: ${callState.email} | ${callState.time ?? "flexible"}]`;
