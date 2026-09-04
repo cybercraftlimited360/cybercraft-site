@@ -100,11 +100,6 @@ export async function GET(req: NextRequest) {
   ]);
 
   const remainingToday = Math.max(0, dailyLimit - todaySent);
-  const perRunLimit = Math.min(25, remainingToday); // never more than 25 per run
-
-  if (remainingToday <= 0) {
-    return NextResponse.json({ ok: true, sent: 0, message: `Daily limit reached (${dailyLimit}/day warmup cap)` });
-  }
 
   // Basic email format validation
   function isValidEmail(email: string): boolean {
@@ -121,12 +116,22 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const due = enrollments.filter(e =>
+  const allDue = enrollments.filter(e =>
     e.status === "active" &&
     isValidEmail(e.leadEmail) &&
     e.currentStep < (sequences.find(s => s.id === e.sequenceId)?.steps.length ?? 0) &&
     new Date(e.nextSendAt) <= now
-  ).slice(0, perRunLimit);
+  );
+
+  // Split into new outreach (step 0 = first contact) and follow-ups (steps 1+)
+  // Daily limit only applies to new leads — follow-ups are always sent regardless
+  const newLeadEmails = allDue.filter(e => e.currentStep === 0).slice(0, Math.min(25, remainingToday));
+  const followUpEmails = allDue.filter(e => e.currentStep > 0).slice(0, 100); // generous cap, no daily limit
+  const due = [...newLeadEmails, ...followUpEmails];
+
+  if (remainingToday <= 0 && newLeadEmails.length === 0 && followUpEmails.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, message: `Daily new-lead limit reached (${dailyLimit}/day). No follow-ups due either.` });
+  }
 
   if (due.length === 0) {
     return NextResponse.json({ ok: true, sent: 0, message: "No emails due" });
@@ -253,7 +258,7 @@ export async function GET(req: NextRequest) {
   await Promise.all([
     redis.set("outreach:enrollments", updatedEnrollments),
     redis.set("outreach:sent_emails", [...newSentLogs, ...sentLog].slice(0, 2000)),
-    incrementTodaySent(redis, sent),
+    incrementTodaySent(redis, newSentLogs.filter(l => l.step === 0).length),
   ]);
 
   // Send daily summary report to owner if any emails went out
@@ -299,6 +304,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed, due: due.length, dailyLimit, todaySent: todaySent + sent });
+  const newSent = newSentLogs.filter(l => l.step === 0).length;
+  const followUpSent = sent - newSent;
+  return NextResponse.json({ ok: true, sent, newLeadsSent: newSent, followUpsSent: followUpSent, failed, due: due.length, dailyLimit, todaySent: todaySent + newSent });
 }
 
