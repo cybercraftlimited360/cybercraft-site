@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","amy","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","precall"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","amy","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","nextdoor","precall"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",amy:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",precall:"🧠" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",amy:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",precall:"Pre-Call Intel" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",amy:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",nextdoor:"🏘️",precall:"🧠" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",amy:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",nextdoor:"Nextdoor",precall:"Pre-Call Intel" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -87,8 +87,9 @@ const MAIN_GROUPS: { label: string; color: string; cards: { tab: Tab; icon: stri
   {
     label: "Content", color: "#f59e0b",
     cards: [
-      { tab:"social",  icon:"📲", title:"Social Media",   desc:"Write & schedule posts to all platforms" },
-      { tab:"review",  icon:"🔍", title:"Review Queue",   desc:"Approve AI content before it goes live" },
+      { tab:"social",    icon:"📲", title:"Social Media",   desc:"Write & schedule posts to all platforms" },
+      { tab:"nextdoor",  icon:"🏘️", title:"Nextdoor",       desc:"AI post generator for Houston community" },
+      { tab:"review",    icon:"🔍", title:"Review Queue",   desc:"Approve AI content before it goes live" },
     ],
   },
 ];
@@ -287,6 +288,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="review"     &&<ReviewQueueTab token={token}/>}
             {tab==="outreach"   &&<OutreachTab    token={token}/>}
             {tab==="linkedin"   &&<LinkedInBotTab token={token}/>}
+            {tab==="nextdoor"   &&<NextdoorTab    token={token}/>}
             {tab==="precall"    &&<PreCallIntelTab token={token}/>}
           </>
         ):(
@@ -5200,6 +5202,257 @@ function PreCallIntelTab({token}:{token:string}) {
           </div>
         )}
       </>)}
+    </div>
+  );
+}
+
+// ── Nextdoor Tab ──────────────────────────────────────────────────────────────
+const NEXTDOOR_CATEGORIES = [
+  { id:"intro",     label:"Business Intro",      emoji:"👋", desc:"Introduce CyberCraft360 to the neighborhood" },
+  { id:"tip",       label:"Helpful AI Tip",       emoji:"💡", desc:"Share a free valuable tip — builds trust" },
+  { id:"promo",     label:"Limited Offer",        emoji:"🎁", desc:"Soft promotion with a neighborhood discount" },
+  { id:"story",     label:"Client Success Story", emoji:"🏆", desc:"Social proof from a local Houston business" },
+  { id:"question",  label:"Ask the Community",    emoji:"🙋", desc:"Engage the neighborhood with a question" },
+  { id:"event",     label:"Free Workshop/Event",  emoji:"📣", desc:"Promote a free webinar or local event" },
+] as const;
+type NdCategory = typeof NEXTDOOR_CATEGORIES[number]["id"];
+
+const NEXTDOOR_NEIGHBORHOODS = [
+  "Sugar Land","Missouri City","Katy","Pearland","The Woodlands","Friendswood","Stafford","Richmond","Rosenberg","Cinco Ranch","First Colony","New Territory","Sienna","Greatwood",
+];
+
+function NextdoorTab({token}:{token:string}) {
+  const accent = "#22c55e"; // Nextdoor green
+  const h = {"x-admin-token":token,"Content-Type":"application/json"};
+
+  const [category, setCategory] = useState<NdCategory>("intro");
+  const [neighborhood, setNeighborhood] = useState(NEXTDOOR_NEIGHBORHOODS[0]);
+  const [customContext, setCustomContext] = useState("");
+  const [tone, setTone] = useState<"friendly"|"professional"|"casual">("friendly");
+  const [generating, setGenerating] = useState(false);
+  const [posts, setPosts] = useState<{post:string;title:string;tags:string[]}[]>([]);
+  const [error, setError] = useState<string|null>(null);
+  const [copied, setCopied] = useState<number|null>(null);
+  const [history, setHistory] = useState<{category:string;neighborhood:string;post:string;generatedAt:string}[]>([]);
+  const [savingIdx, setSavingIdx] = useState<number|null>(null);
+  const [savedMsg, setSavedMsg] = useState<string|null>(null);
+
+  // Load history from Redis via a simple API call
+  useEffect(() => {
+    fetch("/api/admin/nextdoor/history", {headers:h})
+      .then(r=>r.json()).then(d=>{if(d.history)setHistory(d.history);})
+      .catch(()=>{});
+  }, []);
+
+  async function generate() {
+    setGenerating(true); setError(null); setPosts([]);
+    const cat = NEXTDOOR_CATEGORIES.find(c=>c.id===category)!;
+    try {
+      const res = await fetch("/api/admin/nextdoor/generate", {
+        method:"POST", headers:h,
+        body: JSON.stringify({category, categoryLabel:cat.label, neighborhood, tone, customContext: customContext.trim()}),
+      });
+      const d = await res.json();
+      if (!res.ok) { setError(d.error||"Generation failed"); return; }
+      setPosts(d.posts||[]);
+    } catch(e:any) { setError(e.message); }
+    finally { setGenerating(false); }
+  }
+
+  async function savePost(idx:number) {
+    if (!posts[idx]) return;
+    setSavingIdx(idx);
+    const entry = {category, neighborhood, post:posts[idx].post, generatedAt:new Date().toISOString()};
+    await fetch("/api/admin/nextdoor/history", {method:"POST", headers:h, body:JSON.stringify(entry)}).catch(()=>{});
+    setHistory(prev=>[entry,...prev].slice(0,50));
+    setSavedMsg("Saved to history ✓");
+    setSavingIdx(null);
+    setTimeout(()=>setSavedMsg(null), 2500);
+  }
+
+  function copyPost(idx:number) {
+    navigator.clipboard.writeText(posts[idx].post).catch(()=>{});
+    setCopied(idx);
+    setTimeout(()=>setCopied(null), 2000);
+  }
+
+  const card:React.CSSProperties = {background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:20};
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:20,maxWidth:960}}>
+      <SectionHeader icon="🏘️" title="Nextdoor Post Generator" sub="AI-written posts for Houston neighborhoods — introduce yourself, share tips, and win local clients"/>
+
+      {/* What is Nextdoor — info card */}
+      <div style={{...card,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.15)"}}>
+        <div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:200}}>
+            <div style={{fontSize:12,fontWeight:700,color:accent,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.08em"}}>What is Nextdoor?</div>
+            <p style={{fontSize:13,color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:0}}>
+              Nextdoor is a neighborhood social network used by <strong style={{color:"#fff"}}>millions of Houston-area homeowners</strong>. Businesses can post in local neighborhoods to introduce themselves, share tips, and get recommended. It&apos;s the fastest way to get <strong style={{color:"#fff"}}>local word-of-mouth</strong> — posts feel personal, not like ads.
+            </p>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,minWidth:200}}>
+            {[
+              {icon:"🏠",text:"Reach Sugar Land, Katy, Pearland homeowners"},
+              {icon:"💬",text:"Posts get shared & recommended neighbor-to-neighbor"},
+              {icon:"📱",text:"Free — no ad spend needed to get seen"},
+              {icon:"🎯",text:"Highest intent local leads in Houston"},
+            ].map((item,i)=>(
+              <div key={i} style={{display:"flex",gap:8,alignItems:"center",fontSize:12,color:"rgba(255,255,255,0.6)"}}>
+                <span>{item.icon}</span><span>{item.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div style={card}>
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:14,textTransform:"uppercase",letterSpacing:"0.08em"}}>Configure Your Post</div>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+          {/* Post category */}
+          <div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:8}}>Post Type</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {NEXTDOOR_CATEGORIES.map(cat=>(
+                <button key={cat.id} onClick={()=>setCategory(cat.id)}
+                  title={cat.desc}
+                  style={{padding:"8px 14px",borderRadius:20,border:`1px solid ${category===cat.id?accent:"rgba(255,255,255,0.08)"}`,background:category===cat.id?"rgba(34,197,94,0.12)":"none",color:category===cat.id?accent:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",gap:6,alignItems:"center"}}>
+                  <span>{cat.emoji}</span><span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:6}}>
+              {NEXTDOOR_CATEGORIES.find(c=>c.id===category)?.desc}
+            </div>
+          </div>
+
+          {/* Neighborhood + Tone */}
+          <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:6}}>Target Neighborhood</div>
+              <select value={neighborhood} onChange={e=>setNeighborhood(e.target.value)}
+                style={{width:"100%",padding:"10px 12px",borderRadius:10,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,outline:"none"}}>
+                {NEXTDOOR_NEIGHBORHOODS.map(n=><option key={n} value={n}>{n}</option>)}
+                <option value="Houston Heights">Houston Heights</option>
+                <option value="Midtown Houston">Midtown Houston</option>
+                <option value="Memorial">Memorial</option>
+              </select>
+            </div>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:6}}>Tone</div>
+              <div style={{display:"flex",gap:8}}>
+                {(["friendly","professional","casual"] as const).map(t=>(
+                  <button key={t} onClick={()=>setTone(t)}
+                    style={{flex:1,padding:"10px 0",borderRadius:10,border:`1px solid ${tone===t?accent:"rgba(255,255,255,0.08)"}`,background:tone===t?"rgba(34,197,94,0.1)":"transparent",color:tone===t?accent:"rgba(255,255,255,0.4)",fontSize:12,fontWeight:700,cursor:"pointer",textTransform:"capitalize"}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Custom context */}
+          <div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:6}}>Extra Context <span style={{opacity:0.5}}>(optional)</span></div>
+            <textarea value={customContext} onChange={e=>setCustomContext(e.target.value)} rows={2}
+              placeholder="e.g. Mention we helped a local HVAC company book 12 extra calls per week, or that we offer a free 30-min strategy call..."
+              style={{width:"100%",padding:"10px 12px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",color:"#fff",fontSize:13,resize:"vertical",outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+          </div>
+
+          <button onClick={generate} disabled={generating}
+            style={{alignSelf:"flex-start",padding:"12px 28px",borderRadius:12,border:"none",background:generating?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#22c55e,#16a34a)",color:generating?"rgba(255,255,255,0.3)":"#fff",fontSize:14,fontWeight:700,cursor:generating?"not-allowed":"pointer"}}>
+            {generating?"Generating posts…":"✨ Generate 3 Nextdoor Posts"}
+          </button>
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && <div style={{padding:"12px 16px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",color:"#ef4444",fontSize:13}}>{error}</div>}
+
+      {/* Generated posts */}
+      {posts.length > 0 && (
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:"0.08em"}}>Generated Posts — pick your favorite</div>
+          {savedMsg && <div style={{padding:"10px 14px",borderRadius:10,background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.2)",color:accent,fontSize:13}}>{savedMsg}</div>}
+          {posts.map((p,i)=>(
+            <div key={i} style={{...card,position:"relative"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <span style={{fontSize:11,fontWeight:700,color:accent,textTransform:"uppercase",letterSpacing:"0.06em"}}>Version {i+1}</span>
+                  {p.title && <span style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>— {p.title}</span>}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>savePost(i)} disabled={savingIdx===i}
+                    style={{padding:"6px 14px",borderRadius:8,border:"1px solid rgba(34,197,94,0.3)",background:"rgba(34,197,94,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                    {savingIdx===i?"Saving…":"💾 Save"}
+                  </button>
+                  <button onClick={()=>copyPost(i)}
+                    style={{padding:"6px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:copied===i?"rgba(34,197,94,0.1)":"rgba(255,255,255,0.05)",color:copied===i?accent:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                    {copied===i?"Copied ✓":"📋 Copy"}
+                  </button>
+                </div>
+              </div>
+              <pre style={{margin:0,whiteSpace:"pre-wrap",fontSize:14,lineHeight:1.75,color:"rgba(255,255,255,0.85)",fontFamily:"inherit"}}>
+                {p.post}
+              </pre>
+              {p.tags?.length > 0 && (
+                <div style={{marginTop:12,display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {p.tags.map((t:string,j:number)=>(
+                    <span key={j} style={{fontSize:11,padding:"3px 8px",borderRadius:20,background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.15)",color:"rgba(34,197,94,0.8)"}}>{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Posting guide */}
+      <div style={card}>
+        <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:14,textTransform:"uppercase",letterSpacing:"0.08em"}}>📍 How to Post on Nextdoor (Step by Step)</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[
+            {step:"1",title:"Create a Business Page","desc":"Go to nextdoor.com → Business → Create your free Business Page. Use: CyberCraft360 | Category: Business Services | Location: Sugar Land, TX"},
+            {step:"2",title:"Add your details","desc":"Upload your logo, write a bio (2-3 sentences about AI automation for local businesses), add cybercraft360.com and info@cybercraft360.com"},
+            {step:"3",title:"Post in your neighborhood","desc":"Click 'Post' → select 'Business Post' → choose your neighborhood (start with Sugar Land / First Colony) → paste your generated post → publish"},
+            {step:"4",title:"Engage quickly","desc":"Reply to every comment within 1 hour. Nextdoor's algorithm boosts posts with early engagement. A simple 'Thanks! Happy to answer any questions.' works great."},
+            {step:"5",title:"Post frequency","desc":"Post 2-3x per week. Alternate between tips (no promotion), stories, and soft offers. Too promotional = flagged by neighbors."},
+            {step:"6",title:"Expand neighborhoods","desc":"Once you get engagement in Sugar Land, request to expand to Katy, Pearland, Missouri City. Nextdoor lets businesses post to multiple nearby neighborhoods."},
+          ].map(item=>(
+            <div key={item.step} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,fontWeight:800,color:accent}}>{item.step}</div>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{item.title}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",lineHeight:1.6}}>{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Post history */}
+      {history.length > 0 && (
+        <div style={card}>
+          <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.4)",marginBottom:12,textTransform:"uppercase",letterSpacing:"0.08em"}}>Saved Posts ({history.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {history.slice(0,10).map((h,i)=>(
+              <div key={i} style={{padding:"12px 14px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,flexWrap:"wrap",gap:4}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"capitalize"}}>{h.category} · {h.neighborhood}</span>
+                  <span style={{fontSize:11,color:"rgba(255,255,255,0.25)"}}>{new Date(h.generatedAt).toLocaleDateString()}</span>
+                </div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",lineHeight:1.65,whiteSpace:"pre-wrap"}}>{h.post.slice(0,300)}{h.post.length>300?"…":""}</div>
+                <button onClick={()=>navigator.clipboard.writeText(h.post).catch(()=>{})}
+                  style={{marginTop:8,padding:"4px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,0.08)",background:"transparent",color:"rgba(255,255,255,0.4)",fontSize:11,cursor:"pointer"}}>
+                  Copy
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
