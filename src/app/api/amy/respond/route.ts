@@ -85,7 +85,7 @@ If they won't book a call, get their email anyway so Saad can send them somethin
 
 ## HANDLING REAL MOMENTS
 
-**Busy/rushed/driving/in a meeting:** Don't keep the conversation going. Say: "Totally, sorry to catch you at a bad time — when's a better moment? I can call you back this afternoon or tomorrow morning, whatever works." Stop and let them answer.
+**Busy/rushed/driving/in a meeting:** Say ONLY: "Totally, sorry to catch you at a bad time! When's a better time to call you back?" Then STOP. Wait for their answer. Once they give a time, say "Perfect, I'll try you then — have a great day!" and add [END_CALL]. Do NOT continue the conversation. Do NOT pitch. Just get the callback time and end the call.
 
 **Venting/upset:** Don't pivot to the pitch. Just say something like "Man, that sounds genuinely rough." Let them lead. They'll come back to you.
 
@@ -117,6 +117,75 @@ If they won't book a call, get their email anyway so Saad can send them somethin
 - **NEVER assume an email is correct** without reading it back letter by letter first and getting confirmation.
 - **NEVER ask the same question twice.** If someone skips, deflects, or refuses to answer something, move on. Don't circle back to it.
 - When the conversation is clearly over, put [END_CALL] at the very end. If you collected their email for booking, put [BOOK_EMAIL: email | time] before [END_CALL].`;
+
+// Industry-specific knowledge Amy uses to open with tailored questions
+const INDUSTRY_PLAYBOOKS: Record<string, { painPoints: string[]; opener: string; questions: string[] }> = {
+  "beauty salon": {
+    painPoints: ["missed bookings when stylists are with clients", "no-shows killing revenue", "clients going to competitors who book online 24/7", "manual appointment reminders eating up time"],
+    opener: "I pulled up some info on beauty salons before calling — a big one I keep hearing is no-shows and missed bookings when the chair is full. Is that hitting you too?",
+    questions: ["How are you handling appointment reminders right now?", "Are you getting calls or DMs after hours when nobody can pick up?", "How much time goes into rebooking cancellations every week?"],
+  },
+  "hvac": {
+    painPoints: ["missing emergency calls on nights and weekends", "techs too busy to answer leads during peak season", "competitors answering faster and stealing jobs", "manual dispatching slowing response time"],
+    opener: "I was looking at HVAC businesses before I called — the one thing that kills revenue is missing emergency calls after hours when the techs are out. Sound familiar?",
+    questions: ["How are you handling after-hours calls right now?", "Do you lose jobs to competitors who pick up faster?", "How much time goes into scheduling and dispatching each day?"],
+  },
+  "dental": {
+    painPoints: ["patients calling after hours and booking with a competitor", "no-shows and last-minute cancellations", "front desk overwhelmed with calls during patient hours", "slow follow-up on new patient inquiries"],
+    opener: "Before I called I was looking at dental practices — the one that keeps coming up is after-hours calls going to voicemail while patients just book somewhere else. Is that happening?",
+    questions: ["How do you handle new patient calls when the front desk is with someone?", "What's your no-show rate looking like?", "Are you doing any automated appointment reminders?"],
+  },
+  "real estate": {
+    painPoints: ["leads going cold because follow-up takes too long", "missing calls while showing properties", "generic drip emails that don't convert", "competing agents responding faster"],
+    opener: "I was looking at real estate agents before calling — the one that costs the most is slow follow-up. A lead that doesn't hear back in 5 minutes usually goes to whoever called them first. How's your follow-up speed?",
+    questions: ["How quickly are you following up on new leads?", "What happens to inquiries that come in while you're showing a property?", "Are you doing any automated lead nurturing right now?"],
+  },
+  "plumbing": {
+    painPoints: ["missing emergency calls nights and weekends", "jobs going to competitors who answer faster", "too much time on scheduling and dispatching", "no online booking — customers just call competitors"],
+    opener: "I checked out plumbing businesses before calling — emergency calls going to voicemail at 11pm is probably the biggest revenue leak. Is that something you're running into?",
+    questions: ["How are you handling calls when your guys are already on a job?", "Do customers ever just hang up and call another plumber?", "How much time does scheduling take out of your week?"],
+  },
+  "roofing": {
+    painPoints: ["losing storm-season leads to faster-responding competitors", "missed calls during inspections", "slow follow-up on insurance claim leads", "no system to handle surge call volume"],
+    opener: "Before I called I was looking at roofing companies — storm season is brutal for missed calls when your crew is on roofs all day. Does that hit your business?",
+    questions: ["How do you handle the call surge after a big storm?", "Are you losing jobs to companies that pick up faster?", "How are you following up on insurance claim leads?"],
+  },
+  "auto repair": {
+    painPoints: ["customers hanging up when put on hold too long", "missing calls when techs are under the hood", "no online booking — losing customers who don't want to call", "slow estimate follow-up"],
+    opener: "I was looking at auto repair shops before calling — the big one is customers who call, get put on hold, and just hang up and Google the next shop. Sound familiar?",
+    questions: ["How long are customers waiting on hold on average?", "Are you getting walk-ins who called somewhere else first?", "Do you have any way to book or get estimates online?"],
+  },
+  "cleaning": {
+    painPoints: ["missing quote requests outside business hours", "no-shows and cancellations with no system to fill gaps", "spending too much time on scheduling and client communication", "losing recurring clients to competitors who follow up better"],
+    opener: "I was looking at cleaning businesses before I called — the one I hear most is quote requests coming in after hours with no one to respond, and those clients just go somewhere else. Is that hitting you?",
+    questions: ["How do you handle quote requests that come in evenings or weekends?", "What's your process when a client cancels last minute?", "How much time goes into client communication and scheduling each week?"],
+  },
+  "law firm": {
+    painPoints: ["missing intake calls that represent thousands in potential fees", "slow follow-up on online leads", "front desk overwhelmed during trial prep", "no 24/7 intake coverage"],
+    opener: "Before I called I was looking at law firms — a missed intake call can be a $5,000 case walking out the door. Is that something you think about?",
+    questions: ["How are you handling calls when your team is in court or depositions?", "What's your average response time on web inquiries?", "Do you have any 24/7 intake coverage right now?"],
+  },
+  "med spa": {
+    painPoints: ["losing high-ticket bookings to competitors who answer faster", "no-shows on expensive treatments", "manual follow-up on consultations", "after-hours inquiries going unanswered"],
+    opener: "I was researching med spas before calling — the one that hurts most is a $500 treatment inquiry coming in after hours with nobody to respond, and the client books somewhere else. Does that happen to you?",
+    questions: ["How are you handling after-hours booking requests?", "What's your no-show rate on high-ticket treatments?", "How do you follow up after a consultation?"],
+  },
+};
+
+function getIndustryContext(challenge: string): string {
+  if (!challenge) return "";
+  const lower = challenge.toLowerCase();
+  for (const [industry, playbook] of Object.entries(INDUSTRY_PLAYBOOKS)) {
+    if (lower.includes(industry)) {
+      return `\n\n## INDUSTRY BRIEFING — ${industry.toUpperCase()}\nBefore this call, you researched ${industry} businesses. You already know their world. Use this to ask sharp, specific questions — never generic ones.\n\nKey pain points for this industry:\n${playbook.painPoints.map(p => `- ${p}`).join("\n")}\n\nSuggested opener (adapt naturally to the conversation):\n"${playbook.opener}"\n\nProbing questions to rotate through (pick the most relevant, never ask more than 2):\n${playbook.questions.map(q => `- ${q}`).join("\n")}\n\nIMPORTANT: You already know their industry. Ask specific questions about THEIR business — never ask "what kind of business are you in?" or generic questions. Lead with what you already know.`;
+    }
+  }
+  // Generic fallback using the challenge text
+  if (challenge.length > 10) {
+    return `\n\n## PRE-CALL CONTEXT\nBefore this call, you researched this lead. Their situation: ${challenge}\n\nUse this to ask specific questions tailored to their business — never generic ones. You already know their context, so lead with it.`;
+  }
+  return "";
+}
 
 async function loadCallExamples(): Promise<string> {
   try {
@@ -457,7 +526,8 @@ export async function POST(req: NextRequest) {
       loadCallExamples(),
     ]);
     const history = rawHistory ?? [];
-    const systemPrompt = BASE_SYSTEM + learningsContext;
+    const industryContext = getIndustryContext(challenge);
+    const systemPrompt = BASE_SYSTEM + industryContext + learningsContext;
 
     if (stage === "opening") {
       // Inbound: caller already told us what they need — just respond naturally
@@ -535,6 +605,25 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
 
     if (speechResult) {
       history.push({ role: "user", content: speechResult });
+    }
+
+    // Barge-in detection — caller spoke while Amy was talking, speech is garbled/short
+    // Twilio captures partial speech during playback; result is often 1-3 words or noise
+    const isBargein = speechResult.length > 0 && speechResult.split(/\s+/).length <= 3 && history.length > 2;
+    if (isBargein) {
+      const bargeinReply = `Sorry, I didn't quite catch that — could you say it again?`;
+      history.push({ role: "assistant", content: bargeinReply });
+      await redis.set(historyKey, history.slice(-24), { ex: 3600 });
+      return new NextResponse(buildTwiml(bargeinReply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
+    }
+
+    // Busy detection — if caller says they're busy, ask for callback time and hang up
+    const isBusy = /\b(busy|bad time|in a meeting|driving|can't talk|call back|call me back|not a good time|running late|in the middle)\b/i.test(speechResult);
+    if (isBusy && history.filter(m => m.role === "user").length <= 3) {
+      const busyReply = `Totally, sorry to catch you at a bad time! When would be a better time to call you back — later today or tomorrow?`;
+      history.push({ role: "assistant", content: busyReply });
+      await redis.set(historyKey, history.slice(-24), { ex: 3600 });
+      return new NextResponse(buildTwiml(busyReply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
     const reply = await callLLM(history, systemPrompt);
