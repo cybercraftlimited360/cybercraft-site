@@ -85,7 +85,7 @@ If they won't book a call, get their email anyway so Saad can send them somethin
 
 ## HANDLING REAL MOMENTS
 
-**Busy/rushed/driving/in a meeting:** Say ONLY: "Totally, sorry to catch you at a bad time! When's a better time to call you back?" Then STOP. Wait for their answer. Once they give a time, say "Perfect, I'll try you then — have a great day!" and add [END_CALL]. Do NOT continue the conversation. Do NOT pitch. Just get the callback time and end the call.
+**Busy/rushed/driving/in a meeting:** Read the situation. If they say "I'm busy but go ahead" or "make it quick" or "it's okay" — they're giving you a green light. Keep going, just be more concise. If they say "call me back" or "try me later" or clearly want off the call — don't push. Say "Of course, no problem! What time works best for a callback?" Once they give a time, say "Perfect, I'll try you then — have a great day!" and add [END_CALL]. Never pitch to someone who clearly wants off the call.
 
 **Venting/upset:** Don't pivot to the pitch. Just say something like "Man, that sounds genuinely rough." Let them lead. They'll come back to you.
 
@@ -617,13 +617,15 @@ DO NOT ask about their business, challenges, or anything work-related yet. Just 
       return new NextResponse(buildTwiml(bargeinReply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
-    // Busy detection — if caller says they're busy, ask for callback time and hang up
-    const isBusy = /\b(busy|bad time|in a meeting|driving|can't talk|call back|call me back|not a good time|running late|in the middle)\b/i.test(speechResult);
-    if (isBusy && history.filter(m => m.role === "user").length <= 3) {
-      const busyReply = `Totally, sorry to catch you at a bad time! When would be a better time to call you back — later today or tomorrow?`;
-      history.push({ role: "assistant", content: busyReply });
+    // Explicit callback request — caller is clearly asking to be called back later
+    // Only trigger when they say "call me back", "call back later", "try me later" etc.
+    // Does NOT trigger on "I'm busy but we can talk" or "go ahead" — those stay in the conversation
+    const isExplicitCallback = /\b(call me back|call back|try me later|reach me later|call me later|call again later|try again later|call me tomorrow|try tomorrow)\b/i.test(speechResult);
+    if (isExplicitCallback) {
+      const callbackReply = `Of course, no problem at all! When's the best time to reach you — later today or tomorrow?`;
+      history.push({ role: "assistant", content: callbackReply });
       await redis.set(historyKey, history.slice(-24), { ex: 3600 });
-      return new NextResponse(buildTwiml(busyReply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
+      return new NextResponse(buildTwiml(callbackReply, false, actionUrl, firstName, base), { headers: { "Content-Type": "text/xml" } });
     }
 
     const reply = await callLLM(history, systemPrompt);
