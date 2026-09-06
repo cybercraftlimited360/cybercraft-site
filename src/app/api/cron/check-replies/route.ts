@@ -166,8 +166,33 @@ export async function GET(req: NextRequest) {
       if (!fromEmail || fromEmail === imapUser) continue;
       if (repliedIds.has(msgId)) continue;
 
-      // Check if this is a reply to one of our outreach emails
       const sourceText = msg.source?.toString("utf8") ?? "";
+
+      // ── Bounce detection ─────────────────────────────────────────
+      // MAILER-DAEMON / postmaster bounce emails contain the original recipient
+      // address. Detect them and permanently unsubscribe that address.
+      const isBounce =
+        /mailer-daemon|postmaster|mail delivery subsystem|delivery.*fail|undeliverable/i.test(fromEmail) ||
+        /mailer-daemon|postmaster|mail delivery subsystem|delivery.*fail|undeliverable/i.test(subject) ||
+        /550|551|552|553|554|address rejected|user unknown|no such user|does not exist|access denied/i.test(sourceText.slice(0, 3000));
+
+      if (isBounce) {
+        // Extract the failed recipient from the bounce body
+        const recipientMatch = sourceText.match(/(?:failed to deliver to|recipient address rejected.*?<|to:\s*<?)([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+        const bouncedEmail = recipientMatch?.[1]?.toLowerCase().trim();
+        if (bouncedEmail) {
+          const idx = enrollments.findIndex(e => e.leadEmail.toLowerCase() === bouncedEmail);
+          if (idx !== -1 && enrollments[idx].status !== "unsubscribed") {
+            enrollments[idx] = { ...enrollments[idx], status: "unsubscribed" };
+            results.push({ email: bouncedEmail, intent: "bounce", action: "unsubscribed" });
+            console.log(`[check-replies] Bounce detected — unsubscribed ${bouncedEmail}`);
+          }
+        }
+        repliedIds.add(msgId);
+        continue;
+      }
+
+      // Check if this is a reply to one of our outreach emails
       const bodyMatch = sourceText.match(/\r?\n\r?\n([\s\S]{10,2000})/);
       const replyText = bodyMatch?.[1]?.replace(/<[^>]+>/g, "").trim() ?? subject;
 
