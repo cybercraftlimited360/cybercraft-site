@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const TOKEN_KEY = "cc360_admin_token";
-const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","amy","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","nextdoor","precall"] as const;
+const TABS = ["overview","clients","pipeline","finances","tasks","convos","activity","amy","analytics","traffic","calendar","ebooks","website","ads","social","followups","competitors","roi","referrals","reports","review","outreach","linkedin","nextdoor","precall","settings"] as const;
 type Tab = typeof TABS[number];
 
-const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",amy:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",nextdoor:"🏘️",precall:"🧠" };
-const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",amy:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",nextdoor:"Nextdoor",precall:"Pre-Call Intel" };
+const TAB_ICONS: Record<Tab,string> = { overview:"📊",clients:"👥",pipeline:"📋",finances:"💰",tasks:"✅",convos:"💬",activity:"🔔",amy:"📞",analytics:"📈",traffic:"📡",calendar:"📅",ebooks:"📖",website:"🌐",ads:"🎯",social:"📲",followups:"🔁",competitors:"🕵️",roi:"📑",referrals:"🤝",reports:"📬",review:"🔍",outreach:"🎯",linkedin:"💼",nextdoor:"🏘️",precall:"🧠",settings:"⚙️" };
+const TAB_LABELS: Record<Tab,string> = { overview:"Overview",clients:"Clients",pipeline:"Pipeline",finances:"Finances",tasks:"Tasks",convos:"Convos",activity:"Activity",amy:"Amy",analytics:"Analytics",traffic:"Traffic",calendar:"Calendar",ebooks:"eBooks",website:"Website",ads:"AI Ads",social:"Social",followups:"Follow-Ups",competitors:"Intel",roi:"ROI Report",referrals:"Referrals",reports:"Reports",review:"Review Queue",outreach:"Outreach",linkedin:"LinkedIn Bot",nextdoor:"Nextdoor",precall:"Pre-Call Intel",settings:"Settings" };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }: { onAuth:(t:string)=>void }) {
@@ -105,6 +105,7 @@ const MORE_TOOLS: { tab: Tab; label: string }[] = [
   { tab:"linkedin",    label:"LinkedIn Bot" },
   { tab:"activity",    label:"Activity Feed" },
   { tab:"traffic",     label:"Traffic / UTM" },
+  { tab:"settings",    label:"Settings" },
 ];
 
 // ── Dashboard Shell ───────────────────────────────────────────────────────────
@@ -290,6 +291,7 @@ function Dashboard({token,onLogout}:{token:string;onLogout:()=>void}) {
             {tab==="linkedin"   &&<LinkedInBotTab token={token}/>}
             {tab==="nextdoor"   &&<NextdoorTab    token={token}/>}
             {tab==="precall"    &&<PreCallIntelTab token={token}/>}
+            {tab==="settings"   &&<SettingsTab    token={token}/>}
           </>
         ):(
           <div style={{textAlign:"center",marginTop:60,padding:"0 24px"}}>
@@ -5457,3 +5459,133 @@ function NextdoorTab({token}:{token:string}) {
   );
 }
 
+
+// ── Settings Tab ──────────────────────────────────────────────────────────────
+const PRESET_KEYS = [
+  { key: "outreach:daily_limit_override", label: "Daily Email Limit", description: "Max new outreach emails per day (0 = use warmup schedule)", type: "number", placeholder: "e.g. 5" },
+  { key: "outreach:warmup_start", label: "Warmup Start Date", description: "ISO date when warmup began — controls the ramp schedule", type: "text", placeholder: "e.g. 2026-09-01T00:00:00.000Z" },
+  { key: "amy:system_prompt_override", label: "Amy System Prompt Override", description: "Override Amy's base system prompt (leave empty to use default)", type: "textarea", placeholder: "Leave blank to use default..." },
+];
+
+function SettingsTab({ token }: { token: string }) {
+  const h = { "x-admin-token": token, "Content-Type": "application/json" };
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [customKey, setCustomKey] = useState("");
+  const [customVal, setCustomVal] = useState("");
+  const [customSaving, setCustomSaving] = useState(false);
+  const [customSaved, setCustomSaved] = useState(false);
+  const [customError, setCustomError] = useState("");
+
+  useEffect(() => {
+    Promise.all(
+      PRESET_KEYS.map(p =>
+        fetch(`/api/admin/settings?key=${encodeURIComponent(p.key)}`, { headers: h })
+          .then(r => r.json())
+          .then(d => [p.key, d.value ?? ""] as [string, string])
+          .catch(() => [p.key, ""] as [string, string])
+      )
+    ).then(results => {
+      const vals: Record<string, string> = {};
+      const editsInit: Record<string, string> = {};
+      results.forEach(([k, v]) => { vals[k] = v; editsInit[k] = v; });
+      setValues(vals);
+      setEdits(editsInit);
+      setLoading(false);
+    });
+  }, []);
+
+  async function saveKey(key: string) {
+    setSaving(s => ({ ...s, [key]: true }));
+    const val = edits[key];
+    await fetch("/api/admin/settings", { method: "POST", headers: h, body: JSON.stringify({ key, value: val === "" ? null : val }) });
+    setValues(v => ({ ...v, [key]: val }));
+    setSaving(s => ({ ...s, [key]: false }));
+    setSaved(s => ({ ...s, [key]: true }));
+    setTimeout(() => setSaved(s => ({ ...s, [key]: false })), 2000);
+  }
+
+  async function saveCustom() {
+    if (!customKey.trim()) { setCustomError("Key is required"); return; }
+    setCustomSaving(true); setCustomError("");
+    await fetch("/api/admin/settings", { method: "POST", headers: h, body: JSON.stringify({ key: customKey.trim(), value: customVal.trim() || null }) });
+    setCustomSaving(false); setCustomSaved(true);
+    setTimeout(() => setCustomSaved(false), 2000);
+  }
+
+  const card: React.CSSProperties = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 };
+  const input: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 700 }}>
+      <SectionHeader icon="⚙️" title="Settings" sub="Manage Redis config keys that control Amy, outreach limits, and automation behaviour" />
+
+      {/* Preset keys */}
+      {loading ? (
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>Loading current values…</div>
+      ) : (
+        PRESET_KEYS.map(p => (
+          <div key={p.key} style={card}>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 3 }}>{p.label}</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>{p.description}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", fontFamily: "monospace", marginBottom: 10 }}>{p.key}</div>
+            </div>
+            {p.type === "textarea" ? (
+              <textarea
+                value={edits[p.key] ?? ""}
+                onChange={e => setEdits(v => ({ ...v, [p.key]: e.target.value }))}
+                rows={4}
+                placeholder={p.placeholder}
+                style={{ ...input, resize: "vertical" }}
+              />
+            ) : (
+              <input
+                type={p.type}
+                value={edits[p.key] ?? ""}
+                onChange={e => setEdits(v => ({ ...v, [p.key]: e.target.value }))}
+                placeholder={p.placeholder}
+                style={input}
+              />
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+              <button
+                onClick={() => saveKey(p.key)}
+                disabled={saving[p.key]}
+                style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: saved[p.key] ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: saved[p.key] ? "#22c55e" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              >
+                {saving[p.key] ? "Saving…" : saved[p.key] ? "Saved ✓" : "Save"}
+              </button>
+              {values[p.key] && values[p.key] !== edits[p.key] && (
+                <button onClick={() => setEdits(v => ({ ...v, [p.key]: values[p.key] }))} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>Reset</button>
+              )}
+              {values[p.key] && (
+                <button onClick={() => saveKey(p.key === "outreach:daily_limit_override" ? p.key : p.key)} style={{ display: "none" }} />
+              )}
+              {values[p.key] !== "" && (
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>Current: <span style={{ color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>{values[p.key].slice(0, 60)}{values[p.key].length > 60 ? "…" : ""}</span></span>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+
+      {/* Custom key setter */}
+      <div style={card}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Set Any Redis Key</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>Advanced — set or delete any key directly in Redis</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <input value={customKey} onChange={e => setCustomKey(e.target.value)} placeholder="Redis key (e.g. outreach:daily_limit_override)" style={input} />
+          <input value={customVal} onChange={e => setCustomVal(e.target.value)} placeholder="Value (leave blank to DELETE the key)" style={input} />
+          {customError && <div style={{ fontSize: 12, color: "#ef4444" }}>{customError}</div>}
+          <button onClick={saveCustom} disabled={customSaving} style={{ alignSelf: "flex-start", padding: "9px 22px", borderRadius: 8, border: "none", background: customSaved ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.08)", color: customSaved ? "#22c55e" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            {customSaving ? "Saving…" : customSaved ? "Saved ✓" : "Set Key"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
