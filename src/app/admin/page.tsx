@@ -4067,7 +4067,7 @@ function OutreachTab({token}:{token:string}) {
   const [section, setSection] = useState<"leads"|"groups"|"monitor"|"sequences"|"stats"|"review-monitor">("leads");
 
   // Lead scraper state
-  const [industry, setIndustry] = useState("HVAC");
+  const [industry, setIndustry] = useState("ALL");
   const [usaMode, setUsaMode] = useState(true);
   const [cities, setCities] = useState<string[]>(["New York, NY","Los Angeles, CA","Chicago, IL"]);
   const [scraping, setScraping] = useState(false);
@@ -4077,6 +4077,7 @@ function OutreachTab({token}:{token:string}) {
   const [msgBusy, setMsgBusy] = useState<Record<string,boolean>>({});
   const [messages, setMessages] = useState<Record<string,any>>({});
   const [filterMessaged, setFilterMessaged] = useState(false);
+  const [leadSearch, setLeadSearch] = useState("");
 
   // Groups state
   const [groupIndustry, setGroupIndustry] = useState("HVAC");
@@ -4136,8 +4137,38 @@ function OutreachTab({token}:{token:string}) {
 
   async function loadLeads() {
     setLeadsLoading(true);
-    const res = await fetch(`/api/admin/outreach/leads?industry=${encodeURIComponent(industry)}&messaged=${filterMessaged?"":"false"}`,{headers:h});
+    const industryParam = industry === "ALL" ? "" : `industry=${encodeURIComponent(industry)}&`;
+    const res = await fetch(`/api/admin/outreach/leads?${industryParam}messaged=${filterMessaged?"":"false"}`,{headers:h});
     const d = await res.json(); setLeads(d.leads??[]); setLeadsLoading(false);
+  }
+
+  function exportLeadsCSV() {
+    const rows = filteredLeads;
+    if (!rows.length) return;
+    const headers = ["Business Name","Owner Name","Email","Phone","Industry","City","Address","Rating","Reviews","Score","Website","Flags","Status","Scraped At"];
+    const csv = [
+      headers.join(","),
+      ...rows.map(l => [
+        `"${(l.name||"").replace(/"/g,'""')}"`,
+        `"${(l.ownerName||l.contactName||"").replace(/"/g,'""')}"`,
+        `"${(l.email||"").replace(/"/g,'""')}"`,
+        `"${(l.phone||"").replace(/"/g,'""')}"`,
+        `"${(l.industry||"").replace(/"/g,'""')}"`,
+        `"${(l.city||"").replace(/"/g,'""')}"`,
+        `"${(l.address||"").replace(/"/g,'""')}"`,
+        l.rating||"",
+        l.reviewCount||0,
+        l.score||0,
+        `"${(l.website||"").replace(/"/g,'""')}"`,
+        `"${(l.flags||[]).join("; ").replace(/"/g,'""')}"`,
+        l.messaged?"contacted":"pending",
+        l.scrapedAt||"",
+      ].join(","))
+    ].join("\n");
+    const blob = new Blob([csv], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download=`cybercraft360-leads-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
   async function generateMessage(lead:any, platform:"linkedin"|"facebook"|"email") {
@@ -4215,6 +4246,18 @@ function OutreachTab({token}:{token:string}) {
   }
 
   useEffect(()=>{ loadLeads(); },[industry, filterMessaged]);
+
+  const filteredLeads = leadSearch.trim()
+    ? leads.filter(l => {
+        const q = leadSearch.toLowerCase();
+        return (l.name||"").toLowerCase().includes(q) ||
+               (l.email||"").toLowerCase().includes(q) ||
+               (l.city||"").toLowerCase().includes(q) ||
+               (l.ownerName||"").toLowerCase().includes(q) ||
+               (l.phone||"").toLowerCase().includes(q) ||
+               (l.industry||"").toLowerCase().includes(q);
+      })
+    : leads;
   useEffect(()=>{ if(section==="groups") loadGroups(); },[section, groupIndustry]);
   useEffect(()=>{ if(section==="monitor") loadAlerts(); },[section]);
   useEffect(()=>{ if(section==="review-monitor") loadReviewMonitor(); },[section]);
@@ -4253,6 +4296,7 @@ function OutreachTab({token}:{token:string}) {
               <div>
                 <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Industry</label>
                 <select value={industry} onChange={e=>setIndustry(e.target.value)} style={s("")}>
+                  <option value="ALL">⭐ All Industries</option>
                   {INDUSTRIES.map(i=><option key={i} value={i}>{i}</option>)}
                 </select>
               </div>
@@ -4293,17 +4337,33 @@ function OutreachTab({token}:{token:string}) {
           </div>
 
           {/* Lead list */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
-            <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:0}}>{leads.length} leads for {industry}</p>
-            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"rgba(255,255,255,0.4)",cursor:"pointer"}}>
-              <input type="checkbox" checked={filterMessaged} onChange={e=>setFilterMessaged(e.target.checked)}/>
-              Show contacted leads
-            </label>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+            <div>
+              <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:"0 0 2px"}}>
+                <span style={{fontSize:18,fontWeight:800,color:"#00d4ff"}}>{leads.length}</span> total leads stored
+                {leadSearch && <span style={{color:"rgba(255,255,255,0.3)"}}> · showing {filteredLeads.length} matching</span>}
+              </p>
+              <p style={{fontSize:11,color:"rgba(255,255,255,0.25)",margin:0}}>
+                {leads.filter(l=>!l.messaged&&l.email).length} pending email · {leads.filter(l=>l.messaged).length} contacted · {leads.filter(l=>l.converted).length} converted
+              </p>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"rgba(255,255,255,0.4)",cursor:"pointer"}}>
+                <input type="checkbox" checked={filterMessaged} onChange={e=>setFilterMessaged(e.target.checked)}/>
+                Show contacted
+              </label>
+              <button onClick={exportLeadsCSV} disabled={filteredLeads.length===0}
+                style={{padding:"6px 14px",borderRadius:8,border:"1px solid rgba(0,212,255,0.3)",background:"rgba(0,212,255,0.07)",color:"#00d4ff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                ⬇ Export CSV ({filteredLeads.length})
+              </button>
+            </div>
           </div>
+          <input value={leadSearch} onChange={e=>setLeadSearch(e.target.value)} placeholder="🔍  Search by name, email, phone, city, industry…"
+            style={{width:"100%",padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#fff",fontSize:13,outline:"none",marginBottom:14,boxSizing:"border-box"}}/>
 
-          {leadsLoading ? <p style={{color:"rgba(255,255,255,0.3)",fontSize:13}}>Loading…</p> : leads.length===0 ? (
-            <p style={{color:"rgba(255,255,255,0.2)",fontSize:13}}>No leads yet. Run the scraper above.</p>
-          ) : leads.map(lead=>{
+          {leadsLoading ? <p style={{color:"rgba(255,255,255,0.3)",fontSize:13}}>Loading…</p> : filteredLeads.length===0 ? (
+            <p style={{color:"rgba(255,255,255,0.2)",fontSize:13}}>{leads.length===0?"No leads yet. Run the scraper above.":"No leads match your search."}</p>
+          ) : filteredLeads.map(lead=>{
             const liKey=`${lead.id}_linkedin`; const fbKey=`${lead.id}_facebook`; const emKey=`${lead.id}_email`;
             return (
               <div key={lead.id} style={{...card,opacity:lead.messaged?0.55:1}}>
