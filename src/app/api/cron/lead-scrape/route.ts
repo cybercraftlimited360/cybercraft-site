@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
   }));
 
   const newLeads = leads.filter(l => !existingIds.has(l.id));
-  const merged = [...newLeads, ...existing].slice(0, 500);
+  const merged = [...newLeads, ...existing].slice(0, 2000);
   await redis.set("outreach:leads", merged);
 
   // Domains that are never valid business emails
