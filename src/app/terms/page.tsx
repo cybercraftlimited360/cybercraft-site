@@ -12,7 +12,7 @@ export default function TermsPage() {
         <div style={{ marginBottom: 48 }}>
           <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(167,139,250,0.7)" }}>CyberCraft360</p>
           <h1 style={{ margin: "0 0 12px", fontSize: 36, fontWeight: 800, color: "#fff" }}>Terms of Service</h1>
-          <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.35)" }}>Effective date: September 1, 2026 &nbsp;·&nbsp; Last updated: September 4, 2026</p>
+          <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.35)" }}>Effective date: September 1, 2026 &nbsp;·&nbsp; Last updated: September 7, 2026</p>
         </div>
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 40 }} />
@@ -45,7 +45,7 @@ export default function TermsPage() {
           <p><strong>Message frequency:</strong> 1–3 messages per contact event. We do not send bulk promotional blasts.</p>
           <p><strong>Message and data rates may apply.</strong></p>
           <p><strong>To opt out:</strong> Reply <strong>STOP</strong> to any SMS at any time. To get help, reply <strong>HELP</strong> or email <a href="mailto:info@cybercraft360.com" style={{ color: "#a78bfa" }}>info@cybercraft360.com</a>.</p>
-          <p>We do not share your mobile number with third parties for their marketing purposes.</p>
+          <p><strong>No third-party sharing:</strong> Mobile phone numbers and SMS/text messaging opt-in data collected by CyberCraft360 will not be shared with, sold to, or used by third parties or affiliates for marketing or promotional purposes under any circumstances.</p>
         </Section>
 
         <H2>3. Use of the Website</H2>

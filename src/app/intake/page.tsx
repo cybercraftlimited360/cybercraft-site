@@ -82,6 +82,7 @@ type FormData = {
   email: string;
   phone: string;
   preferredContact: string;
+  smsConsent: boolean;
 };
 
 const EMPTY: FormData = {
@@ -90,7 +91,7 @@ const EMPTY: FormData = {
   goals: [], whatSuccess: "",
   servicesInterested: [], existingTools: [],
   budget: "", timeline: "", additionalNotes: "",
-  name: "", email: "", phone: "", preferredContact: "Email",
+  name: "", email: "", phone: "", preferredContact: "Email", smsConsent: false,
 };
 
 const STEPS = [
@@ -157,7 +158,7 @@ export default function IntakePage() {
     if (step === 2) return form.goals.length > 0;
     if (step === 3) return form.servicesInterested.length > 0;
     if (step === 4) return form.budget && form.timeline;
-    if (step === 5) return form.name && form.email;
+    if (step === 5) return form.name && form.email && form.smsConsent;
     return true;
   };
 
@@ -428,6 +429,27 @@ export default function IntakePage() {
                     <div className="col-span-2"><span className="text-white/40">Timeline: </span><span className="text-white font-medium">{form.timeline}</span></div>
                   </div>
                 </div>
+
+                {/* SMS Consent — required by TCPA / A2P 10DLC */}
+                <label className="flex items-start gap-3 cursor-pointer group mt-2">
+                  <div className="relative flex-shrink-0 mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={form.smsConsent}
+                      onChange={e => setForm(f => ({ ...f, smsConsent: e.target.checked }))}
+                      className="sr-only"
+                    />
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${form.smsConsent ? "bg-[#00d4ff] border-[#00d4ff]" : "border-white/30 bg-white/5 group-hover:border-white/50"}`}>
+                      {form.smsConsent && <Check size={11} strokeWidth={3} className="text-[#0a0c12]" />}
+                    </div>
+                  </div>
+                  <span className="text-xs text-white/50 leading-relaxed">
+                    By checking this box, I agree to receive SMS/text messages from CyberCraft360 including appointment reminders, follow-ups, and service updates. Message & data rates may apply. Message frequency varies. Reply <strong className="text-white/70">STOP</strong> to opt out or <strong className="text-white/70">HELP</strong> for assistance. View our{" "}
+                    <a href="/privacy" target="_blank" className="text-[#00d4ff] underline hover:text-[#00d4ff]/80">Privacy Policy</a>{" "}and{" "}
+                    <a href="/terms" target="_blank" className="text-[#00d4ff] underline hover:text-[#00d4ff]/80">Terms of Service</a>.
+                    {" "}<span className="text-[#ef4444]">*</span>
+                  </span>
+                </label>
 
                 {error && <p className="text-red-400 text-sm">{error}</p>}
               </div>
