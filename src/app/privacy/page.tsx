@@ -48,7 +48,8 @@ export default function PrivacyPage() {
           <p>We use collected information to:</p>
           <ul>
             <li>Respond to your inquiries and provide our AI automation services</li>
-            <li>Contact you about services relevant to your business via phone, email, or SMS</li>
+            <li>Contact you about services relevant to your business via phone or email</li>
+            <li>Send SMS messages to individuals who have explicitly opted in via the SMS consent checkbox on our intake form</li>
             <li>Send follow-up SMS messages to individuals who have explicitly opted in to SMS communications after interacting with our AI assistant Amy</li>
             <li>Generate proposals, invoices, and service documentation</li>
             <li>Improve Amy's conversation quality and sales effectiveness</li>
