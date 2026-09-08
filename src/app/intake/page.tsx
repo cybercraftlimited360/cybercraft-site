@@ -158,7 +158,7 @@ export default function IntakePage() {
     if (step === 2) return form.goals.length > 0;
     if (step === 3) return form.servicesInterested.length > 0;
     if (step === 4) return form.budget && form.timeline;
-    if (step === 5) return form.name && form.email && form.smsConsent;
+    if (step === 5) return !!(form.name && form.email);
     return true;
   };
 
@@ -444,10 +444,9 @@ export default function IntakePage() {
                     </div>
                   </div>
                   <span className="text-xs text-white/50 leading-relaxed">
-                    By checking this box, I agree to receive SMS/text messages from CyberCraft360 including appointment reminders, follow-ups, and service updates. Message & data rates may apply. Message frequency varies. Reply <strong className="text-white/70">STOP</strong> to opt out or <strong className="text-white/70">HELP</strong> for assistance. View our{" "}
+                    By checking this box, I agree to receive SMS/text messages from CyberCraft360 including appointment reminders, follow-ups, service updates, and promotional messages. Message frequency varies. Msg &amp; data rates may apply. Reply <strong className="text-white/70">STOP</strong> to opt out or <strong className="text-white/70">HELP</strong> for help. Consent is not a condition of purchase. View our{" "}
                     <a href="/privacy" target="_blank" className="text-[#00d4ff] underline hover:text-[#00d4ff]/80">Privacy Policy</a>{" "}and{" "}
                     <a href="/terms" target="_blank" className="text-[#00d4ff] underline hover:text-[#00d4ff]/80">Terms of Service</a>.
-                    {" "}<span className="text-[#ef4444]">*</span>
                   </span>
                 </label>
 

@@ -59,17 +59,19 @@ export default function PrivacyPage() {
 
         <H2>3. SMS / Text Message Communications</H2>
         <Section>
-          <p>By providing your phone number and engaging with CyberCraft360 via phone call or web form, you consent to receive automated text messages from CyberCraft360, including:</p>
+          <p>CyberCraft360 sends SMS/text messages only to individuals who have <strong>voluntarily opted in</strong> by checking the SMS consent checkbox on our intake form at <a href="https://cybercraft360.com/intake" style={{ color: "#a78bfa" }}>cybercraft360.com/intake</a>. Providing your phone number alone does not constitute consent to receive SMS messages.</p>
+          <p>By checking the SMS consent checkbox, you agree to receive automated text messages from CyberCraft360, which may include:</p>
           <ul>
-            <li>Follow-up messages after a call with Amy</li>
+            <li>Appointment reminders and booking confirmations</li>
+            <li>Follow-up messages after a call with our AI assistant Amy</li>
             <li>Business insights and service information relevant to your industry</li>
-            <li>Booking confirmations and reminders</li>
+            <li>Promotional messages about CyberCraft360 services</li>
           </ul>
-          <p><strong>Message frequency:</strong> Typically 1–3 messages per contact interaction. You will not receive ongoing marketing blasts.</p>
-          <p><strong>Message and data rates may apply</strong> depending on your mobile carrier and plan.</p>
-          <p><strong>To opt out:</strong> Reply <strong>STOP</strong> to any message at any time. You will be immediately removed from all SMS communications. Reply <strong>HELP</strong> for assistance.</p>
-          <p><strong>No third-party sharing:</strong> Mobile phone numbers and SMS/text messaging consent information collected by CyberCraft360 will not be shared with, sold to, or used by third parties or affiliates for marketing or promotional purposes under any circumstances.</p>
-          <p>For support: <a href="mailto:info@cybercraft360.com" style={{ color: "#a78bfa" }}>info@cybercraft360.com</a></p>
+          <p><strong>Message frequency:</strong> Varies based on your interaction with us. Typically 1–3 messages per contact event.</p>
+          <p><strong>Msg &amp; data rates may apply</strong> depending on your mobile carrier and plan.</p>
+          <p><strong>Consent is not a condition of purchase.</strong> You may use our services without opting into SMS communications.</p>
+          <p><strong>To opt out:</strong> Reply <strong>STOP</strong> to any message at any time. You will be immediately removed from all SMS communications. Reply <strong>HELP</strong> for assistance or contact us at <a href="mailto:info@cybercraft360.com" style={{ color: "#a78bfa" }}>info@cybercraft360.com</a>.</p>
+          <p><strong>No third-party sharing:</strong> Mobile phone numbers and SMS/text messaging opt-in data collected by CyberCraft360 will not be shared with, sold to, or used by third parties or affiliates for marketing or promotional purposes under any circumstances.</p>
         </Section>
 
         <H2>4. Email Communications</H2>
