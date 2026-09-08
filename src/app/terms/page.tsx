@@ -39,7 +39,7 @@ export default function TermsPage() {
           <p>By <strong>voluntarily checking the SMS consent checkbox</strong> on our intake form at <a href="https://cybercraft360.com/intake" style={{ color: "#a78bfa" }}>cybercraft360.com/intake</a>, you consent to receive automated SMS messages from CyberCraft360. Providing your phone number alone does not constitute consent to receive SMS messages. SMS communications may include:</p>
           <ul>
             <li>Appointment reminders and booking confirmations</li>
-            <li>Follow-up messages after a phone interaction with our AI assistant Amy</li>
+            <li>Follow-up messages to individuals who have explicitly opted in to SMS communications after a phone interaction with our AI assistant Amy</li>
             <li>Business insights and service information relevant to your industry</li>
             <li>Promotional messages about CyberCraft360 services</li>
           </ul>
