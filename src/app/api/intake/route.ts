@@ -239,6 +239,13 @@ export async function POST(req: NextRequest) {
       console.error("Owner notification error:", err)
     );
 
+    // Persist SMS consent keyed by E.164 phone so the call-status webhook can check it
+    if (form.phone && form.smsConsent === true) {
+      const cleanedPhone = String(form.phone).replace(/\D/g, "");
+      const e164 = cleanedPhone.startsWith("1") ? `+${cleanedPhone}` : `+1${cleanedPhone}`;
+      redis.set(`sms:consent:${e164}`, true, { ex: 60 * 60 * 24 * 365 }).catch(() => {});
+    }
+
     // Instantly have Amy call the lead if they provided a phone number
     if (form.phone) {
       const challenge = `New intake form lead. Services interested: ${((form.servicesInterested as string[]) || []).join(", ") || "AI automation"}. Challenge: ${form.biggestChallenge || "business automation"}. Budget: ${form.budget || "unknown"}.`;

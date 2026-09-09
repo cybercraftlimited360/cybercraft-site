@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
 
 // Twilio calls this after every outbound call ends with the final call status.
-// We use it to send a follow-up SMS to the lead.
+// We use it to send a follow-up SMS — ONLY to leads who explicitly opted in via the intake checkbox.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.formData();
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
 
     // On outbound calls, "To" is the lead's number
     const leadPhone = to;
+
+    // TCPA / A2P compliance: only send SMS if the lead explicitly checked the SMS consent
+    // checkbox on the intake form. Consent is stored in Redis at intake time.
+    const hasConsent = await redis.get(`sms:consent:${leadPhone}`);
+    if (!hasConsent) return new NextResponse("ok");
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
