@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           <ul>
             <li>Respond to your inquiries and provide our AI automation services</li>
             <li>Contact you about services relevant to your business via phone or email</li>
-            <li>Send SMS messages only to individuals who have explicitly opted in by checking the SMS consent checkbox on our intake form at cybercraft360.com/intake</li>
+            <li>Send SMS messages only to individuals who have explicitly opted in by checking the separate, optional SMS consent checkbox on our intake form at cybercraft360.com/intake. Providing a phone number or speaking with our AI assistant does not constitute SMS consent.</li>
             <li>Generate proposals, invoices, and service documentation</li>
             <li>Improve Amy's conversation quality and sales effectiveness</li>
             <li>Comply with legal obligations</li>
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
           <p>By checking the SMS consent checkbox, you agree to receive automated text messages from CyberCraft360, which may include:</p>
           <ul>
             <li>Appointment reminders and booking confirmations</li>
-            <li>Follow-up messages after a call with our AI assistant Amy</li>
+            <li>Follow-up messages after a call with our AI assistant Amy, but only to individuals who have previously opted in to SMS through the SMS consent checkbox on our intake form</li>
             <li>Business insights and service information relevant to your industry</li>
             <li>Promotional messages about CyberCraft360 services</li>
           </ul>
