@@ -37,18 +37,17 @@ export default function TermsPage() {
           <p>Services are provided under a monthly subscription or project-based agreement as outlined in a separate service agreement or proposal.</p>
         </Section>
 
-        <H2>2. SMS Communications</H2>
+        <H2>2. SMS Marketing Communications</H2>
         <Section>
-          <p>By <strong>voluntarily checking the SMS consent checkbox</strong> on our intake form at <a href="https://cybercraft360.com/intake" style={{ color: "#a78bfa" }}>cybercraft360.com/intake</a>, you consent to receive automated SMS messages from CyberCraft360. Providing your phone number alone does not constitute consent to receive SMS messages. SMS communications may include:</p>
+          <p>By <strong>voluntarily checking the SMS marketing consent checkbox</strong> on our intake form at <a href="https://cybercraft360.com/intake" style={{ color: "#a78bfa" }}>cybercraft360.com/intake</a>, you consent to receive recurring automated SMS marketing messages from CyberCraft360. The SMS marketing consent checkbox is unchecked by default and is not required to submit the form. Providing your phone number, submitting an inquiry, receiving a phone call, or speaking with our AI assistant Amy does not constitute consent to receive SMS marketing messages. SMS marketing communications may include:</p>
           <ul>
-            <li>Appointment reminders and booking confirmations</li>
-            <li>Follow-up messages to individuals who have explicitly opted in to SMS communications after a phone interaction with our AI assistant Amy</li>
-            <li>Business insights and service information relevant to your industry</li>
-            <li>Promotional messages about CyberCraft360 services</li>
+            <li>Promotions and offers related to CyberCraft360 services</li>
+            <li>AI automation service information and business automation updates</li>
+            <li>Marketing updates about CyberCraft360 products and services</li>
           </ul>
-          <p><strong>Message frequency:</strong> Varies. Typically 1–3 messages per contact event.</p>
+          <p><strong>Message frequency:</strong> Varies. SMS marketing messages are sent only through intentional marketing campaigns and are not automatically triggered by phone calls, form submissions, or appointments.</p>
           <p><strong>Msg &amp; data rates may apply.</strong></p>
-          <p><strong>Consent is not required to purchase or use our services.</strong> You may engage with CyberCraft360 without opting into SMS communications.</p>
+          <p><strong>Consent is not required to purchase or use our services.</strong> You may engage with CyberCraft360 without opting into SMS marketing.</p>
           <p><strong>To opt out:</strong> Reply <strong>STOP</strong> to any SMS at any time. To get help, reply <strong>HELP</strong> or email <a href="mailto:info@cybercraft360.com" style={{ color: "#a78bfa" }}>info@cybercraft360.com</a>.</p>
           <p><strong>No third-party sharing:</strong> Mobile phone numbers and SMS/text messaging opt-in data collected by CyberCraft360 will not be shared with, sold to, or used by third parties or affiliates for marketing or promotional purposes under any circumstances.</p>
         </Section>

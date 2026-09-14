@@ -1,58 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
 
-// Twilio calls this after every outbound call ends with the final call status.
-// We use it to send a follow-up SMS — ONLY to leads who explicitly opted in via the intake checkbox.
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.formData();
-    const callStatus = (body.get("CallStatus") as string || "").toLowerCase();
-    const direction = (body.get("Direction") as string || "").toLowerCase();
-    const to = body.get("To") as string || "";
-    const from = body.get("From") as string || "";
-
-    if (!to || !from) return new NextResponse("ok");
-
-    // Only send SMS for outbound calls — inbound callers called us, no cold SMS needed
-    if (!direction.startsWith("outbound")) return new NextResponse("ok");
-
-    // Send SMS for all outbound call outcomes except "in-progress" and "initiated"
-    const shouldSms = ["completed", "no-answer", "busy", "failed"].includes(callStatus);
-    if (!shouldSms) return new NextResponse("ok");
-
-    // On outbound calls, "To" is the lead's number
-    const leadPhone = to;
-
-    // TCPA / A2P compliance: only send SMS if the lead explicitly checked the SMS consent
-    // checkbox on the intake form. Consent is stored in Redis at intake time.
-    const hasConsent = await redis.get(`sms:consent:${leadPhone}`);
-    if (!hasConsent) return new NextResponse("ok");
-
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    if (!accountSid || !authToken) return new NextResponse("ok");
-
-    const smsBody = callStatus === "completed"
-      ? `Hi, this is Amy from CyberCraft360 — great connecting with you! If you have any questions or want to pick up where we left off, just reply here. We'd love to help your business grow. 🚀`
-      : `Hi, this is Amy from CyberCraft360 — I tried calling about some opportunities I spotted for your business (Google reviews, online bookings). Happy to share what I found — just reply here and I'll send it over!`;
-
-    const form = new URLSearchParams({
-      To: leadPhone,
-      From: from,
-      Body: smsBody,
-    });
-
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-      },
-      body: form.toString(),
-    });
-  } catch (e) {
-    console.error("[Amy status] SMS error:", e);
-  }
-
+// Twilio calls this webhook after every call ends with the final call status.
+// Amy is voice-only. SMS marketing is handled by a separate intentional workflow.
+// This route acknowledges the webhook — no SMS is sent here under any circumstance.
+export async function POST(_req: NextRequest) {
   return new NextResponse("ok");
 }
