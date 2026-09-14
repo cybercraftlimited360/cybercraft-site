@@ -1,6 +1,9 @@
 export const metadata = {
   title: "Terms of Service | CyberCraft360",
   description: "Terms of Service for CyberCraft360 AI automation services.",
+  alternates: {
+    canonical: "https://cybercraft360.com/terms",
+  },
 };
 
 export default function TermsPage() {

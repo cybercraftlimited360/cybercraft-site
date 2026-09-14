@@ -1,6 +1,9 @@
 export const metadata = {
   title: "Privacy Policy | CyberCraft360",
   description: "Privacy Policy for CyberCraft360 AI automation services.",
+  alternates: {
+    canonical: "https://cybercraft360.com/privacy",
+  },
 };
 
 export default function PrivacyPage() {
@@ -19,7 +22,7 @@ export default function PrivacyPage() {
 
         {/* Intro */}
         <Section>
-          <p>CyberCraft360 ("we," "us," or "our") is an AI automation agency serving US service businesses. This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit <strong>cybercraft360.com</strong>, submit an inquiry, receive communications from us, or interact with our AI assistant Amy via phone or SMS.</p>
+          <p>CyberCraft360 ("we," "us," or "our") is an AI automation agency serving US service businesses. This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit <strong>cybercraft360.com</strong>, submit an inquiry, receive communications from us, or interact with our AI assistant Amy by phone.</p>
           <p>By using our services, you agree to the practices described in this policy. If you do not agree, please do not use our services.</p>
         </Section>
 
