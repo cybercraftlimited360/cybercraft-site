@@ -24,17 +24,18 @@ export const INDUSTRY_PAIN: Record<string, string> = {
   "Med Spa":     "losing high-ticket bookings to competitors who answer faster",
 };
 
-// Weekly auto-scrape rotation
+// Weekly auto-scrape rotation — REAL ESTATE ONLY per operating rules (Sep 15, 2026)
+// Rotates through diverse US markets to build a national real-estate prospect pipeline
 export const WEEKLY_TARGETS = [
-  { industry: "HVAC",        cities: ["Chicago, IL", "Phoenix, AZ", "Dallas, TX", "Atlanta, GA", "Denver, CO"] },
-  { industry: "Dental",      cities: ["Los Angeles, CA", "Houston, TX", "Philadelphia, PA", "San Antonio, TX", "San Diego, CA"] },
-  { industry: "Real Estate", cities: ["New York, NY", "Miami, FL", "Las Vegas, NV", "Austin, TX", "Seattle, WA"] },
-  { industry: "Plumbing",    cities: ["Chicago, IL", "Columbus, OH", "Charlotte, NC", "Indianapolis, IN", "Nashville, TN"] },
-  { industry: "Roofing",     cities: ["Dallas, TX", "Houston, TX", "Atlanta, GA", "Tampa, FL", "Orlando, FL"] },
-  { industry: "Auto Repair", cities: ["Los Angeles, CA", "Detroit, MI", "San Jose, CA", "Memphis, TN", "Louisville, KY"] },
-  { industry: "Cleaning",    cities: ["New York, NY", "Boston, MA", "Washington, DC", "Portland, OR", "Denver, CO"] },
-  { industry: "Law Firm",    cities: ["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ"] },
-  { industry: "Med Spa",     cities: ["Los Angeles, CA", "Miami, FL", "New York, NY", "Dallas, TX", "Las Vegas, NV"] },
+  { industry: "Real Estate", cities: ["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ"] },
+  { industry: "Real Estate", cities: ["Philadelphia, PA", "San Antonio, TX", "San Diego, CA", "Dallas, TX", "San Jose, CA"] },
+  { industry: "Real Estate", cities: ["Austin, TX", "Jacksonville, FL", "Fort Worth, TX", "Columbus, OH", "Charlotte, NC"] },
+  { industry: "Real Estate", cities: ["Indianapolis, IN", "San Francisco, CA", "Seattle, WA", "Denver, CO", "Nashville, TN"] },
+  { industry: "Real Estate", cities: ["Miami, FL", "Las Vegas, NV", "Boston, MA", "Atlanta, GA", "Portland, OR"] },
+  { industry: "Real Estate", cities: ["Minneapolis, MN", "Tampa, FL", "New Orleans, LA", "Raleigh, NC", "Richmond, VA"] },
+  { industry: "Real Estate", cities: ["Salt Lake City, UT", "Sacramento, CA", "Kansas City, MO", "Pittsburgh, PA", "Baltimore, MD"] },
+  { industry: "Real Estate", cities: ["Orlando, FL", "San Bernardino, CA", "Cincinnati, OH", "St. Louis, MO", "Oklahoma City, OK"] },
+  { industry: "Real Estate", cities: ["Scottsdale, AZ", "Boise, ID", "Fresno, CA", "Albuquerque, NM", "Tucson, AZ"] },
 ];
 
 // Pain signals detected in Google reviews

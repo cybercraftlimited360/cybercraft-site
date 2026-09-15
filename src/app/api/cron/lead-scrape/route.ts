@@ -49,6 +49,21 @@ export async function GET(req: NextRequest) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "GOOGLE_MAPS_API_KEY not configured" }, { status: 500 });
 
+  // Hard $50 Google Maps API budget cap — never exceeds this limit automatically
+  const GOOGLE_BUDGET_CAP = 50.00;
+  const COST_TEXT_SEARCH = 0.032; // Places Text Search per request
+  const COST_PLACE_DETAILS = 0.025; // Places Details with reviews per request
+  const currentSpend = await redis.get<number>("outreach:google_api_spend") ?? 0;
+  const budgetRemaining = GOOGLE_BUDGET_CAP - currentSpend;
+
+  if (budgetRemaining <= 0) {
+    return NextResponse.json({
+      ok: true, skipped: true,
+      message: `Google API budget exhausted ($${currentSpend.toFixed(2)} of $${GOOGLE_BUDGET_CAP} used). Will not make paid API calls. Use existing leads from outreach:leads pool.`,
+      currentSpend, budgetCap: GOOGLE_BUDGET_CAP,
+    });
+  }
+
   const week = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000)) % WEEKLY_TARGETS.length;
   const target = WEEKLY_TARGETS[week];
 
@@ -79,25 +94,43 @@ export async function GET(req: NextRequest) {
   const contactedIds = new Set(existing.filter((l: any) => l.messaged).map((l: any) => l.id));
   const weights = await redis.get<Record<string, number>>("outreach:score_weights") ?? {};
 
-  // Don't scrape new leads if there are already 100+ unemailed leads queued — use existing stock first
-  const unemailed = existing.filter((l: any) => !l.messaged && l.email).length;
-  if (unemailed >= 100) {
+  // Don't scrape new leads if we have enough existing stock (2 days' worth at current daily limit)
+  // This ensures existing paid leads are used before purchasing new data
+  const unemailed = existing.filter((l: any) => !l.messaged && l.email && l.industry === "Real Estate").length;
+  const dailyLimitForPause = await (async () => {
+    const override = await redis.get<number>("outreach:daily_limit_override");
+    if (override && override > 0) return Math.min(override, 200);
+    const start = await redis.get<string>("outreach:warmup_start");
+    if (!start) return 25;
+    const days = Math.floor((Date.now() - new Date(start).getTime()) / 86400000);
+    if (days < 7) return 25; if (days < 14) return 50; if (days < 21) return 100; return 200;
+  })();
+  const pauseThreshold = dailyLimitForPause * 2; // 2 days' supply before buying more data
+
+  if (unemailed >= pauseThreshold) {
     return NextResponse.json({
       ok: true, skipped: true,
-      message: `Scrape paused — ${unemailed} unemailed leads already queued. Will resume when queue drops below 100.`,
+      message: `Scrape paused — ${unemailed} uncontacted real estate leads queued (threshold: ${pauseThreshold}). Processing existing stock first. $${currentSpend.toFixed(2)} of $${GOOGLE_BUDGET_CAP} budget used.`,
     });
   }
 
   const queries = INDUSTRIES[target.industry] ?? [];
   const seen = new Set<string>();
   const leads: any[] = [];
+  let runApiCost = 0;
 
   for (const city of citiesToScrape) {
     for (const query of queries.slice(0, 2)) {
+      // Check budget before each search call
+      if (currentSpend + runApiCost + COST_TEXT_SEARCH > GOOGLE_BUDGET_CAP) {
+        console.log(`[lead-scrape-cron] Budget cap reached ($${(currentSpend + runApiCost).toFixed(2)}/$${GOOGLE_BUDGET_CAP}). Stopping scrape.`);
+        break;
+      }
       try {
         const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + " in " + city)}&key=${apiKey}`;
         const searchRes = await fetch(searchUrl);
         const searchData = await searchRes.json();
+        runApiCost += COST_TEXT_SEARCH;
 
         for (const place of (searchData.results ?? []).slice(0, 20)) {
           if (seen.has(place.place_id) || contactedIds.has(place.place_id)) continue;
@@ -105,8 +138,15 @@ export async function GET(req: NextRequest) {
           // Skip chains and franchises — they have corporate gatekeepers, not local owners
           if (/\b(inc\.|llc\.|corp\.|franchise|national|corporate|headquarters|group of)\b/i.test(place.name)) continue;
 
+          // Check budget before each details call
+          if (currentSpend + runApiCost + COST_PLACE_DETAILS > GOOGLE_BUDGET_CAP) {
+            console.log(`[lead-scrape-cron] Budget cap reached at details call. Stopping.`);
+            break;
+          }
+
           const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,website,rating,user_ratings_total,formatted_address,opening_hours,reviews&key=${apiKey}`;
           const detail = ((await (await fetch(detailUrl)).json()).result) ?? {};
+          runApiCost += COST_PLACE_DETAILS;
           const reviewTexts = (detail.reviews ?? []).map((r: any) => r.text ?? "");
 
           const phone = detail.formatted_phone_number ?? null;
@@ -142,6 +182,13 @@ export async function GET(req: NextRequest) {
     const enriched = await enrichLead(lead.website);
     Object.assign(lead, enriched, { enriched: true });
   }));
+
+  // Persist API cost — always real estate leads only per targeting rules
+  if (runApiCost > 0) {
+    const newTotal = Math.min(currentSpend + runApiCost, GOOGLE_BUDGET_CAP);
+    await redis.set("outreach:google_api_spend", newTotal);
+    console.log(`[lead-scrape-cron] API cost this run: $${runApiCost.toFixed(3)} | Cumulative: $${newTotal.toFixed(2)} / $${GOOGLE_BUDGET_CAP}`);
+  }
 
   const newLeads = leads.filter(l => !existingIds.has(l.id));
   const merged = [...newLeads, ...existing].slice(0, 2000);

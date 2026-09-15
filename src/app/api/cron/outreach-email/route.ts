@@ -15,24 +15,28 @@ function getMaxPerRun(): number {
   return 25; // overridden below after async lookup
 }
 
+// PERMANENT DAILY CEILING = 200 emails/day. Never exceeds 200 automatically.
+// Ramp schedule (campaign start: Sep 15, 2026):
+//   Week 1 (Sep 15–21):   25/day
+//   Week 2 (Sep 22–28):   50/day
+//   Week 3 (Sep 29–Oct 5): 100/day
+//   Week 4+ (Oct 6 onward): 200/day — PERMANENT CEILING
+// Deliverability review required before each ramp increase.
+// Override via admin: redis key "outreach:daily_limit_override" (never auto-increases above 200).
 async function getDailyLimit(redis: any): Promise<number> {
   const override = await redis.get<number>("outreach:daily_limit_override");
-  if (override && override > 0) return override; // admin can set custom limit anytime
+  if (override && override > 0) return Math.min(override, 200); // admin override, hard ceiling at 200
 
   const start = await redis.get<string>("outreach:warmup_start");
   if (!start) {
     await redis.set("outreach:warmup_start", new Date().toISOString());
-    return 4; // first run: very conservative
+    return 25; // Week 1 cap
   }
   const daysSinceStart = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
-  if (daysSinceStart < 7)  return 20;   // Week 1
-  if (daysSinceStart < 14) return 50;   // Week 2
-  if (daysSinceStart < 21) return 80;   // Week 3
-  if (daysSinceStart < 28) return 120;  // Week 4
-  if (daysSinceStart < 35) return 160;  // Week 5
-  if (daysSinceStart < 42) return 200;  // Week 6
-  if (daysSinceStart < 49) return 250;  // Week 7+: full speed (Google Workspace limit is 2000/day)
-  return 250;
+  if (daysSinceStart < 7)  return 25;  // Week 1: Sep 15–21
+  if (daysSinceStart < 14) return 50;  // Week 2: Sep 22–28
+  if (daysSinceStart < 21) return 100; // Week 3: Sep 29–Oct 5
+  return 200; // Week 4+ PERMANENT CEILING — never increases above 200
 }
 
 // Track how many emails sent today (resets at midnight UTC)
@@ -261,43 +265,64 @@ export async function GET(req: NextRequest) {
     incrementTodaySent(redis, newSentLogs.filter(l => l.step === 0).length),
   ]);
 
-  // Send daily summary report to owner if any emails went out
+  // Send daily summary report to owner
   if (sent > 0) {
     try {
       const OWNER_EMAIL = "info@cybercraft360.com";
-      const rows = newSentLogs.map(l =>
-        `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0">${l.leadName}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#555">${l.leadEmail}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#555">Step ${l.step + 1}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;color:#888;font-size:12px">${l.subject}</td></tr>`
-      ).join("");
+      const todayStr = new Date().toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+      const warmupStart = await redis.get<string>("outreach:warmup_start");
+      const daysSinceStart2 = warmupStart ? Math.floor((Date.now() - new Date(warmupStart).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      const rampWeek = daysSinceStart2 < 7 ? "Week 1 (25/day max)" : daysSinceStart2 < 14 ? "Week 2 (50/day max)" : daysSinceStart2 < 21 ? "Week 3 (100/day max)" : "Week 4+ (200/day — PERMANENT CEILING)";
+      const nextRampDate = daysSinceStart2 < 7 ? "Sep 22, 2026" : daysSinceStart2 < 14 ? "Sep 29, 2026" : daysSinceStart2 < 21 ? "Oct 6, 2026" : "N/A — at permanent ceiling";
+      const googleCost = await redis.get<number>("outreach:google_api_spend") ?? 0;
+      const budgetRemaining = Math.max(0, 50 - googleCost);
+      const unsubCount = enrollments.filter(e => e.status === "unsubscribed").length;
+      const repliedCount = enrollments.filter(e => e.status === "replied").length;
+      const newFirstContact = newSentLogs.filter(l => l.step === 0).length;
 
-      const reportHtml = `<!DOCTYPE html><html><body style="margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;background:#f9f9f9">
-<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;margin:32px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
-  <tr><td style="background:#0f172a;padding:24px 32px">
-    <span style="color:#fff;font-size:18px;font-weight:600">CyberCraft360</span>
-    <span style="color:#64748b;font-size:13px;margin-left:12px">Daily Outreach Report</span>
-  </td></tr>
-  <tr><td style="padding:28px 32px">
-    <p style="margin:0 0 8px;font-size:28px;font-weight:700;color:#0f172a">${sent} email${sent === 1 ? "" : "s"} sent</p>
-    <p style="margin:0 0 24px;color:#64748b;font-size:14px">${new Date().toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })} &nbsp;Â·&nbsp; ${failed > 0 ? `${failed} failed` : "0 failures"} &nbsp;Â·&nbsp; Daily cap: ${dailyLimit}</p>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#f8fafc">
-        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Business</th>
-        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Email</th>
-        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Step</th>
-        <th style="padding:8px 12px;text-align:left;color:#374151;font-weight:600;border-bottom:2px solid #e5e7eb">Subject</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">Sent from info@cybercraft360.com &nbsp;Â·&nbsp; <a href="https://cybercraft360.com/admin" style="color:#94a3b8">View Admin</a></p>
-  </td></tr>
-</table>
-</body></html>`;
+      const reportText = [
+        "========================================",
+        "DAILY OUTREACH REPORT -- CyberCraft360",
+        "========================================",
+        "",
+        `DATE:                        ${todayStr}`,
+        "",
+        `CURRENT DAILY EMAIL LIMIT:   ${dailyLimit}`,
+        `EMAILS SENT:                 ${sent}`,
+        "",
+        `EXISTING REAL ESTATE LEADS USED: ${newFirstContact} (new first contact)`,
+        `FOLLOW-UPS SENT:                 ${sent - newFirstContact}`,
+        "",
+        `SUPPRESSED:     ${unsubCount} total opt-outs on record`,
+        `BOUNCES:        ${failed} send failures this run`,
+        `UNSUBSCRIBES:   ${unsubCount} lifetime`,
+        `REPLIES:        ${repliedCount} lifetime`,
+        "",
+        `DAILY DATA COST:           $0.00 (email send run, not scrape run)`,
+        `CUMULATIVE DATA COST:      $${googleCost.toFixed(2)}`,
+        `REMAINING $50 DATA BUDGET: $${budgetRemaining.toFixed(2)}`,
+        `GOOGLE/LEAD API COST STATUS: ${budgetRemaining <= 0 ? "BUDGET EXHAUSTED -- no new scraping" : budgetRemaining < 10 ? `LOW -- $${budgetRemaining.toFixed(2)} remaining` : `OK -- $${budgetRemaining.toFixed(2)} remaining`}`,
+        "",
+        `EMAIL ACCOUNT HEALTH:  Monitor bounce/spam rates manually before next ramp`,
+        "",
+        `CURRENT RAMP LEVEL:  ${rampWeek}`,
+        `NEXT RAMP DATE:      ${nextRampDate}`,
+        "",
+        "DAILY MAX AFTER OCTOBER 12: 200 EMAILS/DAY -- PERMANENT CEILING",
+        "",
+        "========================================",
+        "EMAILS SENT THIS RUN",
+        "========================================",
+        ...newSentLogs.map(l => `- ${l.leadName} <${l.leadEmail}> -- Step ${l.step + 1}: ${l.subject}`),
+        "",
+        `Failed: ${failed} | View Admin: https://cybercraft360.com/admin`,
+      ].join("\n");
 
       await transport.sendMail({
         from: `CyberCraft360 Bot <${fromEmail}>`,
         to: OWNER_EMAIL,
-        subject: `[Outreach] ${sent} email${sent === 1 ? "" : "s"} sent today â€” ${new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" })}`,
-        text: `${sent} outreach email(s) sent today.\n\n${newSentLogs.map(l => `â€¢ ${l.leadName} <${l.leadEmail}> â€” Step ${l.step + 1}: ${l.subject}`).join("\n")}\n\nFailed: ${failed}. Daily cap: ${dailyLimit}.`,
-        html: reportHtml,
+        subject: `[CC360 Outreach] ${sent} sent | $${budgetRemaining.toFixed(2)} budget left | ${new Date().toLocaleDateString(“en-US”, { month:”short”, day:”numeric” })}`,
+        text: reportText,
       });
     } catch (e) {
       console.error("[outreach-cron] Failed to send owner report:", String(e).slice(0, 200));
