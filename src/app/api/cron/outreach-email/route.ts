@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
       }
     } catch (e: any) {
       const errStr = String(e).toLowerCase();
-      // Hard bounce codes â€” permanently unsubscribe so we never retry
+      // Hard bounce codes â€" permanently unsubscribe so we never retry
       const isHardBounce = errStr.includes("550") || errStr.includes("551") || errStr.includes("552") ||
         errStr.includes("553") || errStr.includes("554") || errStr.includes("user unknown") ||
         errStr.includes("no such user") || errStr.includes("does not exist") ||
@@ -250,7 +250,7 @@ export async function GET(req: NextRequest) {
       if (isHardBounce) {
         const idx = updatedEnrollments.findIndex(e => e.id === enrollment.id);
         if (idx !== -1) updatedEnrollments[idx] = { ...updatedEnrollments[idx], status: "unsubscribed" };
-        console.log(`[outreach-cron] Hard bounce â€” removed ${enrollment.leadEmail}`);
+        console.log(`[outreach-cron] Hard bounce â€" removed ${enrollment.leadEmail}`);
       } else {
         console.error(`[outreach-cron] Failed to send to ${enrollment.leadEmail}:`, String(e).slice(0, 200));
       }
@@ -321,7 +321,7 @@ export async function GET(req: NextRequest) {
       await transport.sendMail({
         from: `CyberCraft360 Bot <${fromEmail}>`,
         to: OWNER_EMAIL,
-        subject: `[CC360 Outreach] ${sent} sent | $${budgetRemaining.toFixed(2)} budget left | ${new Date().toLocaleDateString(“en-US”, { month:”short”, day:”numeric” })}`,
+        subject: `[CC360 Outreach] ${sent} sent | $${budgetRemaining.toFixed(2)} budget left | ${new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" })}`,
         text: reportText,
       });
     } catch (e) {
