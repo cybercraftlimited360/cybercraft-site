@@ -2219,13 +2219,25 @@ export default function Home() {
 
         {/* Bottom row */}
         <div className="px-[5vw] md:px-[6vw] py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-white/20">© 2025 CyberCraft360. All rights reserved.</span>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2 flex-shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-70" style={{ background: "#22c55e" }} />
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#22c55e" }} />
-            </span>
-            <span className="text-[0.65rem] font-semibold tracking-[0.2em] uppercase text-white/30">Accepting New Clients</span>
+          <span className="text-xs text-white/20">© 2026 CyberCraft360. All rights reserved.</span>
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            <a href="/privacy" style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}>
+              Privacy Policy
+            </a>
+            <span style={{ color: "rgba(255,255,255,0.1)", fontSize: "0.6rem" }}>|</span>
+            <a href="/terms" style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}>
+              Terms of Service
+            </a>
+            <span style={{ color: "rgba(255,255,255,0.1)", fontSize: "0.6rem" }}>|</span>
+            <a href="/sms-consent" style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}>
+              SMS Marketing
+            </a>
           </div>
           <span className="text-xs text-white/10">Houston, TX · Global</span>
         </div>

@@ -444,7 +444,7 @@ export default function IntakePage() {
                     </div>
                   </div>
                   <span className="text-xs text-white/50 leading-relaxed">
-                    By checking this box, I agree to receive recurring SMS/text marketing messages from CyberCraft360, including promotions, offers, service information, and marketing updates. Message frequency varies. Msg &amp; data rates may apply. Reply <strong className="text-white/70">STOP</strong> to opt out or <strong className="text-white/70">HELP</strong> for help. Consent is not a condition of purchase. View our{" "}
+                    By checking this box, I agree to receive recurring SMS/text marketing messages from CyberCraft360, including promotions, offers, service information, and marketing updates. Message frequency varies. Message and data rates may apply. Reply <strong className="text-white/70">STOP</strong> to opt out or <strong className="text-white/70">HELP</strong> for help. Consent is not a condition of purchase. View our{" "}
                     <a href="/privacy" target="_blank" className="text-[#00d4ff] underline hover:text-[#00d4ff]/80">Privacy Policy</a>{" "}and{" "}
                     <a href="/terms" target="_blank" className="text-[#00d4ff] underline hover:text-[#00d4ff]/80">Terms of Service</a>.
                   </span>

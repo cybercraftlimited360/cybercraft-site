@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Privacy Policy | CyberCraft360",
+  title: "CyberCraft360 Privacy Policy",
   description: "Privacy Policy for CyberCraft360 AI automation services.",
   alternates: {
     canonical: "https://cybercraft360.com/privacy",
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <div style={{ marginBottom: 48 }}>
           <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(167,139,250,0.7)" }}>CyberCraft360</p>
           <h1 style={{ margin: "0 0 12px", fontSize: 36, fontWeight: 800, color: "#fff" }}>Privacy Policy</h1>
-          <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.35)" }}>Effective date: September 1, 2026 &nbsp;·&nbsp; Last updated: September 7, 2026</p>
+          <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.35)" }}>Effective date: September 1, 2026 &nbsp;·&nbsp; Last updated: September 15, 2026</p>
         </div>
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 40 }} />
@@ -57,7 +57,7 @@ export default function PrivacyPage() {
             <li>Improve Amy's conversation quality and sales effectiveness</li>
             <li>Comply with legal obligations</li>
           </ul>
-          <p><strong>We do not sell your personal information to third parties.</strong> We do not share your mobile phone number with third parties for their marketing purposes.</p>
+          <p><strong>We do not sell your personal information to third parties.</strong> We do not sell, rent, share, or provide mobile phone numbers, SMS opt-in information, or messaging consent data to third parties or affiliates for their own marketing or promotional purposes.</p>
         </Section>
 
         <H2>3. SMS Marketing Communications</H2>
@@ -71,10 +71,10 @@ export default function PrivacyPage() {
             <li>Marketing updates about CyberCraft360 products and services</li>
           </ul>
           <p><strong>Message frequency:</strong> Varies. SMS marketing messages are sent only through intentional marketing campaigns, not automatically triggered by phone calls, form submissions, or appointments.</p>
-          <p><strong>Msg &amp; data rates may apply</strong> depending on your mobile carrier and plan.</p>
+          <p><strong>Message and data rates may apply</strong> depending on your mobile carrier and plan.</p>
           <p><strong>Consent is not a condition of purchase.</strong> You may use our services without opting into SMS marketing.</p>
           <p><strong>To opt out:</strong> Reply <strong>STOP</strong> to any message at any time. You will be immediately removed from all SMS marketing. Reply <strong>HELP</strong> for assistance or contact us at <a href="mailto:info@cybercraft360.com" style={{ color: "#a78bfa" }}>info@cybercraft360.com</a>.</p>
-          <p><strong>No third-party sharing:</strong> Mobile phone numbers and SMS/text messaging opt-in data collected by CyberCraft360 will not be shared with, sold to, or used by third parties or affiliates for marketing or promotional purposes under any circumstances.</p>
+          <p><strong>No third-party sharing of SMS data:</strong> CyberCraft360 does not sell, rent, share, or provide mobile phone numbers, SMS opt-in information, or messaging consent data to third parties or affiliates for their own marketing or promotional purposes. Any use of third-party service providers for legitimate business operations (such as SMS delivery) does not authorize those providers to use, share, sell, or disclose mobile phone numbers, SMS opt-in data, or messaging consent data for their own marketing or promotional purposes.</p>
         </Section>
 
         <H2>4. Email Communications</H2>
