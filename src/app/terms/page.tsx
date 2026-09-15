@@ -9,6 +9,14 @@ export const metadata = {
 export default function TermsPage() {
   return (
     <main style={{ background: "#080c14", minHeight: "100vh", color: "#e4e6f0", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+      {/* Top nav bar */}
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "16px 32px" }}>
+        <a href="/" style={{ display: "inline-block", textDecoration: "none" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="CyberCraft360" width={64} height={64} style={{ display: "block", objectFit: "contain" }} />
+        </a>
+      </div>
+
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "60px 24px 80px" }}>
 
         {/* Header */}
