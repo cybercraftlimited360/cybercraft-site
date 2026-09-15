@@ -478,7 +478,11 @@ function buildObservation(lead: Enrollment): string {
 }
 
 export function personalizeEmail(template: string, lead: Enrollment): string {
-  const ownerFirst = lead.ownerName?.split(" ")[0] ?? "there";
+  // Validate owner name: must start with uppercase, be 2+ chars, not an HTML artifact
+  const rawOwner = lead.ownerName?.split(" ")[0];
+  const ownerFirst = (rawOwner && /^[A-Z][a-z]{1,}$/.test(rawOwner) && rawOwner.length >= 2)
+    ? rawOwner
+    : "there";
   const observation = buildObservation(lead);
 
   return template

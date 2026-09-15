@@ -12,8 +12,10 @@ function auth(req: NextRequest) {
   return adminSecret && token === Buffer.from(`cc360:${adminSecret}:v2`).toString("base64");
 }
 
+const IMAGE_EXT = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp|tiff?)$/i;
 function isValidEmail(email: string): boolean {
   if (!email || typeof email !== "string") return false;
+  if (IMAGE_EXT.test(email.toLowerCase())) return false; // reject image filenames scraped as emails
   const parts = email.trim().split("@");
   if (parts.length !== 2) return false;
   const [local, domain] = parts;

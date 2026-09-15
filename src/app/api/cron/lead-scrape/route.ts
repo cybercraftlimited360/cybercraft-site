@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "GOOGLE_MAPS_API_KEY not configured" }, { status: 500 });
 
-  // Hard $50 Google Maps API budget cap — never exceeds this limit automatically
-  const GOOGLE_BUDGET_CAP = 50.00;
+  // Google gives $200/month free credit — cap tracks against that free tier
+  const GOOGLE_BUDGET_CAP = 200.00;
   const COST_TEXT_SEARCH = 0.032; // Places Text Search per request
   const COST_PLACE_DETAILS = 0.025; // Places Details with reviews per request
   const currentSpend = await redis.get<number>("outreach:google_api_spend") ?? 0;
@@ -205,14 +205,19 @@ export async function GET(req: NextRequest) {
   // Local-part prefixes that are role addresses, not individual inboxes
   const ROLE_ADDRESS = /^(noreply|no-reply|donotreply|do-not-reply|admin|webmaster|support|help|contact|info|hello|sales|marketing|team|staff|office|service|services|privacy|legal|abuse|dmca|billing|invoice|careers|jobs|hr|recruiting|newsletter|unsubscribe|feedback|press|media|pr|customerservice|customer-service|enquiries|enquiry|general)$/i;
 
+  const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp|tiff?)$/i;
   function isValidBusinessEmail(email: string): boolean {
     if (!email || typeof email !== "string") return false;
     const lower = email.toLowerCase().trim();
+    // Reject image filenames scraped as emails (e.g. ajax-loader@2x.gif, flags@2x.png)
+    if (IMAGE_EXTENSIONS.test(lower)) return false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lower)) return false;
     const [local, domain] = lower.split("@");
     if (BLOCKED_DOMAINS.has(domain)) return false;
-    if (ROLE_ADDRESS.test(local)) return false; // role inboxes don't reach a decision-maker
+    if (ROLE_ADDRESS.test(local)) return false;
     if (local.length > 64 || domain.length > 255) return false;
+    // Reject if the local part contains digits only or looks like a filename artifact
+    if (/^\d+x$/.test(local)) return false; // e.g. "2x", "1x" srcset artifacts
     return true;
   }
 
