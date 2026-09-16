@@ -208,23 +208,23 @@ export async function GET(req: NextRequest) {
   const ROLE_ADDRESS = /^(noreply|no-reply|donotreply|do-not-reply|admin|webmaster|support|help|contact|info|hello|sales|marketing|team|staff|office|service|services|privacy|legal|abuse|dmca|billing|invoice|careers|jobs|hr|recruiting|newsletter|unsubscribe|feedback|press|media|pr|customerservice|customer-service|enquiries|enquiry|general)$/i;
 
   const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp|tiff?)$/i;
-  function isValidBusinessEmail(email: string): boolean {
+  function isValidBusinessEmail(email: string, industry?: string): boolean {
     if (!email || typeof email !== "string") return false;
     const lower = email.toLowerCase().trim();
-    // Reject image filenames scraped as emails (e.g. ajax-loader@2x.gif, flags@2x.png)
     if (IMAGE_EXTENSIONS.test(lower)) return false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lower)) return false;
     const [local, domain] = lower.split("@");
-    if (BLOCKED_DOMAINS.has(domain)) return false;
+    // Real estate agents commonly use Gmail/Yahoo as their actual business contact — allow it
+    const isRealEstate = industry === "Real Estate";
+    if (!isRealEstate && BLOCKED_DOMAINS.has(domain)) return false;
     if (ROLE_ADDRESS.test(local)) return false;
     if (local.length > 64 || domain.length > 255) return false;
-    // Reject if the local part contains digits only or looks like a filename artifact
-    if (/^\d+x$/.test(local)) return false; // e.g. "2x", "1x" srcset artifacts
+    if (/^\d+x$/.test(local)) return false;
     return true;
   }
 
   // Auto-enroll new leads that have valid business email addresses into the right sequence
-  const leadsWithEmail = newLeads.filter(l => isValidBusinessEmail(l.email));
+  const leadsWithEmail = newLeads.filter(l => isValidBusinessEmail(l.email, l.industry));
   if (leadsWithEmail.length > 0) {
     const sequences: Sequence[] = await redis.get("outreach:sequences") ?? DEFAULT_SEQUENCES;
     const enrollments: Enrollment[] = await redis.get("outreach:enrollments") ?? [];
