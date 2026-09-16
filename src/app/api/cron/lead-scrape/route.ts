@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "GOOGLE_MAPS_API_KEY not configured" }, { status: 500 });
 
-  // Google gives $200/month free credit — cap tracks against that free tier
-  const GOOGLE_BUDGET_CAP = 200.00;
+  // Hard $50 Google Maps API budget cap — never exceeds this limit automatically
+  const GOOGLE_BUDGET_CAP = 50.00;
   const COST_TEXT_SEARCH = 0.032; // Places Text Search per request
   const COST_PLACE_DETAILS = 0.025; // Places Details with reviews per request
   const currentSpend = await redis.get<number>("outreach:google_api_spend") ?? 0;
