@@ -94,8 +94,7 @@ export async function GET(req: NextRequest) {
   const contactedIds = new Set(existing.filter((l: any) => l.messaged).map((l: any) => l.id));
   const weights = await redis.get<Record<string, number>>("outreach:score_weights") ?? {};
 
-  // Don't scrape new leads if we have enough existing stock (2 days' worth at current daily limit)
-  // This ensures existing paid leads are used before purchasing new data
+  // Only scrape exactly as many leads as needed to fill today's send quota
   const unemailed = existing.filter((l: any) => !l.messaged && l.email && l.industry === "Real Estate").length;
   const dailyLimitForPause = await (async () => {
     const override = await redis.get<number>("outreach:daily_limit_override");
@@ -105,12 +104,12 @@ export async function GET(req: NextRequest) {
     const days = Math.floor((Date.now() - new Date(start).getTime()) / 86400000);
     if (days < 7) return 25; if (days < 14) return 50; if (days < 21) return 100; return 200;
   })();
-  const pauseThreshold = dailyLimitForPause * 2; // 2 days' supply before buying more data
+  const leadsNeeded = Math.max(0, dailyLimitForPause - unemailed);
 
-  if (unemailed >= pauseThreshold) {
+  if (leadsNeeded === 0) {
     return NextResponse.json({
       ok: true, skipped: true,
-      message: `Scrape paused — ${unemailed} uncontacted real estate leads queued (threshold: ${pauseThreshold}). Processing existing stock first. $${currentSpend.toFixed(2)} of $${GOOGLE_BUDGET_CAP} budget used.`,
+      message: `Scrape skipped — already have ${unemailed} uncontacted real estate leads (daily quota: ${dailyLimitForPause}). $${currentSpend.toFixed(2)} of $${GOOGLE_BUDGET_CAP} budget used.`,
     });
   }
 
@@ -120,7 +119,9 @@ export async function GET(req: NextRequest) {
   let runApiCost = 0;
 
   for (const city of citiesToScrape) {
+    if (leads.length >= leadsNeeded) break; // have enough for today's quota
     for (const query of queries.slice(0, 2)) {
+      if (leads.length >= leadsNeeded) break; // have enough for today's quota
       // Check budget before each search call
       if (currentSpend + runApiCost + COST_TEXT_SEARCH > GOOGLE_BUDGET_CAP) {
         console.log(`[lead-scrape-cron] Budget cap reached ($${(currentSpend + runApiCost).toFixed(2)}/$${GOOGLE_BUDGET_CAP}). Stopping scrape.`);
@@ -133,6 +134,7 @@ export async function GET(req: NextRequest) {
         runApiCost += COST_TEXT_SEARCH;
 
         for (const place of (searchData.results ?? []).slice(0, 20)) {
+          if (leads.length >= leadsNeeded) break; // stop mid-page once quota filled
           if (seen.has(place.place_id) || contactedIds.has(place.place_id)) continue;
           seen.add(place.place_id);
           // Skip chains and franchises — they have corporate gatekeepers, not local owners
