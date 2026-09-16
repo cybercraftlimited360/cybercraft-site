@@ -98,11 +98,11 @@ export async function GET(req: NextRequest) {
   const unemailed = existing.filter((l: any) => !l.messaged && l.email && l.industry === "Real Estate").length;
   const dailyLimitForPause = await (async () => {
     const override = await redis.get<number>("outreach:daily_limit_override");
-    if (override && override > 0) return Math.min(override, 200);
+    if (override && override > 0) return Math.min(override, 100);
     const start = await redis.get<string>("outreach:warmup_start");
     if (!start) return 25;
     const days = Math.floor((Date.now() - new Date(start).getTime()) / 86400000);
-    if (days < 7) return 25; if (days < 14) return 50; if (days < 21) return 100; return 200;
+    if (days < 7) return 25; if (days < 14) return 50; return 100;
   })();
   const leadsNeeded = Math.max(0, dailyLimitForPause - unemailed);
 

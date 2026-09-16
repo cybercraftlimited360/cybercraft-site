@@ -34,14 +34,13 @@ function isBusinessEmail(email: string): boolean {
 
 async function getDailyLimit(): Promise<number> {
   const override = await redis.get<number>("outreach:daily_limit_override");
-  if (override && override > 0) return Math.min(override, 200);
+  if (override && override > 0) return Math.min(override, 100);
   const start = await redis.get<string>("outreach:warmup_start");
   if (!start) return 25;
   const days = Math.floor((Date.now() - new Date(start).getTime()) / 86400000);
   if (days < 7) return 25;
   if (days < 14) return 50;
-  if (days < 21) return 100;
-  return 200;
+  return 100;
 }
 
 export async function GET(req: NextRequest) {

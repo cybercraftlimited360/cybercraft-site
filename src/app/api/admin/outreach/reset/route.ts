@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const updated = enrollments.map(e => {
     if (e.status === "active" && e.leadIndustry !== "Real Estate") {
       paused++;
-      return { ...e, status: "paused_non_realestate" as any };
+      return { ...e, status: "paused_non_realestate" as any, pausedAt: new Date().toISOString() };
     }
     return e;
   });

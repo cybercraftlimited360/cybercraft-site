@@ -25,7 +25,7 @@ function getMaxPerRun(): number {
 // Override via admin: redis key "outreach:daily_limit_override" (never auto-increases above 200).
 async function getDailyLimit(redis: any): Promise<number> {
   const override = await redis.get<number>("outreach:daily_limit_override");
-  if (override && override > 0) return Math.min(override, 200); // admin override, hard ceiling at 200
+  if (override && override > 0) return Math.min(override, 100); // admin override, hard ceiling at 100
 
   const start = await redis.get<string>("outreach:warmup_start");
   if (!start) {
@@ -35,8 +35,7 @@ async function getDailyLimit(redis: any): Promise<number> {
   const daysSinceStart = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
   if (daysSinceStart < 7)  return 25;  // Week 1: Sep 15–21
   if (daysSinceStart < 14) return 50;  // Week 2: Sep 22–28
-  if (daysSinceStart < 21) return 100; // Week 3: Sep 29–Oct 5
-  return 200; // Week 4+ PERMANENT CEILING — never increases above 200
+  return 100; // Week 3+ PERMANENT CEILING — stays at 100/day, within Google free tier
 }
 
 // Track how many emails sent today (resets at midnight UTC)
