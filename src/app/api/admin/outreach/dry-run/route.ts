@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
       followUps: followUpsDue.length,
       rampWeek,
       nextRampDate,
-      permanentCeiling: "200 emails/day after Oct 12, 2026",
+      permanentCeiling: "100 emails/day from Sep 29, 2026 onward — within Google free tier",
     },
 
     // ── Lead inventory ──
