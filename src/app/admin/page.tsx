@@ -4064,7 +4064,7 @@ function EnrollmentsList({token}:{token:string}) {
 
 function OutreachTab({token}:{token:string}) {
   const h = {"x-admin-token":token};
-  const [section, setSection] = useState<"leads"|"groups"|"monitor"|"sequences"|"stats"|"review-monitor">("leads");
+  const [section, setSection] = useState<"leads"|"groups"|"monitor"|"sequences"|"stats"|"review-monitor"|"import-csv">("leads");
 
   // Lead scraper state
   const [industry, setIndustry] = useState("ALL");
@@ -4108,6 +4108,14 @@ function OutreachTab({token}:{token:string}) {
   const [outreachPassword, setOutreachPassword] = useState("");
   const [outreachName, setOutreachName] = useState("Saad");
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // CSV Import state
+  const [csvFile, setCsvFile] = useState<File|null>(null);
+  const [csvSeqId, setCsvSeqId] = useState("realestate-seq");
+  const [csvUsOnly, setCsvUsOnly] = useState(true);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvResult, setCsvResult] = useState<any>(null);
+  const [csvDragOver, setCsvDragOver] = useState(false);
 
   // Review monitor state
   const [rmLeads, setRmLeads] = useState<any[]>([]);
@@ -4279,6 +4287,7 @@ function OutreachTab({token}:{token:string}) {
           {id:"groups",label:"👥 Groups & LinkedIn"},
           {id:"monitor",label:"👁 Post Monitor"},
           {id:"review-monitor",label:"🔔 Review Alerts"},
+          {id:"import-csv",label:"📥 Import CSV"},
         ] as const).map(({id,label})=>(
           <button key={id} onClick={()=>setSection(id as any)}
             style={{padding:"8px 18px",borderRadius:20,border:`1px solid ${section===id?"#00d4ff":"rgba(255,255,255,0.1)"}`,background:section===id?"rgba(0,212,255,0.1)":"none",color:section===id?"#00d4ff":"rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
@@ -4896,6 +4905,143 @@ function OutreachTab({token}:{token:string}) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Import CSV Section ── */}
+      {section==="import-csv" && (
+        <div>
+          <div style={card}>
+            <p style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 6px"}}>Import Hunter.io CSV</p>
+            <p style={{fontSize:13,color:"rgba(255,255,255,0.35)",margin:"0 0 20px",lineHeight:1.6}}>
+              Upload the exported CSV from Hunter.io. US leads are automatically filtered, duplicates are skipped, and contacts are enrolled into the selected email sequence.
+            </p>
+
+            {/* Drop zone */}
+            <div
+              onDragOver={e=>{e.preventDefault();setCsvDragOver(true);}}
+              onDragLeave={()=>setCsvDragOver(false)}
+              onDrop={e=>{e.preventDefault();setCsvDragOver(false);const f=e.dataTransfer.files[0];if(f&&f.name.endsWith(".csv"))setCsvFile(f);}}
+              onClick={()=>document.getElementById("csv-file-input")?.click()}
+              style={{
+                border:`2px dashed ${csvDragOver?"#00d4ff":csvFile?"rgba(34,197,94,0.5)":"rgba(255,255,255,0.12)"}`,
+                borderRadius:14,padding:"32px 20px",textAlign:"center",cursor:"pointer",
+                background:csvDragOver?"rgba(0,212,255,0.05)":csvFile?"rgba(34,197,94,0.04)":"transparent",
+                transition:"all 0.15s",marginBottom:20,
+              }}>
+              <input id="csv-file-input" type="file" accept=".csv" style={{display:"none"}}
+                onChange={e=>{const f=e.target.files?.[0];if(f)setCsvFile(f);e.target.value="";}}/>
+              {csvFile ? (
+                <>
+                  <div style={{fontSize:32,marginBottom:8}}>📄</div>
+                  <p style={{fontSize:14,fontWeight:700,color:"#22c55e",margin:"0 0 4px"}}>{csvFile.name}</p>
+                  <p style={{fontSize:12,color:"rgba(255,255,255,0.4)",margin:0}}>{(csvFile.size/1024).toFixed(1)} KB — click to replace</p>
+                </>
+              ) : (
+                <>
+                  <div style={{fontSize:36,marginBottom:8}}>📥</div>
+                  <p style={{fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.6)",margin:"0 0 4px"}}>Drop CSV file here or click to browse</p>
+                  <p style={{fontSize:12,color:"rgba(255,255,255,0.3)",margin:0}}>Hunter.io export format (.csv)</p>
+                </>
+              )}
+            </div>
+
+            {/* Options */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+              <div>
+                <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Email Sequence</label>
+                <select value={csvSeqId} onChange={e=>setCsvSeqId(e.target.value)} style={s("")}>
+                  <option value="realestate-seq">🏡 Real Estate Outreach</option>
+                  <option value="hvac-seq">🔧 HVAC Outreach</option>
+                  <option value="dental-seq">🦷 Dental Outreach</option>
+                  <option value="lawfirm-seq">⚖️ Law Firm Outreach</option>
+                  <option value="medspa-seq">💉 Med Spa Outreach</option>
+                  <option value="general-seq">📦 General Business</option>
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:12,color:"rgba(255,255,255,0.4)",display:"block",marginBottom:6}}>Country Filter</label>
+                <button onClick={()=>setCsvUsOnly(v=>!v)} style={{
+                  padding:"10px 14px",borderRadius:10,border:`1px solid ${csvUsOnly?"rgba(0,212,255,0.4)":"rgba(255,255,255,0.15)"}`,
+                  background:csvUsOnly?"rgba(0,212,255,0.08)":"transparent",color:csvUsOnly?"#00d4ff":"rgba(255,255,255,0.5)",
+                  fontSize:13,fontWeight:600,cursor:"pointer",width:"100%",textAlign:"left",
+                }}>
+                  {csvUsOnly?"🇺🇸 US leads only":"🌍 All countries"}
+                </button>
+              </div>
+            </div>
+
+            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+              <button
+                onClick={async()=>{
+                  if(!csvFile){alert("Select a CSV file first.");return;}
+                  setCsvImporting(true);setCsvResult(null);
+                  const fd=new FormData();
+                  fd.append("file",csvFile);
+                  fd.append("sequenceId",csvSeqId);
+                  fd.append("usOnly",csvUsOnly?"true":"false");
+                  try {
+                    const res=await fetch("/api/admin/outreach/import-csv",{method:"POST",headers:{"x-admin-token":token},body:fd});
+                    const d=await res.json();setCsvResult(d);
+                    if(d.ok)setCsvFile(null);
+                  } catch(e:any){setCsvResult({ok:false,error:String(e)});}
+                  setCsvImporting(false);
+                }}
+                disabled={csvImporting||!csvFile}
+                style={{...btn("#00d4ff"),opacity:csvImporting||!csvFile?0.4:1}}>
+                {csvImporting?"Importing…":"📥 Import Leads"}
+              </button>
+              {csvFile&&<button onClick={()=>{setCsvFile(null);setCsvResult(null);}} style={{padding:"10px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.4)",fontSize:13,cursor:"pointer"}}>Clear</button>}
+            </div>
+          </div>
+
+          {/* Result */}
+          {csvResult && (
+            <div style={{...card,borderColor:csvResult.ok?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"}}>
+              {csvResult.ok ? (
+                <>
+                  <p style={{fontSize:13,fontWeight:700,color:"#22c55e",margin:"0 0 14px"}}>✓ Import complete</p>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:14}}>
+                    {[
+                      {label:"Enrolled",val:csvResult.enrolled,col:"#22c55e"},
+                      {label:"Duplicates",val:csvResult.skipped_duplicate,col:"#f59e0b"},
+                      {label:"Non-US",val:csvResult.skipped_international,col:"rgba(255,255,255,0.4)"},
+                      {label:"Invalid Email",val:csvResult.skipped_invalid_email,col:"#ef4444"},
+                      {label:"Total Rows",val:csvResult.total,col:"rgba(255,255,255,0.6)"},
+                    ].map(({label,val,col})=>(
+                      <div key={label} style={{background:"rgba(255,255,255,0.03)",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+                        <p style={{fontSize:22,fontWeight:800,color:col,margin:"0 0 4px"}}>{val}</p>
+                        <p style={{fontSize:11,color:"rgba(255,255,255,0.4)",margin:0}}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{fontSize:12,color:"rgba(255,255,255,0.4)",margin:"0 0 10px"}}>Sequence: <span style={{color:"#00d4ff"}}>{csvResult.sequenceId}</span></p>
+                  {csvResult.enrolled_list?.length>0 && (
+                    <details style={{marginTop:10}}>
+                      <summary style={{fontSize:12,color:"rgba(255,255,255,0.4)",cursor:"pointer",marginBottom:6}}>Show enrolled leads ({csvResult.enrolled_list.length})</summary>
+                      <div style={{maxHeight:200,overflowY:"auto",fontSize:11,color:"rgba(255,255,255,0.35)",lineHeight:1.8}}>
+                        {csvResult.enrolled_list.map((e:string,i:number)=><div key={i}>{e}</div>)}
+                      </div>
+                    </details>
+                  )}
+                </>
+              ) : (
+                <p style={{fontSize:13,color:"#ef4444",margin:0}}>✗ {csvResult.error || JSON.stringify(csvResult)}</p>
+              )}
+            </div>
+          )}
+
+          {/* Instructions */}
+          <div style={{...card,borderColor:"rgba(0,212,255,0.1)"}}>
+            <p style={{fontSize:12,fontWeight:700,color:"rgba(0,212,255,0.6)",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 10px"}}>How it works</p>
+            <ol style={{fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:2,margin:0,paddingLeft:18}}>
+              <li>Export leads from Hunter.io as CSV (any list)</li>
+              <li>Drop the file here and pick the email sequence</li>
+              <li>Click Import — US leads are enrolled immediately</li>
+              <li>The daily cron (9am ET, Mon–Fri) sends 25 new emails/day</li>
+              <li>Follow-ups send automatically on days 3, 7, and 14</li>
+            </ol>
+          </div>
         </div>
       )}
     </div>
