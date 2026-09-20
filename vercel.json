@@ -17,10 +17,6 @@
       "schedule": "0 8 * * 1"
     },
     {
-      "path": "/api/cron/lead-scrape",
-      "schedule": "0 7 * * 1-5"
-    },
-    {
       "path": "/api/cron/outreach-email",
       "schedule": "0 14 * * 1-5"
     },
