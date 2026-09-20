@@ -242,7 +242,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (newEnrollments.length > 0) {
-    await redis.set("outreach:enrollments", [...existing, ...newEnrollments]);
+    // Prepend new enrollments so they appear first in the admin list (GET slices to 200)
+    await redis.set("outreach:enrollments", [...newEnrollments, ...existing]);
   }
 
   return NextResponse.json({
