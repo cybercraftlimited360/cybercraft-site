@@ -132,32 +132,38 @@ function ROICalculator() {
 
       <div className="re-roi-grid">
         <div className="re-roi-inputs">
-          <label className="re-roi-label">
+          <label className="re-roi-label" htmlFor="roi-leads">
             Monthly leads received
             <input
+              id="roi-leads"
               type="range" min={10} max={500} step={5} value={leads}
               onChange={e => setLeads(+e.target.value)}
               className="re-range"
+              aria-label="Monthly leads received"
             />
             <span className="re-range-val">{leads} leads/mo</span>
           </label>
 
-          <label className="re-roi-label">
+          <label className="re-roi-label" htmlFor="roi-conv">
             Your current close rate
             <input
+              id="roi-conv"
               type="range" min={1} max={30} step={0.5} value={convRate}
               onChange={e => setConvRate(+e.target.value)}
               className="re-range"
+              aria-label="Current close rate"
             />
             <span className="re-range-val">{convRate}%</span>
           </label>
 
-          <label className="re-roi-label">
+          <label className="re-roi-label" htmlFor="roi-commission">
             Average commission per closing
             <input
+              id="roi-commission"
               type="range" min={2000} max={50000} step={500} value={commission}
               onChange={e => setCommission(+e.target.value)}
               className="re-range"
+              aria-label="Average commission per closing"
             />
             <span className="re-range-val">{fmt(commission)}</span>
           </label>
@@ -209,8 +215,12 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
         body: JSON.stringify({ name, email, phone, role, interest, message, callbackConsent, source, utm }),
       });
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error || "Something went wrong.");
+        let errMsg = "Something went wrong. Please try again.";
+        try {
+          const d = await res.json();
+          if (d.error) errMsg = d.error;
+        } catch { /* response was not JSON — use default message */ }
+        throw new Error(errMsg);
       }
       gtag("event", "re_lead_submitted", { event_category: "real_estate", source });
       onSuccess();
@@ -224,12 +234,12 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
   return (
     <form onSubmit={handleSubmit} className="re-form">
       <div className="re-form-row">
-        <input className="re-input" placeholder="Your name *" value={name} onChange={e => setName(e.target.value)} required />
-        <input className="re-input" type="email" placeholder="Email address *" value={email} onChange={e => setEmail(e.target.value)} required />
+        <input className="re-input" placeholder="Your name *" aria-label="Your name" value={name} onChange={e => setName(e.target.value)} required />
+        <input className="re-input" type="email" placeholder="Email address *" aria-label="Email address" value={email} onChange={e => setEmail(e.target.value)} required />
       </div>
       <div className="re-form-row">
-        <input className="re-input" type="tel" placeholder="Phone number" value={phone} onChange={e => setPhone(e.target.value)} />
-        <select className="re-input re-select" value={role} onChange={e => setRole(e.target.value)}>
+        <input className="re-input" type="tel" placeholder="Phone number" aria-label="Phone number" value={phone} onChange={e => setPhone(e.target.value)} />
+        <select className="re-input re-select" value={role} onChange={e => setRole(e.target.value)} aria-label="Your role">
           <option value="">Your role</option>
           <option value="Real Estate Agent">Real Estate Agent</option>
           <option value="Broker">Broker / Team Lead</option>
@@ -238,7 +248,7 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
           <option value="Other">Other</option>
         </select>
       </div>
-      <select className="re-input re-select re-full" value={interest} onChange={e => setInterest(e.target.value)}>
+      <select className="re-input re-select re-full" value={interest} onChange={e => setInterest(e.target.value)} aria-label="What are you looking to solve">
         <option value="">What are you looking to solve?</option>
         <option value="Missing after-hours calls">Missing after-hours calls</option>
         <option value="Lead qualification">Lead qualification</option>
@@ -246,7 +256,7 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
         <option value="Follow-up automation">Follow-up automation</option>
         <option value="General inquiry">General inquiry / multiple items</option>
       </select>
-      <textarea className="re-input re-textarea" placeholder="Anything specific you'd like Amy to help with? (optional)" value={message} onChange={e => setMessage(e.target.value)} rows={3} />
+      <textarea className="re-input re-textarea" placeholder="Anything specific you'd like Amy to help with? (optional)" aria-label="Message" value={message} onChange={e => setMessage(e.target.value)} rows={3} />
 
       {source === "callback" && (
         <label className="re-consent-label">
@@ -315,9 +325,6 @@ export default function RealEstatePage() {
 
   return (
     <>
-      {/* SEO */}
-      <title>AI Receptionist for Real Estate | CyberCraft360</title>
-      <meta name="description" content="Amy is an AI front desk built for real estate teams. Responds to leads 24/7, qualifies buyers and sellers, schedules showings, and notifies your team — automatically." />
 
       <div className="re-page">
         {/* ── Nav ── */}
@@ -750,7 +757,10 @@ export default function RealEstatePage() {
         .re-roi-inputs { display: flex; flex-direction: column; gap: 24px; }
         .re-roi-label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7); }
         .re-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); outline: none; cursor: pointer; }
-        .re-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: oklch(0.78 0.13 207); cursor: pointer; }
+        .re-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: oklch(0.78 0.13 207); cursor: pointer; box-shadow: 0 0 0 3px oklch(0.78 0.13 207 / 0.2); }
+        .re-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: oklch(0.78 0.13 207); cursor: pointer; border: none; }
+        .re-range::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); }
+        .re-range:focus-visible { outline: 2px solid oklch(0.78 0.13 207); outline-offset: 4px; }
         .re-range-val { font-size: 20px; font-weight: 800; color: oklch(0.78 0.13 207); }
         .re-roi-assumption { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5; margin: 4px 0 0; }
         .re-roi-results { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
@@ -797,8 +807,8 @@ export default function RealEstatePage() {
         .re-input { background: oklch(0.18 0.008 240); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 14px; color: #fff; font-size: 14px; outline: none; transition: border-color .2s; width: 100%; box-sizing: border-box; font-family: inherit; }
         .re-input:focus { border-color: oklch(0.78 0.13 207 / 0.6); }
         .re-input::placeholder { color: rgba(255,255,255,0.25); }
-        .re-select { cursor: pointer; }
-        .re-select option { background: #1a1d2a; }
+        .re-select { cursor: pointer; color-scheme: dark; }
+        .re-select option { background: #1a1d2a; color: #fff; }
         .re-full { width: 100%; }
         .re-textarea { resize: vertical; }
         .re-consent-label { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: rgba(255,255,255,0.45); line-height: 1.55; cursor: pointer; }
