@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/autodial",
       "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/cron/fire-scheduled-callbacks",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

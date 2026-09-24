@@ -2,16 +2,16 @@
 import { motion } from "framer-motion";
 
 const ITEMS = [
-  "4,200 Calls Handled Monthly",
-  "$2.1M Saved for Clients",
-  "340% Average Client ROI",
-  "0 Templates Used",
-  "98% Uptime Guarantee",
-  "12× Average Efficiency Gain",
-  "24/7 AI Always On",
-  "6 Week Average Deploy Time",
   "100% Custom Built",
-  "60+ AI Deployments",
+  "0 Templates Used",
+  "24/7 AI Always On",
+  "Voice · Chat · Automation",
+  "Real Estate · Healthcare · Legal · Trades",
+  "4–6 Week Average Deploy Time",
+  "Trained on Your Business",
+  "Monitored & Improved Monthly",
+  "US Service Businesses",
+  "Free Discovery Call — 45 Minutes",
 ];
 
 export default function ResultsTicker() {

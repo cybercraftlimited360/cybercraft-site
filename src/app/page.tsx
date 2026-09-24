@@ -51,7 +51,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  const navLinks = ["About", "Demo", "Services", "Clients", "FAQ"];
+  const navLinks = ["About", "Services", "FAQ"];
 
   return (
     <>
@@ -99,22 +99,17 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             );
           })}
           <li>
-            <a href="/real-estate" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors no-underline" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
-              Real Estate
-            </a>
-          </li>
-          <li>
             <a href="/blog" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors no-underline" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
               Blog
             </a>
           </li>
           <li className="flex items-center gap-2">
-            <a href="/intake" className="border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:bg-primary/10 transition-all" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
-              Get a Quote
+            <a href="/real-estate" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors no-underline" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+              Real Estate
             </a>
-            <button onClick={() => { setTab("book"); trackEvent("book_clicked"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md border-0 hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
-              Book a Call
-            </button>
+            <a href="/book" onClick={() => trackEvent("book_clicked")} className="bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-5 py-2.5 rounded-md no-underline hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+              Book a Discovery Call
+            </a>
           </li>
         </ul>
 
@@ -214,18 +209,12 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             transition={{ duration: 0.3, delay: menuOpen ? (navLinks.length + 2) * 0.06 : 0 }}
             className="mt-4 flex flex-col items-center gap-3 w-full px-8"
           >
-            <button
-              onClick={() => { setTab("book"); setMenuOpen(false); setTimeout(() => { const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" }); }, 300); }}
-              className="w-full text-center bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md border-0"
-            >
-              📅 Book a Call
-            </button>
             <a
-              href="/intake"
-              onClick={() => setMenuOpen(false)}
-              className="w-full text-center border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md no-underline"
+              href="/book"
+              onClick={() => { setMenuOpen(false); trackEvent("book_clicked"); }}
+              className="w-full text-center bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-8 py-4 rounded-md no-underline"
             >
-              💬 Get a Quote
+              📅 Book a Discovery Call
             </a>
           </motion.div>
         </motion.div>
@@ -391,18 +380,18 @@ export default function Home() {
 
             {/* Floating stat badges — hidden on mobile */}
             {[
-              { stat: "60+",    label: "AI Deployments",       top: "4%",  left: "2%",  delay: 0 },
-              { stat: "4,200",  label: "Calls Handled / Mo",  top: "20%", left: "2%",  delay: 0.5 },
+              { stat: "Voice",  label: "AI Front Desk",       top: "4%",  left: "2%",  delay: 0 },
+              { stat: "Lead",   label: "Automation",          top: "20%", left: "2%",  delay: 0.5 },
               { stat: "6 wk",   label: "Avg Deploy Time",     top: "36%", left: "2%",  delay: 1.0 },
-              { stat: "45 min", label: "Strategy Session",    top: "52%", left: "2%",  delay: 1.5 },
-              { stat: "$2.1M+", label: "Saved for Clients",   top: "68%", left: "2%",  delay: 0.8 },
-              { stat: "340%",   label: "Avg Client ROI*",     top: "84%", left: "2%",  delay: 1.3 },
-              { stat: "12×",    label: "Avg Efficiency Gain", top: "4%",  right: "2%", delay: 0.3 },
-              { stat: "3×",     label: "Pipeline Growth",     top: "20%", right: "2%", delay: 0.7 },
-              { stat: "24/7",   label: "AI Always On",        top: "36%", right: "2%", delay: 0.2 },
-              { stat: "100%",   label: "Custom Built",        top: "52%", right: "2%", delay: 1.1 },
-              { stat: "98%",    label: "Uptime Guarantee",    top: "68%", right: "2%", delay: 0.6 },
-              { stat: "0",      label: "Templates Used",      top: "84%", right: "2%", delay: 0.9 },
+              { stat: "45 min", label: "Discovery Call",      top: "52%", left: "2%",  delay: 1.5 },
+              { stat: "Biz",    label: "Automation",          top: "68%", left: "2%",  delay: 0.8 },
+              { stat: "Real",   label: "Estate · Healthcare", top: "84%", left: "2%",  delay: 1.3 },
+              { stat: "24/7",   label: "AI Always On",        top: "4%",  right: "2%", delay: 0.3 },
+              { stat: "Chat",   label: "AI Receptionist",     top: "20%", right: "2%", delay: 0.7 },
+              { stat: "100%",   label: "Custom Built",        top: "36%", right: "2%", delay: 0.2 },
+              { stat: "0",      label: "Templates Used",      top: "52%", right: "2%", delay: 1.1 },
+              { stat: "US",     label: "Service Businesses",  top: "68%", right: "2%", delay: 0.6 },
+              { stat: "Free",   label: "First Call",          top: "84%", right: "2%", delay: 0.9 },
             ].map(({ stat, label, delay, ...pos }, i) => (
               <motion.div
                 key={stat}
@@ -512,7 +501,7 @@ export default function Home() {
                   lineHeight: 1.6,
                   textShadow: "0 1px 16px rgba(0,0,0,1), 0 2px 32px rgba(0,0,0,1), 0 0 2px rgba(0,0,0,1)",
                 }}>
-                  Custom AI receptionists, sales agents, support teams & automation — built for your business.
+                  CyberCraft360 builds AI systems that answer customers, qualify leads, schedule next steps, and automate repetitive business workflows.
                 </p>
               </motion.div>
 
@@ -531,7 +520,7 @@ export default function Home() {
           >
             <Magnetic strength={0} radius={0}>
               <motion.a
-                href="#services"
+                href="/book"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 className="group inline-flex items-center gap-2.5 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-sm tracking-widest uppercase no-underline shadow-lg hover:shadow-primary/25 transition-shadow duration-300 overflow-hidden relative"
@@ -542,20 +531,21 @@ export default function Home() {
                   whileHover={{ x: "100%" }}
                   transition={{ duration: 0.7 }}
                 />
-                <span className="relative z-10">Explore Our AI Solutions</span>
+                <span className="relative z-10">Book a Free Discovery Call</span>
                 <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
               </motion.a>
             </Magnetic>
 
             <Magnetic strength={0} radius={0}>
               <motion.a
-                href="#contact"
+                href="#about"
+                onClick={(e) => { e.preventDefault(); setTab("about"); const tb = document.querySelector("[data-tabbar]") as HTMLElement; if (tb) window.scrollTo({ top: tb.getBoundingClientRect().top + window.scrollY - 63, behavior: "smooth" }); }}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-2.5 px-8 py-4 border border-border/60 rounded-md font-medium text-sm tracking-widest uppercase text-foreground no-underline bg-background/60 backdrop-blur-sm hover:border-primary/40 hover:text-primary transition-colors duration-200"
               >
                 <Zap className="w-4 h-4" />
-                Get Your Free AI Audit
+                See How It Works
               </motion.a>
             </Magnetic>
           </motion.div>
@@ -578,13 +568,13 @@ export default function Home() {
               <div key={ri} className="flex shrink-0 gap-6">
                 {[
                   { text: "Your phone answers itself", accent: "#00d4ff" },
-                  { text: "Leads called in 60 seconds", accent: "#7c3aed" },
-                  { text: "Proposals sent while you sleep", accent: "#00d4ff" },
-                  { text: "400 customer questions daily — zero staff", accent: "#e64dff" },
-                  { text: "Close deals at 2am", accent: "#7c3aed" },
+                  { text: "AI responds to every inquiry", accent: "#7c3aed" },
+                  { text: "Leads qualified while you sleep", accent: "#00d4ff" },
+                  { text: "AI front desk — no extra headcount", accent: "#e64dff" },
+                  { text: "AI available nights and weekends", accent: "#7c3aed" },
                   { text: "AI trained on your business", accent: "#00d4ff" },
-                  { text: "Never miss another lead", accent: "#22c55e" },
-                  { text: "Your competitors are already doing this", accent: "#e64dff" },
+                  { text: "Never miss another inquiry", accent: "#22c55e" },
+                  { text: "Custom-built — not a template", accent: "#e64dff" },
                 ].map(({ text, accent }, i) => (
                   <div key={i} className="flex items-center gap-6 shrink-0">
                     <span
@@ -613,12 +603,12 @@ export default function Home() {
               <div key={ri} className="flex shrink-0 gap-6">
                 {[
                   { text: "Workflows that run themselves", accent: "#7c3aed" },
-                  { text: "Follow up with every lead automatically", accent: "#00d4ff" },
-                  { text: "28 hours saved per week", accent: "#22c55e" },
+                  { text: "Lead follow-up on autopilot", accent: "#00d4ff" },
+                  { text: "Automate repetitive admin tasks", accent: "#22c55e" },
                   { text: "Custom built — no templates", accent: "#e64dff" },
                   { text: "Live in 4–6 weeks", accent: "#00d4ff" },
-                  { text: "AI that learns and gets smarter every month", accent: "#7c3aed" },
-                  { text: "Scale without hiring", accent: "#22c55e" },
+                  { text: "AI that learns every month", accent: "#7c3aed" },
+                  { text: "Scale without adding headcount", accent: "#22c55e" },
                   { text: "Your business runs 24 / 7 / 365", accent: "#e64dff" },
                 ].map(({ text, accent }, i) => (
                   <div key={i} className="flex items-center gap-6 shrink-0">
@@ -730,11 +720,11 @@ export default function Home() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }} className="mt-16 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <Magnetic strength={0.35} radius={120}>
-            <motion.a href="#contact" whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-sm tracking-widest uppercase no-underline">
-              Start With a Free Discovery Call <ArrowRight className="w-4 h-4" />
+            <motion.a href="/book" whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }} className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-sm tracking-widest uppercase no-underline">
+              Book a Free Discovery Call <ArrowRight className="w-4 h-4" />
             </motion.a>
           </Magnetic>
-          <span className="text-muted-foreground text-sm">45 minutes · No obligation · Clear answers guaranteed</span>
+          <span className="text-muted-foreground text-sm">30 minutes · No obligation · Clear answers guaranteed</span>
         </motion.div>
       </section>
 
@@ -780,7 +770,7 @@ export default function Home() {
                 <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(10,12,18,0.7), transparent)" }} />
               </div>
 
-              {/* Floating trust badge */}
+              {/* Location badge */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.85 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -789,8 +779,8 @@ export default function Home() {
                 className="absolute -bottom-5 -right-4 md:-right-8"
                 style={{ background: "rgba(10,12,18,0.95)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: 14, padding: "14px 18px", backdropFilter: "blur(20px)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
               >
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#00d4ff", lineHeight: 1 }}>60+</div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3 }}>AI Systems Built</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#00d4ff", lineHeight: 1 }}>Houston, TX</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3 }}>Serving US Businesses</div>
               </motion.div>
             </motion.div>
 
@@ -812,31 +802,12 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Trust signals */}
-              <div className="grid grid-cols-3 gap-4 mb-10">
-                {[
-                  { stat: "60+", label: "AI Deployments" },
-                  { stat: "$2.1M+", label: "Saved for Clients" },
-                  { stat: "4–6 wk", label: "Average Live Time" },
-                ].map(({ stat, label }) => (
-                  <div key={label} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: "#00d4ff", lineHeight: 1 }}>{stat}</div>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 5 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <motion.a href="#contact" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                <motion.a href="/book" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold tracking-widest uppercase no-underline hover:opacity-90 transition-opacity"
                   style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
-                  Get Your Free AI Audit <ArrowRight size={15} />
-                </motion.a>
-                <motion.a href="/intake" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold tracking-widest uppercase no-underline transition-colors duration-200"
-                  style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
-                  Get a Quote
+                  Book a Free Discovery Call <ArrowRight size={15} />
                 </motion.a>
               </div>
             </motion.div>
@@ -893,9 +864,9 @@ export default function Home() {
             <span className="text-primary text-[0.68rem] font-bold tracking-[0.28em] uppercase">✦ Your AI Workforce</span>
           </div>
           <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight text-foreground mb-3 max-w-2xl" style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif" }}>
-            You&apos;re Not Buying Software.<br /><em>You&apos;re Hiring an AI Team.</em>
+            Three Solutions.<br /><em>One AI Partner.</em>
           </h2>
-          <p className="text-muted-foreground text-lg mb-16 max-w-lg leading-relaxed">Every AI employee is custom-built for your business, trained on your data, and gets smarter every month through real interactions.</p>
+          <p className="text-muted-foreground text-lg mb-16 max-w-lg leading-relaxed">AI Front Desk, Lead Automation, and Business Automation — each custom-built for your business, trained on your data, and improved every month.</p>
         </motion.div>
 
         {(() => {
@@ -951,16 +922,6 @@ export default function Home() {
               icon: Workflow,
             },
             {
-              emoji: "📈", name: "Orion", role: "AI Marketing", accent: "#f59e0b",
-              headline: "Marketing That Never Stops Working",
-              problem: "Generate more content, more campaigns, and more leads — without a larger team.",
-              desc: "Orion handles social media content, email campaigns, SEO content, AI ad copy, and personalized marketing at scale — consistently, on-brand, every day.",
-              features: ["Social media content", "AI video creation", "Email campaigns", "SEO content", "Personalized marketing", "AI ad copy"],
-              impact: "More campaigns. Better engagement. Zero extra headcount.",
-              tag: "Always Publishing",
-              icon: Zap,
-            },
-            {
               emoji: "🎙️", name: "Amy", role: "AI Voice Agent", accent: "#e64dff",
               headline: "Conversations That Feel Human",
               problem: "Your customers deserve real conversations — not robotic menus.",
@@ -970,33 +931,12 @@ export default function Home() {
               tag: "Sounds Human",
               icon: Mic,
             },
-            {
-              emoji: "🛡️", name: "Aegis", role: "AI Cybersecurity", accent: "#ef4444",
-              headline: "Protection That Never Clocks Out",
-              problem: "Cyber threats don't wait for business hours.",
-              desc: "Aegis monitors your systems 24/7, detects anomalies before they become incidents, and responds automatically — protecting your data, your clients, and your reputation around the clock.",
-              features: ["Continuous threat monitoring", "Anomaly detection", "Automated incident response", "Compliance reporting", "Real-time alerts", "Zero human intervention needed"],
-              impact: "Sleep soundly knowing your business is protected around the clock.",
-              tag: "Always Watching",
-              icon: Shield,
-            },
-            {
-              emoji: "📖", name: "Sage", role: "AI eBook Generator", accent: "#f97316",
-              headline: "Turn Your Expertise Into a Lead Magnet",
-              problem: "Your knowledge is your best marketing tool — but writing takes time you don't have.",
-              desc: "Sage transforms your ideas into a professionally written, fully designed eBook in under 60 seconds. Use it as a lead magnet, authority builder, or client onboarding asset. Every eBook is unique to your business.",
-              features: ["AI-written in 60 seconds", "Professionally designed PDF", "Delivered straight to inbox", "Custom to your industry & tone", "5 full chapters + conclusion", "Free — no credit card needed"],
-              impact: "Build authority, capture leads, and grow your email list — automatically.",
-              tag: "Instant PDF",
-              icon: FileSearch,
-              cta: true,
-            },
           ];
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {employees.map(({ emoji, name, role, accent, headline, problem, desc, features, impact, tag, icon: Icon, cta }: any, i: number) => {
-                const hasDemo = ["Ava","Nova","Atlas","Echo","Pulse","Orion","Amy","Aegis"].includes(name);
+                const hasDemo = ["Ava","Nova","Atlas","Echo","Pulse","Amy"].includes(name);
                 const openDemo = () => { if (hasDemo) { setHowItWorksService(name); setShowHowItWorks(true); } };
                 return (
                 <TiltCard key={name}>
@@ -1197,8 +1137,8 @@ export default function Home() {
         </div>
 
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="text-center">
-          <a href="#contact" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
-            See What We Build for Your Business <ArrowRight size={15} />
+          <a href="/book" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
+            Book a Free Discovery Call <ArrowRight size={15} />
           </a>
         </motion.div>
       </section>
@@ -1280,8 +1220,8 @@ export default function Home() {
                 <WorkflowAnimation />
                 <div className="text-center mt-10">
                   <p className="text-[0.65rem] font-bold tracking-[0.22em] uppercase text-muted-foreground/40 mb-5">The entire process takes under 30 seconds · Repeats for every single call · Zero human involvement required</p>
-                  <a href="#contact" className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity" style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
-                    Build This for My Business <ArrowRight size={15} />
+                  <a href="/book" className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity" style={{ background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff" }}>
+                    Book a Free Discovery Call <ArrowRight size={15} />
                   </a>
                 </div>
               </div>
@@ -1326,7 +1266,7 @@ export default function Home() {
             { name: "Automotive", emoji: "🚗", color: "#f59e0b" },
             { name: "E-Commerce", emoji: "🛒", color: "#e64dff" },
           ].map(({ name, emoji, color }, i) => (
-            <motion.a key={name} href="#contact" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45, delay: i * 0.05 }}
+            <motion.a key={name} href="/book" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45, delay: i * 0.05 }}
               className="flex flex-col items-center gap-2 py-5 px-3 rounded-xl no-underline group transition-all duration-200"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${color}0d`; (e.currentTarget as HTMLElement).style.borderColor = `${color}30`; }}
@@ -1338,7 +1278,7 @@ export default function Home() {
           ))}
         </div>
         <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.4 }} className="text-center text-muted-foreground/50 text-xs mt-8 tracking-widest uppercase">
-          Don&apos;t see your industry? We work with any service-based business. <a href="#contact" className="text-primary hover:underline">Let&apos;s talk.</a>
+          Don&apos;t see your industry? We work with any service-based business. <a href="/book" className="text-primary hover:underline">Let&apos;s talk.</a>
         </motion.p>
       </section>
 
@@ -1654,8 +1594,8 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <p className="text-muted-foreground text-sm flex-1">All prices in USD. Final quote depends on complexity, integrations, and scope. Book a free strategy call — we&apos;ll scope your project and give you an exact number.</p>
-          <a href="#contact" className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
-            Book a Free Strategy Call <ArrowRight size={15} />
+          <a href="/book" className="shrink-0 inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
+            Book a Free Discovery Call <ArrowRight size={15} />
           </a>
         </div>
       </section>
@@ -1703,10 +1643,10 @@ export default function Home() {
             </div>
           </div>
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }} className="mt-10 text-center">
-            <a href="#contact" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
-              Start Your Free Strategy Session <ArrowRight size={15} />
+            <a href="/book" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-bold tracking-widest uppercase px-7 py-3.5 rounded-xl no-underline hover:opacity-90 transition-opacity">
+              Book a Free Discovery Call <ArrowRight size={15} />
             </a>
-            <p className="text-muted-foreground/40 text-xs mt-3 tracking-widest uppercase">45 minutes · No obligation · You keep the strategy doc</p>
+            <p className="text-muted-foreground/40 text-xs mt-3 tracking-widest uppercase">30 minutes · No obligation · Free strategy breakdown</p>
           </motion.div>
         </div>
       </section>
@@ -1783,7 +1723,7 @@ export default function Home() {
         >
           <p className="hidden md:block text-white/45 text-sm leading-relaxed mb-8">Unlike off-the-shelf solutions that plateau on deployment, every CyberCraft360 system is built with continuous learning at its core — so your AI investment compounds rather than depreciates.</p>
           <div className="grid grid-cols-2 gap-px bg-white/8 border border-white/8 rounded-sm overflow-hidden mt-4">
-            {[["12×", "Avg. efficiency gain"], ["98%", "Uptime guarantee"], ["6 wk", "Avg. deployment time"], ["0", "Off-the-shelf templates"]].map(([num, label], i) => (
+            {[["24/7", "Always on"], ["100%", "Custom built"], ["6 wk", "Avg. deployment time"], ["0", "Off-the-shelf templates"]].map(([num, label], i) => (
               <motion.div
                 key={label}
                 initial={{ opacity: 0, scale: 0.85 }}
@@ -2162,25 +2102,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Col 2 — Services */}
+          {/* Col 2 — Solutions */}
           <div className="flex flex-col gap-4">
-            <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Services</p>
-            {["AI Chatbots", "Voice AI Agents", "AI eBook Generator", "Workflow Automation", "Lead Intelligence", "AI Cybersecurity", "Premium Websites", "AI Ads & Marketing"].map(s => (
-              <button key={s} onClick={() => {
-                setTab("services");
-                const tb = document.querySelector("[data-tabbar]") as HTMLElement;
-                if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" });
-              }} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", transition: "color 0.2s" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
-              >{s}</button>
-            ))}
-          </div>
-
-          {/* Col 3 — Company */}
-          <div className="flex flex-col gap-4">
-            <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Company</p>
-            {([["About", "about"], ["How It Works", "about"], ["Case Studies", "results"], ["FAQ", "faq"], ["Book a Call", "book"]] as [string, SiteTab][]).map(([label, targetTab]) => (
+            <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Solutions</p>
+            {[
+              { label: "AI Front Desk", tab: "services" as SiteTab },
+              { label: "Lead Automation", tab: "services" as SiteTab },
+              { label: "Business Automation", tab: "services" as SiteTab },
+            ].map(({ label, tab: targetTab }) => (
               <button key={label} onClick={() => {
                 setTab(targetTab);
                 const tb = document.querySelector("[data-tabbar]") as HTMLElement;
@@ -2190,6 +2119,49 @@ export default function Home() {
                 onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
               >{label}</button>
             ))}
+            <div style={{ marginTop: "12px" }}>
+              <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "8px" }}>Industries</p>
+              {[
+                { label: "Real Estate", href: "/real-estate" },
+              ].map(({ label, href }) => (
+                <a key={label} href={href} style={{ display: "block", fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s", marginBottom: "8px" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
+                >{label}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Col 3 — Company + Legal */}
+          <div className="flex flex-col gap-4">
+            <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "4px" }}>Company</p>
+            {([["How It Works", "about"], ["FAQ", "faq"]] as [string, SiteTab][]).map(([label, targetTab]) => (
+              <button key={label} onClick={() => {
+                setTab(targetTab);
+                const tb = document.querySelector("[data-tabbar]") as HTMLElement;
+                if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" });
+              }} style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", transition: "color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
+              >{label}</button>
+            ))}
+            <a href="/blog" style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
+            >Blog</a>
+            <div style={{ marginTop: "12px" }}>
+              <p style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", marginBottom: "8px" }}>Legal</p>
+              {[
+                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Terms of Service", href: "/terms" },
+                { label: "SMS Consent", href: "/sms-consent" },
+              ].map(({ label, href }) => (
+                <a key={label} href={href} style={{ display: "block", fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s", marginBottom: "8px" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
+                >{label}</a>
+              ))}
+            </div>
           </div>
 
           {/* Col 4 — CTA + Location */}
@@ -2204,21 +2176,15 @@ export default function Home() {
               <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.5, marginBottom: "14px" }}>
                 Book a free 45-min strategy call. No pitch. Just clarity.
               </p>
-              <Magnetic strength={0.25} radius={80}>
-                <button onClick={() => {
-                  setTab("book");
-                  const tb = document.querySelector("[data-tabbar]") as HTMLElement;
-                  if (tb) window.scrollTo({ top: tb.offsetTop - 63, behavior: "smooth" });
-                }} style={{
-                  display: "inline-block", padding: "10px 18px",
-                  borderRadius: "8px", fontSize: "0.7rem", fontWeight: 700,
-                  letterSpacing: "0.12em", textTransform: "uppercase",
-                  background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff",
-                  border: "none", cursor: "pointer",
-                }}>
-                  Book a Free Call →
-                </button>
-              </Magnetic>
+              <a href="/book" style={{
+                display: "inline-block", padding: "10px 18px",
+                borderRadius: "8px", fontSize: "0.7rem", fontWeight: 700,
+                letterSpacing: "0.12em", textTransform: "uppercase",
+                background: "linear-gradient(135deg, #00d4ff, #7c3aed)", color: "#fff",
+                textDecoration: "none",
+              }}>
+                Book a Discovery Call →
+              </a>
             </div>
 
             {/* Location */}

@@ -18,8 +18,8 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "CyberCraft360 — Automate Everything. Secure Anything.",
-  description: "Bespoke AI solutions built from scratch for your business. Custom chatbots, voice agents, workflow automation and more.",
+  title: "CyberCraft360 — AI Front Desk, Lead Automation & Business Automation",
+  description: "CyberCraft360 builds custom AI systems that answer customers, qualify leads, schedule appointments, and automate repetitive workflows — for US service businesses.",
   verification: {
     google: "QyVX4wH85g9Mf-eGJLSKXOAVq0cqk3akN7AKUtAuE6o",
   },

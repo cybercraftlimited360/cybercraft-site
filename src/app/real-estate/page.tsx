@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 
 // ─── UTM helper ──────────────────────────────────────────────────────────────
@@ -138,36 +138,57 @@ function AmyDemoChat() {
   );
 }
 
+// ─── FAQ Item ────────────────────────────────────────────────────────────────
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`re-faq-item ${open ? "re-faq-open" : ""}`}>
+      <button className="re-faq-q" onClick={() => setOpen(v => !v)} aria-expanded={open}>
+        <span>{q}</span>
+        <span className="re-faq-chevron">{open ? "−" : "+"}</span>
+      </button>
+      {open && <div className="re-faq-a">{a}</div>}
+    </div>
+  );
+}
+
 // ─── ROI Calculator ───────────────────────────────────────────────────────────
 function ROICalculator() {
-  const [leads, setLeads] = useState(50);
+  const [leads, setLeads] = useState(80);
+  const [minutes, setMinutes] = useState(20);
+  const [assistRate, setAssistRate] = useState(60);
+  const [hourlyRate, setHourlyRate] = useState(75);
+  const [showRevenue, setShowRevenue] = useState(false);
   const [convRate, setConvRate] = useState(5);
   const [commission, setCommission] = useState(8000);
-  const [delayedRate, setDelayedRate] = useState(30);
-  const [assistRate, setAssistRate] = useState(50);
   const [showMethod, setShowMethod] = useState(false);
 
-  const opportunityLeads = Math.round(leads * (delayedRate / 100));
-  const amyAssisted = Math.round(opportunityLeads * (assistRate / 100));
+  const hoursPerMonth = Math.round((leads * minutes * (assistRate / 100)) / 60);
+  const moneySaved = Math.round(hoursPerMonth * hourlyRate);
+
+  const amyAssisted = Math.round(leads * (assistRate / 100));
   const additionalRevenue = Math.round(amyAssisted * (convRate / 100) * commission);
 
-  const fmt = (n: number) =>
+  const fmtMoney = (n: number) =>
     n >= 1000 ? `$${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : `$${n}`;
+
+  const minutePresets = [5, 10, 15, 20, 30];
+  const ratePresets = [25, 50, 75, 100];
 
   return (
     <div className="re-roi-wrapper">
       <div className="re-roi-disclaimer">
         <span className="re-disclaimer-icon">⚠</span>
         <span>
-          Illustrative scenario based entirely on the assumptions you enter below. Adjust the inputs to model different outcomes for your business.
-          This calculator does not predict actual revenue or guarantee results.
+          Illustrative scenario based entirely on the assumptions you enter. Adjust inputs to model your business.
+          This does not predict actual results or guarantee outcomes.
         </span>
       </div>
 
       <div className="re-roi-grid">
         <div className="re-roi-inputs">
           <label className="re-roi-label" htmlFor="roi-leads">
-            Monthly leads received
+            How many leads come in per month?
             <input
               id="roi-leads"
               type="range" min={10} max={500} step={5} value={leads}
@@ -178,67 +199,119 @@ function ROICalculator() {
             <span className="re-range-val">{leads} leads/mo</span>
           </label>
 
-          <label className="re-roi-label" htmlFor="roi-delayed">
-            % of leads that receive delayed or no response
+          <div className="re-roi-label">
+            How long does each lead interaction take you?
+            <div className="re-preset-btns">
+              {minutePresets.map(m => (
+                <button
+                  key={m}
+                  className={`re-preset-btn ${minutes === m ? "re-preset-btn-active" : ""}`}
+                  onClick={() => setMinutes(m)}
+                  type="button"
+                >
+                  {m} min
+                </button>
+              ))}
+            </div>
             <input
-              id="roi-delayed"
-              type="range" min={5} max={80} step={5} value={delayedRate}
-              onChange={e => setDelayedRate(+e.target.value)}
+              type="range" min={5} max={45} step={5} value={minutes}
+              onChange={e => setMinutes(+e.target.value)}
               className="re-range"
-              aria-label="Percentage of leads with delayed or no response"
+              aria-label="Minutes per lead interaction"
             />
-            <span className="re-range-val">{delayedRate}% of leads</span>
-          </label>
+            <span className="re-range-val">{minutes} min/lead</span>
+          </div>
 
           <label className="re-roi-label" htmlFor="roi-assist">
-            % of those leads Amy could help engage
+            What % of those Amy could handle?
             <input
               id="roi-assist"
               type="range" min={10} max={90} step={5} value={assistRate}
               onChange={e => setAssistRate(+e.target.value)}
               className="re-range"
-              aria-label="Percentage of delayed leads Amy could assist"
+              aria-label="Percentage Amy could handle"
             />
-            <span className="re-range-val">{assistRate}% assisted</span>
+            <span className="re-range-val">{assistRate}% handled by Amy</span>
           </label>
 
-          <label className="re-roi-label" htmlFor="roi-conv">
-            Your current close rate
+          <div className="re-roi-label">
+            What&apos;s your time worth per hour?
+            <div className="re-preset-btns">
+              {ratePresets.map(r => (
+                <button
+                  key={r}
+                  className={`re-preset-btn ${hourlyRate === r ? "re-preset-btn-active" : ""}`}
+                  onClick={() => setHourlyRate(r)}
+                  type="button"
+                >
+                  ${r}
+                </button>
+              ))}
+            </div>
             <input
-              id="roi-conv"
-              type="range" min={1} max={30} step={0.5} value={convRate}
-              onChange={e => setConvRate(+e.target.value)}
+              type="range" min={25} max={200} step={25} value={hourlyRate}
+              onChange={e => setHourlyRate(+e.target.value)}
               className="re-range"
-              aria-label="Current close rate"
+              aria-label="Hourly rate"
             />
-            <span className="re-range-val">{convRate}%</span>
-          </label>
-
-          <label className="re-roi-label" htmlFor="roi-commission">
-            Average commission per closing
-            <input
-              id="roi-commission"
-              type="range" min={2000} max={50000} step={500} value={commission}
-              onChange={e => setCommission(+e.target.value)}
-              className="re-range"
-              aria-label="Average commission per closing"
-            />
-            <span className="re-range-val">{fmt(commission)}</span>
-          </label>
+            <span className="re-range-val">${hourlyRate}/hr</span>
+          </div>
         </div>
 
         <div className="re-roi-results">
-          <div className="re-roi-tile">
-            <span className="re-roi-tile-val">{amyAssisted}</span>
-            <span className="re-roi-tile-label">Additional leads<br />Amy could assist per month</span>
+          <div className="re-roi-tile re-roi-tile-primary">
+            <span className="re-roi-tile-eyebrow">Hours back every month</span>
+            <span className="re-roi-tile-val">{hoursPerMonth}</span>
+            <span className="re-roi-tile-label">hours saved per month</span>
           </div>
           <div className="re-roi-tile re-roi-tile-accent">
-            <span className="re-roi-tile-val">{fmt(additionalRevenue)}</span>
-            <span className="re-roi-tile-label">Illustrative additional<br />revenue per month</span>
+            <span className="re-roi-tile-eyebrow">Value of that time</span>
+            <span className="re-roi-tile-val">{fmtMoney(moneySaved)}</span>
+            <span className="re-roi-tile-label">at ${hourlyRate}/hr — illustrative</span>
           </div>
           <p className="re-roi-caveat">
-            All numbers are illustrative and based entirely on your inputs — not a forecast or guarantee of any kind.
+            All figures are illustrative based on your inputs only — not a forecast or guarantee.
           </p>
+
+          <button
+            className="re-revenue-toggle"
+            onClick={() => setShowRevenue(v => !v)}
+            type="button"
+          >
+            {showRevenue ? "▾" : "▸"} Also model revenue opportunity
+          </button>
+
+          {showRevenue && (
+            <div className="re-revenue-section">
+              <label className="re-roi-label re-roi-label-sm" htmlFor="roi-conv">
+                Your close rate
+                <input
+                  id="roi-conv"
+                  type="range" min={1} max={30} step={0.5} value={convRate}
+                  onChange={e => setConvRate(+e.target.value)}
+                  className="re-range"
+                  aria-label="Close rate"
+                />
+                <span className="re-range-val re-range-val-sm">{convRate}%</span>
+              </label>
+              <label className="re-roi-label re-roi-label-sm" htmlFor="roi-commission">
+                Average commission per closing
+                <input
+                  id="roi-commission"
+                  type="range" min={2000} max={50000} step={500} value={commission}
+                  onChange={e => setCommission(+e.target.value)}
+                  className="re-range"
+                  aria-label="Average commission"
+                />
+                <span className="re-range-val re-range-val-sm">{fmtMoney(commission)}</span>
+              </label>
+              <div className="re-roi-tile re-roi-tile-revenue">
+                <span className="re-roi-tile-eyebrow">Illustrative revenue opportunity</span>
+                <span className="re-roi-tile-val re-roi-tile-val-sm">{fmtMoney(additionalRevenue)}</span>
+                <span className="re-roi-tile-label">from {amyAssisted} Amy-assisted leads/mo</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -246,22 +319,18 @@ function ROICalculator() {
         className="re-methodology-toggle"
         onClick={() => setShowMethod(v => !v)}
         aria-expanded={showMethod}
+        type="button"
       >
         {showMethod ? "▾" : "▸"} How is this calculated?
       </button>
       {showMethod && (
         <div className="re-methodology-body">
-          <p>The calculator uses only the five assumptions you enter:</p>
-          <ol>
-            <li><strong>Opportunity leads</strong> = Monthly leads × % with delayed/no response</li>
-            <li><strong>Leads Amy assists</strong> = Opportunity leads × % Amy could engage</li>
-            <li><strong>Additional closings</strong> = Leads Amy assists × your close rate</li>
-            <li><strong>Illustrative revenue</strong> = Additional closings × average commission</li>
-          </ol>
+          <p><strong>Hours saved</strong> = Leads × Minutes per lead × % Amy handles ÷ 60</p>
+          <p><strong>Time value</strong> = Hours saved × your hourly rate</p>
+          <p><strong>Revenue opportunity</strong> = Leads × % Amy handles × close rate × average commission</p>
           <p>
-            This is not a prediction, a projection, or a representation of CyberCraft360 customer results.
-            The calculator does not guarantee additional closings or revenue. Actual outcomes depend on your specific market,
-            lead quality, follow-up execution, and many other factors outside any system's control.
+            Not a prediction or guarantee. Actual results depend on your market, lead quality,
+            follow-up execution, and many other factors outside any system&apos;s control.
           </p>
         </div>
       )}
@@ -269,38 +338,40 @@ function ROICalculator() {
   );
 }
 
-// ─── Lead form ────────────────────────────────────────────────────────────────
-function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callback" | "demo"; utm: Record<string, string>; onSuccess: () => void }) {
+// ─── Amy Call Form ────────────────────────────────────────────────────────────
+function AmyCallForm({ utm, onSuccess }: { utm: Record<string, string>; onSuccess: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
   const [interest, setInterest] = useState("");
   const [message, setMessage] = useState("");
-  const [callbackConsent, setCallbackConsent] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name || !email) { setError("Name and email are required."); return; }
+    if (!phone) { setError("Phone number is required so Amy can call you."); return; }
+    if (!consent) { setError("Please check the box to request Amy's call."); return; }
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/real-estate/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, role, interest, message, callbackConsent, source, utm }),
+        body: JSON.stringify({ name, email, phone, role, interest, message, callbackConsent: true, source: "callback", utm }),
       });
       if (!res.ok) {
         let errMsg = "Something went wrong. Please try again.";
         try {
           const d = await res.json();
           if (d.error) errMsg = d.error;
-        } catch { /* response was not JSON — use default message */ }
+        } catch { /* response was not JSON */ }
         throw new Error(errMsg);
       }
-      gtag("event", "re_lead_submitted", { event_category: "real_estate", source });
+      gtag("event", "re_amy_call_requested", { event_category: "real_estate" });
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -316,7 +387,7 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
         <input className="re-input" type="email" placeholder="Email address *" aria-label="Email address" value={email} onChange={e => setEmail(e.target.value)} required />
       </div>
       <div className="re-form-row">
-        <input className="re-input" type="tel" placeholder="Phone number" aria-label="Phone number" value={phone} onChange={e => setPhone(e.target.value)} />
+        <input className="re-input" type="tel" placeholder="Phone number *" aria-label="Phone number" value={phone} onChange={e => setPhone(e.target.value)} required />
         <select className="re-input re-select" value={role} onChange={e => setRole(e.target.value)} aria-label="Your role">
           <option value="">Your role</option>
           <option value="Real Estate Agent">Real Estate Agent</option>
@@ -327,7 +398,7 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
         </select>
       </div>
       <select className="re-input re-select re-full" value={interest} onChange={e => setInterest(e.target.value)} aria-label="Biggest lead-handling challenge">
-        <option value="">What&apos;s your biggest lead-handling challenge?</option>
+        <option value="">What&apos;s your biggest lead-handling challenge? (optional)</option>
         <option value="Missed calls">Missed calls</option>
         <option value="Slow lead response">Slow lead response</option>
         <option value="Lead qualification">Lead qualification</option>
@@ -338,29 +409,173 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
       </select>
       <textarea
         className="re-input re-textarea"
-        placeholder="Tell us more about your current lead process or what you&apos;d like Amy to help with (optional)"
+        placeholder="Anything specific you&apos;d like Amy to cover on the call? (optional)"
         aria-label="Tell us more"
         value={message}
         onChange={e => setMessage(e.target.value)}
-        rows={3}
+        rows={2}
       />
-
-      {source === "callback" && (
-        <label className="re-consent-label">
-          <input type="checkbox" checked={callbackConsent} onChange={e => setCallbackConsent(e.target.checked)} className="re-checkbox" />
-          <span>
-            I&apos;d like CyberCraft360 to contact me by phone. By checking this box you consent to receiving a call from our team.
-            You may opt out at any time.
-          </span>
-        </label>
-      )}
+      <label className="re-consent-label">
+        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="re-checkbox" aria-required="true" />
+        <span>
+          I&apos;m requesting a call from Amy, CyberCraft360&apos;s AI front desk. I understand Amy is an AI voice assistant and I consent to receiving this call.
+          You may opt out at any time.{" "}
+          <Link href="/privacy" className="re-trust-link">Privacy Policy</Link>
+        </span>
+      </label>
 
       {error && <p className="re-form-error">{error}</p>}
 
       <button type="submit" className="re-submit-btn" disabled={loading}>
-        {loading ? "Sending..." : source === "callback" ? "Request Callback" : "Talk to Amy →"}
+        {loading ? "Requesting..." : "Have Amy Call Me →"}
       </button>
-      <p className="re-form-note">No spam. No obligation. We&apos;ll respond within minutes during business hours.</p>
+      <p className="re-form-note">During business hours, Amy typically calls within minutes. After hours, we&apos;ll schedule a time.</p>
+      <p className="re-form-note re-form-note-alt">
+        Prefer a walkthrough with our team? <Link href="/book" className="re-trust-link">Book a free demo →</Link>
+      </p>
+    </form>
+  );
+}
+
+// ─── Timezone list (common US zones) ─────────────────────────────────────────
+const US_TIMEZONES = [
+  { value: "America/New_York",    label: "Eastern (ET)" },
+  { value: "America/Chicago",     label: "Central (CT)" },
+  { value: "America/Denver",      label: "Mountain (MT)" },
+  { value: "America/Phoenix",     label: "Arizona (no DST)" },
+  { value: "America/Los_Angeles", label: "Pacific (PT)" },
+  { value: "America/Anchorage",   label: "Alaska (AKT)" },
+  { value: "Pacific/Honolulu",    label: "Hawaii (HST)" },
+];
+
+const TIME_WINDOWS = [
+  { value: "morning",   label: "Morning — 9 AM to 12 PM" },
+  { value: "afternoon", label: "Afternoon — 12 PM to 4 PM" },
+  { value: "evening",   label: "Evening — 4 PM to 7 PM" },
+];
+
+// ─── Schedule Callback Form ───────────────────────────────────────────────────
+function ScheduleCallbackForm({ utm, onSuccess }: { utm: Record<string, string>; onSuccess: () => void }) {
+  const [name, setName]           = useState("");
+  const [email, setEmail]         = useState("");
+  const [phone, setPhone]         = useState("");
+  const [role, setRole]           = useState("");
+  const [interest, setInterest]   = useState("");
+  const [date, setDate]           = useState("");
+  const [timeWindow, setTimeWindow] = useState("");
+  const [timezone, setTimezone]   = useState(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "America/Chicago"; }
+  });
+  const [consent, setConsent]     = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+
+  // Min date = tomorrow
+  const minDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
+  })();
+  // Max date = 14 days out
+  const maxDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split("T")[0];
+  })();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name || !email) { setError("Name and email are required."); return; }
+    if (!phone) { setError("Phone number is required."); return; }
+    if (!date) { setError("Please select a date."); return; }
+    if (!timeWindow) { setError("Please select a preferred time window."); return; }
+    if (!consent) { setError("Please check the consent box to schedule a callback."); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/real-estate/schedule-callback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, role, interest, date, timeWindow, timezone, utm }),
+      });
+      if (!res.ok) {
+        let errMsg = "Something went wrong. Please try again.";
+        try { const d = await res.json(); if (d.error) errMsg = d.error; } catch { /* not JSON */ }
+        throw new Error(errMsg);
+      }
+      gtag("event", "re_callback_scheduled", { event_category: "real_estate" });
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="re-form">
+      <div className="re-form-row">
+        <input className="re-input" placeholder="Your name *" aria-label="Your name" value={name} onChange={e => setName(e.target.value)} required />
+        <input className="re-input" type="email" placeholder="Email address *" aria-label="Email address" value={email} onChange={e => setEmail(e.target.value)} required />
+      </div>
+      <div className="re-form-row">
+        <input className="re-input" type="tel" placeholder="Phone number *" aria-label="Phone number" value={phone} onChange={e => setPhone(e.target.value)} required />
+        <select className="re-input re-select" value={role} onChange={e => setRole(e.target.value)} aria-label="Your role">
+          <option value="">Your role</option>
+          <option value="Real Estate Agent">Real Estate Agent</option>
+          <option value="Broker / Team Lead">Broker / Team Lead</option>
+          <option value="Property Manager">Property Manager</option>
+          <option value="Investor">Investor</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <select className="re-input re-select re-full" value={interest} onChange={e => setInterest(e.target.value)} aria-label="Biggest lead-handling challenge">
+        <option value="">What&apos;s your biggest lead-handling challenge? (optional)</option>
+        <option value="Missed calls">Missed calls</option>
+        <option value="Slow lead response">Slow lead response</option>
+        <option value="Lead qualification">Lead qualification</option>
+        <option value="Showing scheduling">Showing scheduling</option>
+        <option value="Follow-up">Follow-up</option>
+        <option value="After-hours inquiries">After-hours inquiries</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <div className="re-form-row">
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+          <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>Preferred Date *</label>
+          <input className="re-input" type="date" aria-label="Preferred date" value={date} min={minDate} max={maxDate} onChange={e => setDate(e.target.value)} required style={{ colorScheme: "dark" }} />
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+          <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>Time Window *</label>
+          <select className="re-input re-select" aria-label="Preferred time window" value={timeWindow} onChange={e => setTimeWindow(e.target.value)} required>
+            <option value="">Select window</option>
+            {TIME_WINDOWS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>Your Timezone</label>
+        <select className="re-input re-select re-full" aria-label="Your timezone" value={timezone} onChange={e => setTimezone(e.target.value)}>
+          {US_TIMEZONES.map(z => <option key={z.value} value={z.value}>{z.label}</option>)}
+        </select>
+      </div>
+
+      <label className="re-consent-label">
+        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="re-checkbox" aria-required="true" />
+        <span>
+          I&apos;m scheduling a callback from Amy, CyberCraft360&apos;s AI voice assistant. I understand Amy is an AI and I consent to receiving this automated call at the time I selected.
+          You may opt out at any time.{" "}
+          <a href="/privacy" style={{ color: "#00d4ff" }}>Privacy Policy</a>
+        </span>
+      </label>
+
+      {error && <p className="re-form-error">{error}</p>}
+
+      <button type="submit" className="re-submit-btn" disabled={loading}>
+        {loading ? "Scheduling..." : "Schedule My Callback →"}
+      </button>
+      <p className="re-form-note">Amy will call your number during the time window you selected. You&apos;ll receive an email confirmation.</p>
     </form>
   );
 }
@@ -368,9 +583,9 @@ function LeadForm({ source, utm, onSuccess }: { source: "talk-to-amy" | "callbac
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function RealEstatePage() {
   const utm = useUTM();
-  const [talkFormSuccess, setTalkFormSuccess] = useState(false);
-  const [callbackSuccess, setCallbackSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<"talk" | "callback">("talk");
+  const [callSuccess, setCallSuccess]             = useState(false);
+  const [scheduleSuccess, setScheduleSuccess]     = useState(false);
+  const [amyTab, setAmyTab]                       = useState<"now" | "schedule">("now");
 
   useEffect(() => {
     gtag("event", "re_page_view", {
@@ -381,79 +596,35 @@ export default function RealEstatePage() {
     });
   }, [utm]);
 
-  const capabilities = [
-    {
-      icon: "📞",
-      title: "Respond Instantly",
-      desc: "Responds to incoming calls and inquiries 24/7, including when your team is unavailable.",
-    },
-    {
-      icon: "🎯",
-      title: "Qualify Leads",
-      desc: "Asks the questions your team needs to understand buyer and seller intent — timeline, budget, location, representation.",
-    },
-    {
-      icon: "🏠",
-      title: "Answer Questions",
-      desc: "Can be configured to answer common property, pricing, and availability questions using approved business and listing information.",
-    },
-    {
-      icon: "📋",
-      title: "Capture Details",
-      desc: "Captures contact details, timeline, budget, and other information your team needs — structured and ready to act on.",
-    },
-    {
-      icon: "📅",
-      title: "Schedule Showings",
-      desc: "Helps qualified prospects move toward an appointment or showing without unnecessary back-and-forth.",
-    },
-    {
-      icon: "🔄",
-      title: "Follow Up",
-      desc: "Can help identify follow-up opportunities and keep your team informed on conversations that need attention.",
-    },
-    {
-      icon: "🔔",
-      title: "Notify Your Team",
-      desc: "Alerts your team when a conversation requires attention or a qualified lead has been identified.",
-    },
-  ];
-
-  const useCases = [
-    { title: "Buyer Leads", desc: "Qualify buyers on timeline, budget, and location before they ever reach your desk." },
-    { title: "Seller Leads", desc: "Capture property details and seller motivation for a warm hand-off to your team." },
-    { title: "Property Inquiries", desc: "Respond to questions about listing details, neighborhood, and pricing at any hour." },
-    { title: "Showing Requests", desc: "Help qualified prospects schedule showings without manual back-and-forth." },
-    { title: "Open House Follow-Up", desc: "Re-engage open house visitors promptly after the event." },
-    { title: "After-Hours Inquiries", desc: "The 11pm Zillow inquiry gets a real, structured response — not a form or voicemail." },
-    { title: "Lead Qualification", desc: "Gather buying timeline, pre-approval status, and motivation before your agent calls back." },
-    { title: "Appointment Requests", desc: "Handle inbound appointment requests and guide prospects toward a scheduled time." },
-    { title: "AI Lead Follow-Up", desc: "Keep conversations moving when prospects don't respond immediately. Amy can help identify follow-up opportunities and keep your team informed." },
-  ];
 
   const steps = [
     {
       num: "1",
+      title: "Discover",
+      desc: "We learn your business: how leads come in, how your team handles them, what matters most to your clients.",
+    },
+    {
+      num: "2",
       title: "Connect",
       desc: "Connect your phone, calendar, CRM, and any other systems your team relies on.",
     },
     {
-      num: "2",
+      num: "3",
       title: "Configure",
       desc: "Amy is configured around your business, team, workflows, listings, and brand voice — not a generic template.",
     },
     {
-      num: "3",
+      num: "4",
       title: "Test",
       desc: "We run structured conversations and workflow tests before anything goes live.",
     },
     {
-      num: "4",
+      num: "5",
       title: "Launch",
       desc: "Go live after configuration, testing, and your approval.",
     },
     {
-      num: "5",
+      num: "6",
       title: "Improve",
       desc: "Review real conversations and refine the system over time with your team.",
     },
@@ -465,13 +636,13 @@ export default function RealEstatePage() {
         {/* ── Nav ── */}
         <nav className="re-nav">
           <Link href="/" className="re-nav-logo">
-            <span className="re-logo-cc">CC</span>
-            <span className="re-logo-360">360</span>
+            <img src="/logo-icon.svg" alt="CyberCraft360" className="re-nav-logo-img" />
+            <span className="re-nav-logo-text">CyberCraft360</span>
           </Link>
           <div className="re-nav-links">
             <a href="#how-it-works" className="re-nav-link">How It Works</a>
             <a href="#pricing" className="re-nav-link">Pricing</a>
-            <a href="#talk-to-amy" className="re-nav-link">Talk to Amy</a>
+            <a href="#have-amy-call-me" className="re-nav-link">Have Amy Call Me</a>
             <Link href="/book" className="re-nav-cta">Book Demo</Link>
           </div>
         </nav>
@@ -494,15 +665,15 @@ export default function RealEstatePage() {
               Amy responds to calls and inquiries, qualifies prospects, and helps schedule showings — day and night. Built specifically for real estate teams.
             </p>
             <p className="re-hero-lead-note">
-              Leads arrive from Zillow, HAR, Realtor.com, your website, and social media. Amy helps you handle every opportunity — so nothing waits.
+              When a buyer calls at 11pm, Amy answers. When an inquiry comes in, Amy qualifies and captures it. Every lead gets a structured, immediate response.
             </p>
             <div className="re-hero-ctas">
               <a
-                href="#talk-to-amy"
+                href="#have-amy-call-me"
                 className="re-btn-primary re-btn-hero-primary"
-                onClick={() => gtag("event", "re_cta_hero_talk", { event_category: "real_estate" })}
+                onClick={() => gtag("event", "re_cta_hero_call", { event_category: "real_estate" })}
               >
-                Talk to Amy — Try It Live
+                Have Amy Call Me
               </a>
               <Link
                 href="/book"
@@ -512,10 +683,10 @@ export default function RealEstatePage() {
                 Book a Free Demo
               </Link>
               <a href="#roi-calculator" className="re-btn-ghost">
-                Calculate Your ROI
+                See the ROI
               </a>
             </div>
-            <p className="re-hero-cta-note">See what your leads would experience before you commit.</p>
+            <p className="re-hero-cta-note">Enter your number and Amy will call you — experience the real thing.</p>
           </motion.div>
           <motion.div
             className="re-hero-demo"
@@ -530,22 +701,47 @@ export default function RealEstatePage() {
         {/* ── Problem ── */}
         <section className="re-section re-problem">
           <div className="re-container">
-            <h2 className="re-section-headline">Real Estate Doesn&apos;t Stop<br />When Your Office Does.</h2>
-            <p className="re-section-sub">Leads come in at 10pm. Buyers call during your showing. Sellers want answers on Sunday morning.</p>
-            <div className="re-problem-grid">
-              {[
-                { icon: "📵", prob: "Missed call at 11pm", outcome: "Lead may call another agent instead." },
-                { icon: "📭", prob: "Voicemail unanswered for 6 hours", outcome: "A buyer may have moved on before you reply." },
-                { icon: "📋", prob: "Showing request comes in during an open house", outcome: "A showing request can get buried in the inbox." },
-                { icon: "🏃", prob: "New inquiry while you&apos;re with another client", outcome: "A new inquiry can sit unanswered until you&apos;re free." },
-              ].map((item, i) => (
-                <div key={i} className="re-problem-card">
-                  <span className="re-problem-icon">{item.icon}</span>
-                  <p className="re-problem-text">{item.prob}</p>
-                  <div className="re-problem-arrow">→</div>
-                  <p className="re-problem-outcome">{item.outcome}</p>
-                </div>
-              ))}
+            <h2 className="re-section-headline re-center">Real Estate Doesn&apos;t Stop<br />When Your Office Does.</h2>
+            <p className="re-section-sub">A lead comes in at 11pm. Here&apos;s what happens — with and without Amy.</p>
+            <div className="re-timeline-comparison">
+              <div className="re-timeline-col">
+                <div className="re-timeline-col-header re-col-without">Without Amy</div>
+                {[
+                  { time: "11:02 PM", event: "Buyer calls about 123 Main St.", note: "Phone rings. No answer." },
+                  { time: "11:03 PM", event: "Voicemail left", note: "Buyer hangs up — leaves a generic message." },
+                  { time: "11:04 PM", event: "Zillow inquiry sent too", note: "Buyer isn't sure you got the call." },
+                  { time: "7:41 AM", event: "You see the voicemail", note: "8+ hours later. No context on what they want." },
+                  { time: "8:15 AM", event: "You call back", note: "No answer. They may have moved on." },
+                ].map((row, i) => (
+                  <div key={i} className="re-tl-row re-tl-without">
+                    <span className="re-tl-time">{row.time}</span>
+                    <span className="re-tl-dot re-tl-dot-bad" />
+                    <div className="re-tl-content">
+                      <span className="re-tl-event">{row.event}</span>
+                      <span className="re-tl-note">{row.note}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="re-timeline-col">
+                <div className="re-timeline-col-header re-col-with">With Amy</div>
+                {[
+                  { time: "11:02 PM", event: "Buyer calls about 123 Main St.", note: "Amy answers within seconds." },
+                  { time: "11:04 PM", event: "Amy qualifies the lead", note: "Budget, timeline, representation — all captured." },
+                  { time: "11:06 PM", event: "Showing offered", note: "Friday 11am. Lead says yes." },
+                  { time: "11:07 PM", event: "You get a summary", note: "Sarah Johnson · $400–450K · No agent · Friday 11am." },
+                  { time: "8:00 AM", event: "You start the day with context", note: "A warm lead, fully qualified, ready to act." },
+                ].map((row, i) => (
+                  <div key={i} className="re-tl-row re-tl-with">
+                    <span className="re-tl-time">{row.time}</span>
+                    <span className="re-tl-dot re-tl-dot-good" />
+                    <div className="re-tl-content">
+                      <span className="re-tl-event">{row.event}</span>
+                      <span className="re-tl-note">{row.note}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -554,20 +750,61 @@ export default function RealEstatePage() {
         <section className="re-section">
           <div className="re-container">
             <div className="re-eyebrow re-eyebrow-center">What Amy Does</div>
-            <h2 className="re-section-headline re-center">Seven Things Amy Handles<br />So You Don&apos;t Have To</h2>
-            <div className="re-capabilities-grid">
-              {capabilities.map((cap, i) => (
+            <h2 className="re-section-headline re-center">Three Outcomes.<br />One AI Front Desk.</h2>
+            <div className="re-cap-groups">
+              {[
+                {
+                  group: "RESPOND",
+                  color: "blue",
+                  headline: "Never miss an inquiry",
+                  items: [
+                    { icon: "📞", title: "Answer 24/7", desc: "Responds to incoming calls and inquiries when your team is unavailable — nights, weekends, during showings." },
+                    { icon: "🔔", title: "Notify Your Team", desc: "Alerts you the moment a qualified lead or urgent conversation needs your attention." },
+                  ],
+                },
+                {
+                  group: "QUALIFY",
+                  color: "purple",
+                  headline: "Know who's worth calling back",
+                  items: [
+                    { icon: "🎯", title: "Qualify Leads", desc: "Asks the questions that matter — timeline, budget, location, representation — before the lead reaches your desk." },
+                    { icon: "📋", title: "Capture Details", desc: "Contact info, intent, and context — structured and ready for your team to act on." },
+                    { icon: "🏠", title: "Answer Questions", desc: "Configured to handle common property, pricing, and availability questions using your approved information." },
+                  ],
+                },
+                {
+                  group: "MOVE FORWARD",
+                  color: "green",
+                  headline: "Warm leads, not cold callbacks",
+                  items: [
+                    { icon: "📅", title: "Schedule Showings", desc: "Helps qualified prospects move toward an appointment or showing without unnecessary back-and-forth." },
+                    { icon: "🔄", title: "Surface Follow-Ups", desc: "Identifies conversations that need follow-up and keeps your team informed on what requires attention." },
+                  ],
+                },
+              ].map((group, gi) => (
                 <motion.div
-                  key={i}
-                  className="re-cap-card"
-                  initial={{ opacity: 0, y: 16 }}
+                  key={gi}
+                  className={`re-cap-group re-cap-group-${group.color}`}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.07 }}
+                  transition={{ delay: gi * 0.1 }}
                 >
-                  <span className="re-cap-icon">{cap.icon}</span>
-                  <h3 className="re-cap-title">{cap.title}</h3>
-                  <p className="re-cap-desc">{cap.desc}</p>
+                  <div className="re-cap-group-header">
+                    <span className={`re-cap-group-label re-cap-group-label-${group.color}`}>{group.group}</span>
+                    <h3 className="re-cap-group-headline">{group.headline}</h3>
+                  </div>
+                  <div className="re-cap-group-items">
+                    {group.items.map((item, ii) => (
+                      <div key={ii} className="re-cap-item">
+                        <span className="re-cap-icon">{item.icon}</span>
+                        <div>
+                          <h4 className="re-cap-title">{item.title}</h4>
+                          <p className="re-cap-desc">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -649,57 +886,39 @@ export default function RealEstatePage() {
           </div>
         </section>
 
-        {/* ── Before / After ── */}
-        <section className="re-section re-ba-section">
+        {/* ── FAQ ── */}
+        <section className="re-section re-faq-section">
           <div className="re-container">
-            <h2 className="re-section-headline re-center">Before Amy. After Amy.</h2>
-            <div className="re-ba-grid">
-              <div className="re-ba-col re-ba-before">
-                <div className="re-ba-label">Before</div>
-                {[
-                  "Phone rings at 9pm — no one answers",
-                  "Lead leaves a voicemail",
-                  "You return the call 8 hours later",
-                  "Lead has already moved on",
-                  "You never knew what they were looking for",
-                ].map((line, i) => (
-                  <div key={i} className="re-ba-row">
-                    <span className="re-ba-x">✕</span>
-                    <span>{line}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="re-ba-divider">→</div>
-              <div className="re-ba-col re-ba-after">
-                <div className="re-ba-label re-ba-label-after">After Amy</div>
-                {[
-                  "Amy responds to incoming inquiries when your team is unavailable",
-                  "Lead is qualified and interest is captured",
-                  "Qualified prospects can be guided toward a showing or appointment",
-                  "You receive a structured conversation summary",
-                  "Important conversations are surfaced for agent follow-up",
-                ].map((line, i) => (
-                  <div key={i} className="re-ba-row">
-                    <span className="re-ba-check">✓</span>
-                    <span>{line}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Use Cases ── */}
-        <section className="re-section">
-          <div className="re-container">
-            <div className="re-eyebrow re-eyebrow-center">Use Cases</div>
-            <h2 className="re-section-headline re-center">Common Scenarios Amy Is Built For</h2>
-            <div className="re-usecase-grid">
-              {useCases.map((uc, i) => (
-                <div key={i} className="re-usecase-card">
-                  <h3 className="re-usecase-title">{uc.title}</h3>
-                  <p className="re-usecase-desc">{uc.desc}</p>
-                </div>
+            <div className="re-eyebrow re-eyebrow-center">Common Questions</div>
+            <h2 className="re-section-headline re-center">What Teams Ask<br />Before Getting Started</h2>
+            <div className="re-faq-list">
+              {[
+                {
+                  q: "Is Amy a real person or an AI?",
+                  a: "Amy is an AI voice assistant built by CyberCraft360. She's designed to handle incoming real estate calls naturally and professionally. She does not represent herself as a human to callers who sincerely ask.",
+                },
+                {
+                  q: "What happens when Amy gets a question she can't answer?",
+                  a: "Amy is configured with your business information, listings, and approved talking points. For questions outside her scope, she captures the caller's details and flags the conversation for your team to follow up.",
+                },
+                {
+                  q: "How does the Amy call demo work?",
+                  a: "When you click \"Have Amy Call Me\" and provide your number, Amy will call you — typically within minutes during business hours. You'll experience the real system, not a simulation.",
+                },
+                {
+                  q: "Do I need to integrate my CRM or calendar?",
+                  a: "Integration is part of the setup and configuration process. We work with your team to connect Amy to the tools you already use. The scope depends on your stack and workflow requirements.",
+                },
+                {
+                  q: "How long does setup take?",
+                  a: "Typical deployment is 2–4 weeks. More complex integrations, high call volumes, or custom workflows may take approximately 4–6 weeks. We'll give you a specific estimate after the discovery session.",
+                },
+                {
+                  q: "What if I get a lot of leads from Zillow or HAR?",
+                  a: "Amy handles inbound phone calls. If your Zillow or HAR leads come in via phone, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
+                },
+              ].map((item, i) => (
+                <FAQItem key={i} q={item.q} a={item.a} />
               ))}
             </div>
           </div>
@@ -709,7 +928,8 @@ export default function RealEstatePage() {
         <section className="re-section" id="roi-calculator">
           <div className="re-container">
             <div className="re-eyebrow re-eyebrow-center">ROI Calculator</div>
-            <h2 className="re-section-headline re-center">Model the Opportunity<br />for Your Business</h2>
+            <h2 className="re-section-headline re-center">See What Amy Could Give Back<br />to Your Business</h2>
+            <p className="re-section-sub">Use your own numbers to explore an illustrative scenario.</p>
             <ROICalculator />
           </div>
         </section>
@@ -718,12 +938,12 @@ export default function RealEstatePage() {
         <section className="re-section" id="how-it-works">
           <div className="re-container">
             <div className="re-eyebrow re-eyebrow-center">How It Works</div>
-            <h2 className="re-section-headline re-center">From Sign-Up to Launch</h2>
+            <h2 className="re-section-headline re-center">From Your Business<br />to Your Amy</h2>
             <p className="re-section-sub">
               Deployment timeline depends on call volume, integrations, knowledge configuration,
               calendar and CRM setup, testing, and workflow complexity.
             </p>
-            <div className="re-steps re-steps-5">
+            <div className="re-steps re-steps-6">
               {steps.map((step, i) => (
                 <motion.div
                   key={i}
@@ -800,65 +1020,75 @@ export default function RealEstatePage() {
                 <li>✓ Structured lead summaries and team alerts</li>
                 <li>✓ Dedicated setup and onboarding support</li>
               </ul>
-              <Link href="/book" className="re-btn-primary re-pricing-cta">
-                Book a Free Demo →
-              </Link>
+              <a href="#have-amy-call-me" className="re-btn-primary re-pricing-cta">
+                Have Amy Call Me →
+              </a>
+              <p style={{marginTop:"12px", fontSize:"13px"}}>
+                <Link href="/book" style={{color:"rgba(255,255,255,0.4)", textDecoration:"none"}}>Or book a team demo →</Link>
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ── Talk to Amy / Callback form ── */}
-        <section className="re-section re-form-section" id="talk-to-amy">
+        {/* ── Have Amy Call Me ── */}
+        <section className="re-section re-form-section" id="have-amy-call-me">
           <div className="re-container">
-            <div className="re-eyebrow re-eyebrow-center">Get Started</div>
-            <h2 className="re-section-headline re-center">See What Amy Would Do<br />With Your Next Lead.</h2>
+            <div className="re-eyebrow re-eyebrow-center">Experience the Real Thing</div>
+            <h2 className="re-section-headline re-center">Talk to Amy.</h2>
             <p className="re-section-sub">
-              Tell us a little about your business and your current lead process. We&apos;ll show you how Amy could fit into your workflow.
+              Get a call from Amy — the same AI your leads would speak to. Choose to have her call you now or pick a time that works for you.
             </p>
 
-            <div className="re-form-tabs">
-              <button
-                className={`re-tab ${activeTab === "talk" ? "re-tab-active" : ""}`}
-                onClick={() => setActiveTab("talk")}
-              >
-                Talk to Amy
-              </button>
-              <button
-                className={`re-tab ${activeTab === "callback" ? "re-tab-active" : ""}`}
-                onClick={() => setActiveTab("callback")}
-              >
-                Request Callback
-              </button>
+            {/* Tab switcher */}
+            <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "32px" }}>
+              {[
+                { key: "now",      label: "☎ Call Amy Now",       desc: "Amy calls you immediately" },
+                { key: "schedule", label: "📅 Schedule a Callback", desc: "Pick a date and time window" },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setAmyTab(tab.key as "now" | "schedule")}
+                  style={{
+                    padding: "12px 22px",
+                    borderRadius: "10px",
+                    border: amyTab === tab.key ? "1.5px solid #00d4ff" : "1px solid rgba(255,255,255,0.12)",
+                    background: amyTab === tab.key ? "rgba(0,212,255,0.1)" : "rgba(255,255,255,0.03)",
+                    color: amyTab === tab.key ? "#00d4ff" : "rgba(255,255,255,0.5)",
+                    fontWeight: 700,
+                    fontSize: "13px",
+                    letterSpacing: "0.04em",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {tab.label}
+                  <div style={{ fontSize: "10px", fontWeight: 400, opacity: 0.7, marginTop: "2px" }}>{tab.desc}</div>
+                </button>
+              ))}
             </div>
 
-            <AnimatePresence mode="wait">
-              {activeTab === "talk" && (
-                <motion.div key="talk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {talkFormSuccess ? (
-                    <div className="re-form-success">
-                      <span className="re-success-icon">✓</span>
-                      <h3>We&apos;ve got you.</h3>
-                      <p>Amy will be in touch within minutes. Check your email for a confirmation.</p>
-                    </div>
-                  ) : (
-                    <LeadForm source="talk-to-amy" utm={utm} onSuccess={() => setTalkFormSuccess(true)} />
-                  )}
-                </motion.div>
-              )}
-              {activeTab === "callback" && (
-                <motion.div key="callback" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {callbackSuccess ? (
-                    <div className="re-form-success">
-                      <span className="re-success-icon">✓</span>
-                      <h3>Callback requested.</h3>
-                      <p>Our team will be in touch. Make sure your phone is on.</p>
-                    </div>
-                  ) : (
-                    <LeadForm source="callback" utm={utm} onSuccess={() => setCallbackSuccess(true)} />
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {amyTab === "now" ? (
+              callSuccess ? (
+                <div className="re-form-success">
+                  <span className="re-success-icon">✓</span>
+                  <h3>Amy&apos;s call is on the way.</h3>
+                  <p>During business hours, expect a call within minutes. Check your email for a confirmation.</p>
+                </div>
+              ) : (
+                <AmyCallForm utm={utm} onSuccess={() => setCallSuccess(true)} />
+              )
+            ) : (
+              scheduleSuccess ? (
+                <div className="re-form-success">
+                  <span className="re-success-icon">✓</span>
+                  <h3>Callback scheduled.</h3>
+                  <p>Amy will call you during your selected time window. You&apos;ll receive a confirmation email shortly.</p>
+                </div>
+              ) : (
+                <ScheduleCallbackForm utm={utm} onSuccess={() => setScheduleSuccess(true)} />
+              )
+            )}
           </div>
         </section>
 
@@ -867,7 +1097,10 @@ export default function RealEstatePage() {
           <div className="re-container">
             <div className="re-footer-top">
               <div>
-                <div className="re-footer-brand">CyberCraft360</div>
+                <div className="re-footer-brand-row">
+                  <img src="/logo-icon.svg" alt="CyberCraft360" className="re-footer-logo-img" />
+                  <span className="re-footer-brand">CyberCraft360</span>
+                </div>
                 <p className="re-footer-tagline">AI automation for US service businesses.</p>
               </div>
               <div className="re-footer-links">
@@ -891,9 +1124,9 @@ export default function RealEstatePage() {
 
         /* ── Nav ── */
         .re-nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; background: oklch(0.13 0.004 240 / 0.92); backdrop-filter: blur(12px); z-index: 50; }
-        .re-nav-logo { display: flex; align-items: baseline; gap: 1px; text-decoration: none; }
-        .re-logo-cc { font-size: 18px; font-weight: 800; color: oklch(0.78 0.13 207); }
-        .re-logo-360 { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.5); }
+        .re-nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+        .re-nav-logo-img { height: 32px; width: auto; display: block; }
+        .re-nav-logo-text { font-size: 15px; font-weight: 800; color: rgba(255,255,255,0.9); letter-spacing: -0.01em; }
         .re-nav-links { display: flex; align-items: center; gap: 24px; }
         .re-nav-link { color: rgba(255,255,255,0.55); text-decoration: none; font-size: 14px; transition: color .2s; }
         .re-nav-link:hover { color: #fff; }
@@ -964,22 +1197,41 @@ export default function RealEstatePage() {
         .re-workflow-label { font-weight: 600; letter-spacing: 0.03em; }
         .re-workflow-arrow { color: rgba(255,255,255,0.2); font-size: 14px; margin-left: 2px; }
 
-        /* ── Problem ── */
+        /* ── Problem / Timeline ── */
         .re-problem { background: oklch(0.15 0.006 240); }
-        .re-problem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 48px; }
-        .re-problem-card { background: oklch(0.18 0.008 240); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 24px; text-align: center; }
-        .re-problem-icon { font-size: 28px; display: block; margin-bottom: 12px; }
-        .re-problem-text { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); margin: 0 0 10px; line-height: 1.4; }
-        .re-problem-arrow { font-size: 18px; color: rgba(255,0,80,0.6); margin-bottom: 10px; }
-        .re-problem-outcome { font-size: 13px; color: rgba(255,60,60,0.75); margin: 0; line-height: 1.4; }
+        .re-timeline-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px; }
+        .re-timeline-col { background: oklch(0.17 0.008 240); border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.07); }
+        .re-timeline-col-header { padding: 14px 20px; font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+        .re-col-without { background: rgba(255,60,60,0.08); color: rgba(255,100,100,0.8); border-bottom: 1px solid rgba(255,60,60,0.15); }
+        .re-col-with { background: rgba(0,212,130,0.07); color: rgba(34,197,94,0.9); border-bottom: 1px solid rgba(34,197,94,0.15); }
+        .re-tl-row { display: grid; grid-template-columns: 76px 12px 1fr; align-items: start; gap: 10px; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .re-tl-row:last-child { border-bottom: none; }
+        .re-tl-time { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); font-variant-numeric: tabular-nums; padding-top: 2px; }
+        .re-tl-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+        .re-tl-dot-bad { background: rgba(255,80,80,0.7); box-shadow: 0 0 6px rgba(255,80,80,0.4); }
+        .re-tl-dot-good { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+        .re-tl-content { display: flex; flex-direction: column; gap: 3px; }
+        .re-tl-event { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); line-height: 1.3; }
+        .re-tl-note { font-size: 12px; color: rgba(255,255,255,0.35); line-height: 1.4; }
 
         /* ── Capabilities ── */
-        .re-capabilities-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 48px; }
-        .re-cap-card { background: oklch(0.16 0.007 240); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 24px 20px; transition: border-color .2s; }
-        .re-cap-card:hover { border-color: oklch(0.78 0.13 207 / 0.4); }
-        .re-cap-icon { font-size: 26px; display: block; margin-bottom: 12px; }
-        .re-cap-title { font-size: 15px; font-weight: 700; margin: 0 0 8px; }
-        .re-cap-desc { font-size: 13px; color: rgba(255,255,255,0.5); margin: 0; line-height: 1.55; }
+        .re-cap-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+        .re-cap-group { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.07); }
+        .re-cap-group-blue { border-color: oklch(0.78 0.13 207 / 0.25); }
+        .re-cap-group-purple { border-color: rgba(124,58,237,0.3); }
+        .re-cap-group-green { border-color: rgba(34,197,94,0.25); }
+        .re-cap-group-header { padding: 20px 22px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); background: oklch(0.16 0.007 240); }
+        .re-cap-group-label { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; border-radius: 4px; padding: 3px 8px; margin-bottom: 8px; }
+        .re-cap-group-label-blue { color: oklch(0.78 0.13 207); background: oklch(0.78 0.13 207 / 0.12); }
+        .re-cap-group-label-purple { color: rgb(167,139,250); background: rgba(124,58,237,0.15); }
+        .re-cap-group-label-green { color: #22c55e; background: rgba(34,197,94,0.1); }
+        .re-cap-group-headline { font-size: 15px; font-weight: 700; margin: 0; color: rgba(255,255,255,0.85); }
+        .re-cap-group-items { display: flex; flex-direction: column; gap: 0; background: oklch(0.155 0.006 240); }
+        .re-cap-item { display: flex; gap: 14px; align-items: flex-start; padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .re-cap-item:last-child { border-bottom: none; }
+        .re-cap-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+        .re-cap-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+        .re-cap-desc { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; line-height: 1.5; }
 
         /* ── Agent Dashboard ── */
         .re-dashboard-section { background: oklch(0.15 0.006 240); }
@@ -1036,29 +1288,41 @@ export default function RealEstatePage() {
         .re-roi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
         .re-roi-inputs { display: flex; flex-direction: column; gap: 24px; }
         .re-roi-label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7); }
+        .re-roi-label-sm { font-size: 13px; }
+        .re-preset-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .re-preset-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer; transition: all .15s; font-family: inherit; }
+        .re-preset-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+        .re-preset-btn-active { background: oklch(0.78 0.13 207 / 0.2); border-color: oklch(0.78 0.13 207 / 0.5); color: oklch(0.78 0.13 207); }
         .re-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); outline: none; cursor: pointer; }
         .re-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: oklch(0.78 0.13 207); cursor: pointer; box-shadow: 0 0 0 3px oklch(0.78 0.13 207 / 0.2); }
         .re-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: oklch(0.78 0.13 207); cursor: pointer; border: none; }
         .re-range::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); }
         .re-range:focus-visible { outline: 2px solid oklch(0.78 0.13 207); outline-offset: 4px; }
         .re-range-val { font-size: 20px; font-weight: 800; color: oklch(0.78 0.13 207); }
-        .re-roi-results { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
-        .re-roi-tile { background: oklch(0.16 0.007 240); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 28px 24px; text-align: center; }
+        .re-range-val-sm { font-size: 16px; }
+        .re-roi-results { display: flex; flex-direction: column; gap: 16px; justify-content: flex-start; }
+        .re-roi-tile { background: oklch(0.16 0.007 240); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 22px 24px; text-align: center; }
+        .re-roi-tile-primary { border-color: rgba(255,255,255,0.12); }
         .re-roi-tile-accent { border-color: oklch(0.78 0.13 207 / 0.4); background: oklch(0.78 0.13 207 / 0.07); }
-        .re-roi-tile-val { display: block; font-size: 44px; font-weight: 900; color: oklch(0.78 0.13 207); font-variant-numeric: tabular-nums; line-height: 1; }
-        .re-roi-tile-label { display: block; font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 8px; line-height: 1.4; }
-        .re-roi-caveat { font-size: 11px; color: rgba(255,190,0,0.6); line-height: 1.5; border: 1px solid rgba(255,190,0,0.15); border-radius: 8px; padding: 10px 14px; }
+        .re-roi-tile-revenue { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.05); margin-top: 8px; }
+        .re-roi-tile-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+        .re-roi-tile-val { display: block; font-size: 48px; font-weight: 900; color: oklch(0.78 0.13 207); font-variant-numeric: tabular-nums; line-height: 1; }
+        .re-roi-tile-val-sm { font-size: 36px; color: #22c55e; }
+        .re-roi-tile-label { display: block; font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 6px; line-height: 1.4; }
+        .re-roi-caveat { font-size: 11px; color: rgba(255,190,0,0.6); line-height: 1.5; border: 1px solid rgba(255,190,0,0.15); border-radius: 8px; padding: 10px 14px; margin: 0; }
+        .re-revenue-toggle { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0; font-family: inherit; transition: color .2s; text-align: left; }
+        .re-revenue-toggle:hover { color: rgba(255,255,255,0.7); }
+        .re-revenue-section { display: flex; flex-direction: column; gap: 14px; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; }
         .re-methodology-toggle { margin-top: 24px; background: none; border: none; color: rgba(255,255,255,0.35); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; font-family: inherit; transition: color .2s; }
         .re-methodology-toggle:hover { color: rgba(255,255,255,0.6); }
         .re-methodology-body { margin-top: 12px; padding: 16px 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.6; }
         .re-methodology-body p { margin: 0 0 10px; }
-        .re-methodology-body ol { margin: 0 0 10px; padding-left: 18px; }
-        .re-methodology-body li { margin-bottom: 6px; }
         .re-methodology-body strong { color: rgba(255,255,255,0.65); }
 
         /* ── How It Works / Steps ── */
         .re-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 48px; }
         .re-steps-5 { grid-template-columns: repeat(5, 1fr); }
+        .re-steps-6 { grid-template-columns: repeat(6, 1fr); }
         .re-step { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
         .re-step-num { width: 44px; height: 44px; border-radius: 50%; background: oklch(0.78 0.13 207 / 0.15); border: 2px solid oklch(0.78 0.13 207 / 0.5); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: oklch(0.78 0.13 207); flex-shrink: 0; }
         .re-step-title { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
@@ -1110,15 +1374,29 @@ export default function RealEstatePage() {
         .re-submit-btn:hover:not(:disabled) { opacity: 0.88; }
         .re-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .re-form-note { font-size: 12px; color: rgba(255,255,255,0.25); text-align: center; margin: 0; }
+        .re-form-note-alt { margin-top: 6px; color: rgba(255,255,255,0.3); }
         .re-form-success { max-width: 560px; margin: 0 auto; text-align: center; padding: 48px 24px; background: oklch(0.78 0.13 207 / 0.06); border: 1px solid oklch(0.78 0.13 207 / 0.2); border-radius: 14px; }
         .re-success-icon { display: block; font-size: 36px; margin-bottom: 16px; color: #22c55e; }
         .re-form-success h3 { font-size: 22px; font-weight: 700; margin: 0 0 10px; }
         .re-form-success p { font-size: 15px; color: rgba(255,255,255,0.5); margin: 0; }
 
+        /* ── FAQ ── */
+        .re-faq-section { background: oklch(0.15 0.006 240); }
+        .re-faq-list { max-width: 720px; margin: 48px auto 0; display: flex; flex-direction: column; gap: 0; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+        .re-faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .re-faq-item:last-child { border-bottom: none; }
+        .re-faq-q { width: 100%; background: none; border: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; text-align: left; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.85); cursor: pointer; font-family: inherit; transition: background .15s; }
+        .re-faq-q:hover { background: rgba(255,255,255,0.03); }
+        .re-faq-chevron { font-size: 20px; font-weight: 300; color: oklch(0.78 0.13 207); flex-shrink: 0; }
+        .re-faq-a { padding: 0 24px 20px; font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.65; }
+        .re-faq-open .re-faq-q { color: #fff; background: rgba(255,255,255,0.02); }
+
         /* ── Footer ── */
         .re-footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 40px 0; }
         .re-footer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-        .re-footer-brand { font-size: 16px; font-weight: 800; color: oklch(0.78 0.13 207); margin-bottom: 6px; }
+        .re-footer-brand-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .re-footer-logo-img { height: 24px; width: auto; }
+        .re-footer-brand { font-size: 15px; font-weight: 800; color: rgba(255,255,255,0.85); }
         .re-footer-tagline { font-size: 13px; color: rgba(255,255,255,0.3); margin: 0; }
         .re-footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
         .re-footer-links a { font-size: 13px; color: rgba(255,255,255,0.4); text-decoration: none; transition: color .2s; }
@@ -1130,11 +1408,13 @@ export default function RealEstatePage() {
           .re-hero { grid-template-columns: 1fr; padding: 48px 20px 32px; }
           .re-hero-demo { order: -1; }
           .re-chat-container { max-width: 100%; }
-          .re-problem-grid, .re-capabilities-grid, .re-trust-grid { grid-template-columns: 1fr 1fr; }
+          .re-timeline-comparison { grid-template-columns: 1fr; }
+          .re-cap-groups { grid-template-columns: 1fr; }
+          .re-trust-grid { grid-template-columns: 1fr 1fr; }
           .re-usecase-grid { grid-template-columns: 1fr 1fr; }
           .re-ba-grid { grid-template-columns: 1fr; }
           .re-ba-divider { display: none; }
-          .re-steps, .re-steps-5 { grid-template-columns: 1fr 1fr; }
+          .re-steps, .re-steps-5, .re-steps-6 { grid-template-columns: repeat(3, 1fr); }
           .re-roi-grid { grid-template-columns: 1fr; }
           .re-nav-links .re-nav-link { display: none; }
           .re-dashboard-fields { grid-template-columns: 1fr 1fr; }
@@ -1143,7 +1423,7 @@ export default function RealEstatePage() {
         }
         @media (max-width: 600px) {
           .re-section { padding: 56px 0; }
-          .re-problem-grid, .re-capabilities-grid, .re-trust-grid, .re-steps, .re-steps-5 { grid-template-columns: 1fr; }
+          .re-trust-grid, .re-steps, .re-steps-5, .re-steps-6 { grid-template-columns: 1fr 1fr; }
           .re-usecase-grid { grid-template-columns: 1fr; }
           .re-form-row { grid-template-columns: 1fr; }
           .re-footer-top { flex-direction: column; gap: 20px; }
@@ -1154,6 +1434,7 @@ export default function RealEstatePage() {
           .re-workflow-bar { gap: 3px; }
           .re-workflow-label { display: none; }
           .re-timeline-note { flex-direction: column; align-items: center; }
+          .re-tl-row { grid-template-columns: 60px 10px 1fr; gap: 8px; padding: 12px 14px; }
         }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
