@@ -99,6 +99,11 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             );
           })}
           <li>
+            <a href="/real-estate" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors no-underline" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
+              Real Estate
+            </a>
+          </li>
+          <li>
             <a href="/blog" className="text-muted-foreground hover:text-foreground text-sm font-semibold tracking-widest uppercase transition-colors no-underline" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}>
               Blog
             </a>
@@ -175,10 +180,25 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
             );
           })}
           <motion.a
-            href="/blog"
+            href="/real-estate"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
             transition={{ duration: 0.3, delay: menuOpen ? navLinks.length * 0.06 : 0 }}
+            className="no-underline"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
+              fontSize: "clamp(2rem, 8vw, 3.5rem)",
+              color: "rgba(255,255,255,0.85)",
+            }}
+          >
+            Real Estate
+          </motion.a>
+          <motion.a
+            href="/blog"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
+            transition={{ duration: 0.3, delay: menuOpen ? (navLinks.length + 1) * 0.06 : 0 }}
             className="no-underline"
             style={{
               fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif",
@@ -191,7 +211,7 @@ function NavBar({ tab, setTab }: { tab: SiteTab; setTab: (t: SiteTab) => void })
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: menuOpen ? 1 : 0, y: menuOpen ? 0 : 20 }}
-            transition={{ duration: 0.3, delay: menuOpen ? (navLinks.length + 1) * 0.06 : 0 }}
+            transition={{ duration: 0.3, delay: menuOpen ? (navLinks.length + 2) * 0.06 : 0 }}
             className="mt-4 flex flex-col items-center gap-3 w-full px-8"
           >
             <button
