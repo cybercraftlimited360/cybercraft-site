@@ -104,7 +104,7 @@ function AmyDemoChat() {
         )}
         {!isPlaying && visibleCount === 0 && (
           <div className="re-chat-placeholder">
-            <p>See how Amy handles an 11pm inquiry from a qualified buyer.</p>
+            <p>See how Amy handles an 11pm buyer inquiry.</p>
           </div>
         )}
       </div>
@@ -619,7 +619,7 @@ export default function RealEstatePage() {
     {
       num: "2",
       title: "Connect",
-      desc: "Connect your phone, calendar, CRM, and any other systems your team relies on.",
+      desc: "Connect applicable supported systems — your phone, calendar, CRM, and other tools used in your workflow.",
     },
     {
       num: "3",
@@ -711,24 +711,6 @@ export default function RealEstatePage() {
           </motion.div>
         </section>
 
-        {/* ── Whiteboard Video Placeholder ── */}
-        {/* TODO: Replace this placeholder with the final 45–60s whiteboard video once produced. */}
-        {/* When video is added, compress or remove the "Without Amy / With Amy" timeline below. */}
-        <section className="re-section re-video-placeholder-section">
-          <div className="re-container">
-            <div className="re-eyebrow re-eyebrow-center">Why Real Estate Leads Get Missed</div>
-            <h2 className="re-section-headline re-center" style={{ marginBottom: "12px" }}>See the Problem — and Where Amy Fits — in Under 60 Seconds.</h2>
-            <p className="re-section-sub" style={{ marginBottom: "32px" }}>A short walkthrough of the workflow: inquiry arrives, agent is busy, Amy responds, collects information, helps coordinate next steps, agent receives context.</p>
-            <div className="re-video-placeholder">
-              <div className="re-video-placeholder-inner">
-                <div className="re-video-play-icon">▶</div>
-                <p className="re-video-placeholder-label">Whiteboard explainer — coming soon</p>
-                <p className="re-video-placeholder-sub">~60 seconds · No sign-up required</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* ── Problem ── */}
         <section className="re-section re-problem">
           <div className="re-container">
@@ -790,8 +772,8 @@ export default function RealEstatePage() {
                   color: "blue",
                   headline: "Be there when inquiries come in",
                   items: [
-                    { icon: "📞", title: "Answer 24/7", desc: "Responds to incoming calls and inquiries when your team is unavailable — nights, weekends, during showings." },
-                    { icon: "🔔", title: "Notify Your Team", desc: "Alerts you the moment a qualified lead or urgent conversation needs your attention." },
+                    { icon: "📞", title: "Available 24/7", desc: "Amy can respond to incoming calls and inquiries during showings, evenings, weekends, and other times your team is unavailable." },
+                    { icon: "🔔", title: "Notify Your Team", desc: "Alerts your team when a lead completes the configured qualification workflow or when an urgent conversation needs attention." },
                   ],
                 },
                 {
@@ -807,9 +789,9 @@ export default function RealEstatePage() {
                 {
                   group: "MOVE FORWARD",
                   color: "green",
-                  headline: "Warm leads, not cold callbacks",
+                  headline: "Start with context, not a cold callback.",
                   items: [
-                    { icon: "📅", title: "Schedule Showings", desc: "Helps qualified prospects move toward an appointment or showing without unnecessary back-and-forth." },
+                    { icon: "📅", title: "Schedule Showings", desc: "Helps prospects move toward an appointment or showing based on the information captured during the conversation." },
                     { icon: "🔄", title: "Surface Follow-Ups", desc: "Identifies conversations that need follow-up and keeps your team informed on what requires attention." },
                   ],
                 },
@@ -854,7 +836,7 @@ export default function RealEstatePage() {
               <div className="re-dashboard-meta-row">
                 <span className="re-dashboard-new-badge">
                   <span className="re-dashboard-dot" />
-                  New Qualified Lead
+                  Qualification Complete
                 </span>
                 <span className="re-dashboard-example-tag">Illustrative example</span>
               </div>
@@ -919,44 +901,6 @@ export default function RealEstatePage() {
           </div>
         </section>
 
-        {/* ── FAQ ── */}
-        <section className="re-section re-faq-section">
-          <div className="re-container">
-            <div className="re-eyebrow re-eyebrow-center">Common Questions</div>
-            <h2 className="re-section-headline re-center">What Teams Ask<br />Before Getting Started</h2>
-            <div className="re-faq-list">
-              {[
-                {
-                  q: "Is Amy a real person or an AI?",
-                  a: "Amy is an AI voice assistant built by CyberCraft360. She's designed to handle incoming real estate calls naturally and professionally. She does not represent herself as a human to callers who sincerely ask.",
-                },
-                {
-                  q: "What happens when Amy gets a question she can't answer?",
-                  a: "Amy is configured with your business information, listings, and approved talking points. For questions outside her scope, she captures the caller's details and flags the conversation for your team to follow up.",
-                },
-                {
-                  q: "How does the Amy call demo work?",
-                  a: "When you click \"Have Amy Call Me\" and provide your number, Amy will call you — typically within minutes during business hours. You'll experience the real system, not a simulation.",
-                },
-                {
-                  q: "Do I need to integrate my CRM or calendar?",
-                  a: "Integration is part of the setup and configuration process. We work with your team to connect Amy to the tools you already use. The scope depends on your stack and workflow requirements.",
-                },
-                {
-                  q: "How long does setup take?",
-                  a: "Typical deployment is 2–4 weeks. More complex integrations, high call volumes, or custom workflows may take approximately 4–6 weeks. We'll give you a specific estimate after the discovery session.",
-                },
-                {
-                  q: "What if I get a lot of leads from Zillow or HAR?",
-                  a: "Amy handles inbound phone calls. If your Zillow or HAR leads come in via phone, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
-                },
-              ].map((item, i) => (
-                <FAQItem key={i} q={item.q} a={item.a} />
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── ROI Calculator ── */}
         <section className="re-section" id="roi-calculator">
           <div className="re-container">
@@ -1009,7 +953,7 @@ export default function RealEstatePage() {
               <div className="re-trust-item">
                 <span className="re-trust-icon">🌍</span>
                 <h3>Built for Real Estate Teams</h3>
-                <p>Built around residential and commercial real-estate workflows — for teams worldwide.</p>
+                <p>Built around common U.S. residential and commercial real-estate workflows.</p>
               </div>
               <div className="re-trust-item">
                 <span className="re-trust-icon">⚖️</span>
@@ -1133,6 +1077,44 @@ export default function RealEstatePage() {
                 <ScheduleCallbackForm utm={utm} onSuccess={() => setScheduleSuccess(true)} />
               )
             )}
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section className="re-section re-faq-section">
+          <div className="re-container">
+            <div className="re-eyebrow re-eyebrow-center">Common Questions</div>
+            <h2 className="re-section-headline re-center">What Teams Ask<br />Before Getting Started</h2>
+            <div className="re-faq-list">
+              {[
+                {
+                  q: "Is Amy a real person or an AI?",
+                  a: "Amy is an AI voice assistant built by CyberCraft360. She's designed to handle incoming real estate calls naturally and professionally. She does not represent herself as a human to callers who sincerely ask.",
+                },
+                {
+                  q: "What happens when Amy gets a question she can't answer?",
+                  a: "Amy is configured with your business information, listings, and approved talking points. For questions outside her scope, she captures the caller's details and flags the conversation for your team to follow up.",
+                },
+                {
+                  q: "How does the Amy call demo work?",
+                  a: "When you click \"Have Amy Call Me\" and provide your number, Amy will call you — typically within minutes during business hours. You'll experience the real system, not a simulation.",
+                },
+                {
+                  q: "Do I need to integrate my CRM or calendar?",
+                  a: "Integration is part of the setup and configuration process. We work with your team to connect Amy to the tools you already use. The scope depends on your stack and workflow requirements.",
+                },
+                {
+                  q: "How long does setup take?",
+                  a: "Typical deployment is 2–4 weeks. More complex integrations, high call volumes, or custom workflows may take approximately 4–6 weeks. We'll give you a specific estimate after the discovery session.",
+                },
+                {
+                  q: "What if I get a lot of leads from Zillow or HAR?",
+                  a: "Amy handles inbound phone calls. If your Zillow or HAR leads come in via phone, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
+                },
+              ].map((item, i) => (
+                <FAQItem key={i} q={item.q} a={item.a} />
+              ))}
+            </div>
           </div>
         </section>
 
