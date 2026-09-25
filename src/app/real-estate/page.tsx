@@ -223,15 +223,16 @@ function ROICalculator() {
           </div>
 
           <label className="re-roi-label" htmlFor="roi-assist">
-            What % of those Amy could handle?
+            What percentage of that repetitive lead-handling work could Amy assist with?
+            <span className="re-roi-helper">This is your assumption. Adjust it based on your workflow.</span>
             <input
               id="roi-assist"
               type="range" min={10} max={90} step={5} value={assistRate}
               onChange={e => setAssistRate(+e.target.value)}
               className="re-range"
-              aria-label="Percentage Amy could handle"
+              aria-label="Percentage Amy could assist with"
             />
-            <span className="re-range-val">{assistRate}% handled by Amy</span>
+            <span className="re-range-val">{assistRate}% — Amy assists</span>
           </label>
 
           <div className="re-roi-label">
@@ -418,8 +419,7 @@ function AmyCallForm({ utm, onSuccess }: { utm: Record<string, string>; onSucces
       <label className="re-consent-label">
         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="re-checkbox" aria-required="true" />
         <span>
-          I&apos;m requesting a call from Amy, CyberCraft360&apos;s AI front desk. I understand Amy is an AI voice assistant and I consent to receiving this call.
-          You may opt out at any time.{" "}
+          I request a call from Amy, CyberCraft360&apos;s AI voice assistant, at the number provided above.{" "}
           <Link href="/privacy" className="re-trust-link">Privacy Policy</Link>
         </span>
       </label>
@@ -427,11 +427,11 @@ function AmyCallForm({ utm, onSuccess }: { utm: Record<string, string>; onSucces
       {error && <p className="re-form-error">{error}</p>}
 
       <button type="submit" className="re-submit-btn" disabled={loading}>
-        {loading ? "Requesting..." : "Have Amy Call Me →"}
+        {loading ? "Requesting..." : "Call Amy Now →"}
       </button>
-      <p className="re-form-note">During business hours, Amy typically calls within minutes. After hours, we&apos;ll schedule a time.</p>
+      <p className="re-form-note">After submitting, Amy will typically call within a few moments to walk you through the system.</p>
       <p className="re-form-note re-form-note-alt">
-        Prefer a walkthrough with our team? <Link href="/book" className="re-trust-link">Book a free demo →</Link>
+        Prefer a walkthrough with our team? <Link href="/book" className="re-trust-link">Book your free Amy demo →</Link>
       </p>
     </form>
   );
@@ -564,8 +564,7 @@ function ScheduleCallbackForm({ utm, onSuccess }: { utm: Record<string, string>;
       <label className="re-consent-label">
         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="re-checkbox" aria-required="true" />
         <span>
-          I&apos;m scheduling a callback from Amy, CyberCraft360&apos;s AI voice assistant. I understand Amy is an AI and I consent to receiving this automated call at the time I selected.
-          You may opt out at any time.{" "}
+          I request a callback from Amy, CyberCraft360&apos;s AI voice assistant, at the number provided above, during my selected time window.{" "}
           <a href="/privacy" style={{ color: "#00d4ff" }}>Privacy Policy</a>
         </span>
       </label>
@@ -641,9 +640,9 @@ export default function RealEstatePage() {
           </Link>
           <div className="re-nav-links">
             <a href="#how-it-works" className="re-nav-link">How It Works</a>
-            <a href="#pricing" className="re-nav-link">Pricing</a>
-            <a href="#have-amy-call-me" className="re-nav-link">Have Amy Call Me</a>
-            <Link href="/book" className="re-nav-cta">Book Demo</Link>
+            <a href="#how-amy-fits" className="re-nav-link">Custom Setup</a>
+            <a href="#have-amy-call-me" className="re-nav-link">Talk to Amy</a>
+            <Link href="/book" className="re-nav-cta">Book Amy Demo</Link>
           </div>
         </nav>
 
@@ -657,15 +656,15 @@ export default function RealEstatePage() {
           >
             <div className="re-eyebrow">Amy · AI Front Desk for Real Estate</div>
             <h1 className="re-hero-headline">
-              Never Let Another<br />
-              <span className="re-headline-accent">Real Estate Lead</span><br />
-              Go Unanswered.
+              Real Estate Leads<br />
+              <span className="re-headline-accent">Don&apos;t Wait.</span><br />
+              Neither Does Amy.
             </h1>
             <p className="re-hero-sub">
-              Amy responds to calls and inquiries, qualifies prospects, and helps schedule showings — day and night. Built specifically for real estate teams.
+              Amy responds to calls and inquiries, qualifies prospects, and helps schedule showings — day and night. Built for real estate teams.
             </p>
             <p className="re-hero-lead-note">
-              When a buyer calls at 11pm, Amy answers. When an inquiry comes in, Amy qualifies and captures it. Every lead gets a structured, immediate response.
+              When a buyer calls at 11pm, Amy can answer. When an inquiry comes in, Amy works to qualify and capture it — so your team starts the next day with context, not cold callbacks.
             </p>
             <div className="re-hero-ctas">
               <a
@@ -673,14 +672,14 @@ export default function RealEstatePage() {
                 className="re-btn-primary re-btn-hero-primary"
                 onClick={() => gtag("event", "re_cta_hero_call", { event_category: "real_estate" })}
               >
-                Have Amy Call Me
+                Talk to Amy
               </a>
               <Link
                 href="/book"
                 className="re-btn-secondary"
                 onClick={() => gtag("event", "re_cta_hero_demo", { event_category: "real_estate" })}
               >
-                Book a Free Demo
+                Book Your Free Amy Demo
               </Link>
               <a href="#roi-calculator" className="re-btn-ghost">
                 See the ROI
@@ -698,11 +697,30 @@ export default function RealEstatePage() {
           </motion.div>
         </section>
 
+        {/* ── Whiteboard Video Placeholder ── */}
+        {/* TODO: Replace this placeholder with the final 45–60s whiteboard video once produced. */}
+        {/* When video is added, compress or remove the "Without Amy / With Amy" timeline below. */}
+        <section className="re-section re-video-placeholder-section">
+          <div className="re-container">
+            <div className="re-eyebrow re-eyebrow-center">Why Real Estate Leads Get Missed</div>
+            <h2 className="re-section-headline re-center" style={{ marginBottom: "12px" }}>See the Problem — and Where Amy Fits — in Under 60 Seconds.</h2>
+            <p className="re-section-sub" style={{ marginBottom: "32px" }}>A short walkthrough of the workflow: inquiry arrives, agent is busy, Amy responds, collects information, helps coordinate next steps, agent receives context.</p>
+            <div className="re-video-placeholder">
+              <div className="re-video-placeholder-inner">
+                <div className="re-video-play-icon">▶</div>
+                <p className="re-video-placeholder-label">Whiteboard explainer — coming soon</p>
+                <p className="re-video-placeholder-sub">~60 seconds · No sign-up required</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Problem ── */}
         <section className="re-section re-problem">
           <div className="re-container">
+            <div className="re-illustrative-label">Illustrative Scenario</div>
             <h2 className="re-section-headline re-center">Real Estate Doesn&apos;t Stop<br />When Your Office Does.</h2>
-            <p className="re-section-sub">A lead comes in at 11pm. Here&apos;s what happens — with and without Amy.</p>
+            <p className="re-section-sub">A lead comes in at 11pm. Here&apos;s how the workflow can look — with and without Amy.</p>
             <div className="re-timeline-comparison">
               <div className="re-timeline-col">
                 <div className="re-timeline-col-header re-col-without">Without Amy</div>
@@ -726,11 +744,11 @@ export default function RealEstatePage() {
               <div className="re-timeline-col">
                 <div className="re-timeline-col-header re-col-with">With Amy</div>
                 {[
-                  { time: "11:02 PM", event: "Buyer calls about 123 Main St.", note: "Amy answers within seconds." },
+                  { time: "11:02 PM", event: "Buyer calls about 123 Main St.", note: "Amy answers." },
                   { time: "11:04 PM", event: "Amy qualifies the lead", note: "Budget, timeline, representation — all captured." },
                   { time: "11:06 PM", event: "Showing offered", note: "Friday 11am. Lead says yes." },
                   { time: "11:07 PM", event: "You get a summary", note: "Sarah Johnson · $400–450K · No agent · Friday 11am." },
-                  { time: "8:00 AM", event: "You start the day with context", note: "A warm lead, fully qualified, ready to act." },
+                  { time: "8:00 AM", event: "You start the day with context", note: "Lead details captured, qualification information collected, next step identified." },
                 ].map((row, i) => (
                   <div key={i} className="re-tl-row re-tl-with">
                     <span className="re-tl-time">{row.time}</span>
@@ -756,7 +774,7 @@ export default function RealEstatePage() {
                 {
                   group: "RESPOND",
                   color: "blue",
-                  headline: "Never miss an inquiry",
+                  headline: "Be there when inquiries come in",
                   items: [
                     { icon: "📞", title: "Answer 24/7", desc: "Responds to incoming calls and inquiries when your team is unavailable — nights, weekends, during showings." },
                     { icon: "🔔", title: "Notify Your Team", desc: "Alerts you the moment a qualified lead or urgent conversation needs your attention." },
@@ -877,9 +895,10 @@ export default function RealEstatePage() {
                   </p>
                 </div>
 
-                <div className="re-dashboard-actions">
-                  <button className="re-dashboard-btn-primary" disabled>View Conversation</button>
-                  <button className="re-dashboard-btn-secondary" disabled>Contact Lead</button>
+                <div className="re-dashboard-actions" aria-hidden="true">
+                  <span className="re-dashboard-mockup-note">Illustrative interface</span>
+                  <button className="re-dashboard-btn-primary re-dashboard-btn-mockup" disabled tabIndex={-1} style={{ pointerEvents: "none", opacity: 0.45 }}>View Conversation</button>
+                  <button className="re-dashboard-btn-secondary re-dashboard-btn-mockup" disabled tabIndex={-1} style={{ pointerEvents: "none", opacity: 0.45 }}>Contact Lead</button>
                 </div>
               </motion.div>
             </div>
@@ -976,18 +995,18 @@ export default function RealEstatePage() {
               <div className="re-trust-item">
                 <span className="re-trust-icon">🇺🇸</span>
                 <h3>US Real Estate Focus</h3>
-                <p>Built specifically for US residential and commercial real estate workflows and regulations.</p>
+                <p>Built around common U.S. residential and commercial real-estate workflows.</p>
               </div>
               <div className="re-trust-item">
                 <span className="re-trust-icon">⚖️</span>
                 <h3>Consent-First Design</h3>
-                <p>Outbound callback workflows are initiated only after the prospect explicitly requests a call. No unsolicited outreach.</p>
+                <p>Amy&apos;s demo callback is initiated only after the visitor explicitly requests the call. Outbound workflows are configured around your team&apos;s consent practices.</p>
               </div>
               <div className="re-trust-item">
                 <span className="re-trust-icon">🔒</span>
                 <h3>Data Privacy</h3>
                 <p>
-                  Lead data stays in your account. We do not sell, share, or use your contacts for any other purpose.{" "}
+                  We don&apos;t sell your lead data or use your contacts for third-party marketing.{" "}
                   <Link href="/privacy" className="re-trust-link">Privacy Policy →</Link>
                 </p>
               </div>
@@ -1000,33 +1019,44 @@ export default function RealEstatePage() {
           </div>
         </section>
 
-        {/* ── Pricing ── */}
-        <section className="re-section" id="pricing">
-          <div className="re-container re-pricing-container">
-            <div className="re-eyebrow re-eyebrow-center">Pricing</div>
-            <h2 className="re-section-headline re-center">Transparent Pricing.<br />No Surprises.</h2>
-            <div className="re-pricing-card">
-              <div className="re-pricing-badge">Real Estate Teams &amp; Brokerages</div>
-              <div className="re-pricing-from">Starting from</div>
-              <div className="re-pricing-price">$700<span>/mo</span></div>
-              <p className="re-pricing-note">
-                Includes setup, configuration on your business and listings, and ongoing refinement.
-                Exact pricing depends on call volume and integration requirements.
-              </p>
-              <ul className="re-pricing-features">
-                <li>✓ 24/7 call response and lead capture</li>
-                <li>✓ Configured for your team and listings</li>
-                <li>✓ Calendar and CRM integration</li>
-                <li>✓ Structured lead summaries and team alerts</li>
-                <li>✓ Dedicated setup and onboarding support</li>
-              </ul>
-              <a href="#have-amy-call-me" className="re-btn-primary re-pricing-cta">
-                Have Amy Call Me →
-              </a>
-              <p style={{marginTop:"12px", fontSize:"13px"}}>
-                <Link href="/book" style={{color:"rgba(255,255,255,0.4)", textDecoration:"none"}}>Or book a team demo →</Link>
-              </p>
+        {/* ── Custom Setup / Configuration ── */}
+        <section className="re-section" id="how-amy-fits">
+          <div className="re-container">
+            <div className="re-eyebrow re-eyebrow-center">Built Around Your Workflow</div>
+            <h2 className="re-section-headline re-center">A Setup That Fits<br />the Way Your Team Works</h2>
+            <p className="re-section-sub">
+              Every real-estate team handles leads differently. We&apos;ll learn how your team currently works,
+              identify where Amy can help, and recommend a setup based on your call volume, workflows, and integrations.
+            </p>
+            <div className="re-config-factors">
+              {[
+                { icon: "📞", title: "Call Volume", desc: "How many conversations Amy needs to support." },
+                { icon: "🔄", title: "Workflow", desc: "How you want inquiries qualified and routed." },
+                { icon: "🔧", title: "Integrations", desc: "The systems Amy needs to work with." },
+              ].map((f, i) => (
+                <motion.div
+                  key={i}
+                  className="re-config-factor"
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <span className="re-config-icon">{f.icon}</span>
+                  <h3 className="re-config-title">{f.title}</h3>
+                  <p className="re-config-desc">{f.desc}</p>
+                </motion.div>
+              ))}
             </div>
+            <div className="re-config-ctas">
+              <Link href="/book" className="re-btn-primary re-config-cta-primary">
+                Book Your Free Amy Demo
+              </Link>
+              <a href="#have-amy-call-me" className="re-btn-secondary re-config-cta-secondary">
+                Talk to Amy
+              </a>
+            </div>
+            <p className="re-config-microcopy">See the experience first. We&apos;ll discuss the right setup for your business afterward.</p>
           </div>
         </section>
 
@@ -1042,7 +1072,7 @@ export default function RealEstatePage() {
             {/* Tab switcher */}
             <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "32px" }}>
               {[
-                { key: "now",      label: "☎ Call Amy Now",       desc: "Amy calls you immediately" },
+                { key: "now",      label: "☎ Call Amy Now",       desc: "Request a demo call — Amy typically calls within a few moments" },
                 { key: "schedule", label: "📅 Schedule a Callback", desc: "Pick a date and time window" },
               ].map(tab => (
                 <button
@@ -1105,7 +1135,7 @@ export default function RealEstatePage() {
               </div>
               <div className="re-footer-links">
                 <Link href="/">Home</Link>
-                <Link href="/book">Book a Demo</Link>
+                <Link href="/book">Book Your Free Amy Demo</Link>
                 <Link href="/privacy">Privacy Policy</Link>
                 <a href="mailto:info@cybercraft360.com">Contact</a>
               </div>
@@ -1258,7 +1288,8 @@ export default function RealEstatePage() {
         .re-dashboard-summary { padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .re-dashboard-summary-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 8px; }
         .re-dashboard-summary-text { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.6; margin: 0; font-style: italic; }
-        .re-dashboard-actions { display: flex; gap: 10px; padding: 16px 24px; }
+        .re-dashboard-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 24px 16px; }
+        .re-dashboard-mockup-note { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,0.2); width: 100%; }
         .re-dashboard-btn-primary { background: oklch(0.78 0.13 207); color: #000; font-size: 13px; font-weight: 700; border: none; border-radius: 8px; padding: 10px 18px; cursor: not-allowed; opacity: 0.9; font-family: inherit; }
         .re-dashboard-btn-secondary { background: transparent; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 18px; cursor: not-allowed; font-family: inherit; }
 
@@ -1403,6 +1434,31 @@ export default function RealEstatePage() {
         .re-footer-links a:hover { color: #fff; }
         .re-footer-bottom { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.2); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; }
 
+        /* ── Illustrative label ── */
+        .re-illustrative-label { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 3px 10px; margin: 0 auto 20px; display: block; width: fit-content; }
+
+        /* ── Video placeholder ── */
+        .re-video-placeholder-section { background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .re-video-placeholder { border: 1.5px dashed rgba(255,255,255,0.12); border-radius: 14px; max-width: 640px; margin: 0 auto; overflow: hidden; background: rgba(255,255,255,0.02); }
+        .re-video-placeholder-inner { padding: 56px 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+        .re-video-play-icon { width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(0,212,255,0.35); display: flex; align-items: center; justify-content: center; font-size: 20px; color: rgba(0,212,255,0.5); }
+        .re-video-placeholder-label { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.35); margin: 0; }
+        .re-video-placeholder-sub { font-size: 12px; color: rgba(255,255,255,0.2); margin: 0; }
+
+        /* ── Config factors ── */
+        .re-config-factors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 40px 0 36px; }
+        .re-config-factor { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 28px 24px; text-align: center; }
+        .re-config-icon { font-size: 28px; display: block; margin-bottom: 12px; }
+        .re-config-title { font-size: 15px; font-weight: 700; color: #fff; margin: 0 0 8px; }
+        .re-config-desc { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; margin: 0; }
+        .re-config-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .re-config-cta-primary { text-decoration: none; }
+        .re-config-cta-secondary { text-decoration: none; }
+        .re-config-microcopy { text-align: center; font-size: 13px; color: rgba(255,255,255,0.3); margin: 0; }
+
+        /* ── ROI helper text ── */
+        .re-roi-helper { display: block; font-size: 11px; color: rgba(255,255,255,0.35); margin: 4px 0 8px; font-style: italic; }
+
         /* ── Mobile ── */
         @media (max-width: 900px) {
           .re-hero { grid-template-columns: 1fr; padding: 48px 20px 32px; }
@@ -1426,6 +1482,7 @@ export default function RealEstatePage() {
           .re-trust-grid, .re-steps, .re-steps-5, .re-steps-6 { grid-template-columns: 1fr 1fr; }
           .re-usecase-grid { grid-template-columns: 1fr; }
           .re-form-row { grid-template-columns: 1fr; }
+          .re-config-factors { grid-template-columns: 1fr; }
           .re-footer-top { flex-direction: column; gap: 20px; }
           .re-footer-bottom { flex-direction: column; gap: 8px; }
           .re-nav { padding: 14px 18px; }
