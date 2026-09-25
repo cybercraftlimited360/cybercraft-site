@@ -29,7 +29,7 @@ function gtag(...args: unknown[]) {
 
 // ─── Demo messages (aligned with dashboard example) ───────────────────────────
 const DEMO_MESSAGES = [
-  { role: "caller", text: "Hi, I saw your listing for 123 Main Street. Is it still available?" },
+  { role: "caller", text: "Hi, I saw your listing on Zillow for 123 Main Street. Is it still available?" },
   { role: "amy", text: "Hi! Yes, 123 Main Street is still available — it just listed. Are you looking to buy, or still getting a feel for the market?" },
   { role: "caller", text: "We're ready to buy. Looking for a 3-bedroom in the $400–450K range in that area." },
   { role: "amy", text: "That's a great match. Can I get your name and best email? I'd love to send you some other properties that fit too." },
@@ -741,7 +741,7 @@ export default function RealEstatePage() {
                 {[
                   { time: "11:02 PM", event: "Buyer calls about 123 Main St.", note: "Phone rings. No answer." },
                   { time: "11:03 PM", event: "Voicemail left", note: "Buyer hangs up — leaves a generic message." },
-                  { time: "11:04 PM", event: "Listing portal inquiry sent too", note: "Buyer isn't sure you got the call." },
+                  { time: "11:04 PM", event: "Zillow inquiry sent too", note: "Buyer isn't sure you got the call." },
                   { time: "7:41 AM", event: "You see the voicemail", note: "8+ hours later. No context on what they want." },
                   { time: "8:15 AM", event: "You call back", note: "No answer. They may have moved on." },
                 ].map((row, i) => (
@@ -947,8 +947,8 @@ export default function RealEstatePage() {
                   a: "Typical deployment is 2–4 weeks. More complex integrations, high call volumes, or custom workflows may take approximately 4–6 weeks. We'll give you a specific estimate after the discovery session.",
                 },
                 {
-                  q: "What if my leads come from property portals or listing sites?",
-                  a: "Amy handles inbound phone calls. If leads from property portals or listing sites call your number, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
+                  q: "What if I get a lot of leads from Zillow or HAR?",
+                  a: "Amy handles inbound phone calls. If your Zillow or HAR leads come in via phone, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
                 },
               ].map((item, i) => (
                 <FAQItem key={i} q={item.q} a={item.a} />
