@@ -29,7 +29,7 @@ function gtag(...args: unknown[]) {
 
 // ─── Demo messages (aligned with dashboard example) ───────────────────────────
 const DEMO_MESSAGES = [
-  { role: "caller", text: "Hi, I saw your listing on Zillow for 123 Main Street. Is it still available?" },
+  { role: "caller", text: "Hi, I saw your listing for 123 Main Street. Is it still available?" },
   { role: "amy", text: "Hi! Yes, 123 Main Street is still available — it just listed. Are you looking to buy, or still getting a feel for the market?" },
   { role: "caller", text: "We're ready to buy. Looking for a 3-bedroom in the $400–450K range in that area." },
   { role: "amy", text: "That's a great match. Can I get your name and best email? I'd love to send you some other properties that fit too." },
@@ -437,15 +437,29 @@ function AmyCallForm({ utm, onSuccess }: { utm: Record<string, string>; onSucces
   );
 }
 
-// ─── Timezone list (common US zones) ─────────────────────────────────────────
+// ─── Timezone list (major global zones) ──────────────────────────────────────
 const US_TIMEZONES = [
-  { value: "America/New_York",    label: "Eastern (ET)" },
-  { value: "America/Chicago",     label: "Central (CT)" },
-  { value: "America/Denver",      label: "Mountain (MT)" },
-  { value: "America/Phoenix",     label: "Arizona (no DST)" },
-  { value: "America/Los_Angeles", label: "Pacific (PT)" },
-  { value: "America/Anchorage",   label: "Alaska (AKT)" },
-  { value: "Pacific/Honolulu",    label: "Hawaii (HST)" },
+  { value: "America/New_York",      label: "Eastern (ET) — New York" },
+  { value: "America/Chicago",       label: "Central (CT) — Chicago" },
+  { value: "America/Denver",        label: "Mountain (MT) — Denver" },
+  { value: "America/Phoenix",       label: "Arizona (no DST)" },
+  { value: "America/Los_Angeles",   label: "Pacific (PT) — Los Angeles" },
+  { value: "America/Anchorage",     label: "Alaska (AKT)" },
+  { value: "Pacific/Honolulu",      label: "Hawaii (HST)" },
+  { value: "America/Toronto",       label: "Eastern — Toronto" },
+  { value: "America/Vancouver",     label: "Pacific — Vancouver" },
+  { value: "Europe/London",         label: "GMT/BST — London" },
+  { value: "Europe/Dublin",         label: "GMT/IST — Dublin" },
+  { value: "Europe/Paris",          label: "CET — Paris / Amsterdam" },
+  { value: "Europe/Berlin",         label: "CET — Berlin / Frankfurt" },
+  { value: "Asia/Dubai",            label: "GST — Dubai" },
+  { value: "Asia/Riyadh",          label: "AST — Riyadh" },
+  { value: "Asia/Karachi",         label: "PKT — Karachi" },
+  { value: "Asia/Kolkata",         label: "IST — India" },
+  { value: "Asia/Singapore",       label: "SGT — Singapore" },
+  { value: "Australia/Sydney",     label: "AEST — Sydney" },
+  { value: "Australia/Melbourne",  label: "AEST — Melbourne" },
+  { value: "Pacific/Auckland",     label: "NZST — Auckland" },
 ];
 
 const TIME_WINDOWS = [
@@ -727,7 +741,7 @@ export default function RealEstatePage() {
                 {[
                   { time: "11:02 PM", event: "Buyer calls about 123 Main St.", note: "Phone rings. No answer." },
                   { time: "11:03 PM", event: "Voicemail left", note: "Buyer hangs up — leaves a generic message." },
-                  { time: "11:04 PM", event: "Zillow inquiry sent too", note: "Buyer isn't sure you got the call." },
+                  { time: "11:04 PM", event: "Listing portal inquiry sent too", note: "Buyer isn't sure you got the call." },
                   { time: "7:41 AM", event: "You see the voicemail", note: "8+ hours later. No context on what they want." },
                   { time: "8:15 AM", event: "You call back", note: "No answer. They may have moved on." },
                 ].map((row, i) => (
@@ -933,8 +947,8 @@ export default function RealEstatePage() {
                   a: "Typical deployment is 2–4 weeks. More complex integrations, high call volumes, or custom workflows may take approximately 4–6 weeks. We'll give you a specific estimate after the discovery session.",
                 },
                 {
-                  q: "What if I get a lot of leads from Zillow or HAR?",
-                  a: "Amy handles inbound phone calls. If your Zillow or HAR leads come in via phone, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
+                  q: "What if my leads come from property portals or listing sites?",
+                  a: "Amy handles inbound phone calls. If leads from property portals or listing sites call your number, Amy responds to those calls. Leads that come through web forms go to your CRM or email as usual — Amy handles the conversation once a caller dials your number.",
                 },
               ].map((item, i) => (
                 <FAQItem key={i} q={item.q} a={item.a} />
@@ -993,9 +1007,9 @@ export default function RealEstatePage() {
             <h2 className="re-section-headline re-center">Built for Real Estate Professionals</h2>
             <div className="re-trust-grid">
               <div className="re-trust-item">
-                <span className="re-trust-icon">🇺🇸</span>
-                <h3>US Real Estate Focus</h3>
-                <p>Built around common U.S. residential and commercial real-estate workflows.</p>
+                <span className="re-trust-icon">🌍</span>
+                <h3>Built for Real Estate Teams</h3>
+                <p>Built around residential and commercial real-estate workflows — for teams worldwide.</p>
               </div>
               <div className="re-trust-item">
                 <span className="re-trust-icon">⚖️</span>
