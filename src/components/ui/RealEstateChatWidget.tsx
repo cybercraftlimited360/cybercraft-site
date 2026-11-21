@@ -4,15 +4,25 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BLUEPRINT =
-  "Visitor is viewing CyberCraft360's Amy for Real Estate landing page. Focus on Amy's AI receptionist capabilities, real estate lead handling, appointment workflows and relevant CyberCraft360 services. Offer to answer questions or help visitors request a consultation. Never invent product capabilities, prices or results.";
+  "Visitor is viewing CyberCraft360's Amy for Real Estate landing page. " +
+  "Amy is CyberCraft360's AI voice receptionist built for real estate teams. Amy can respond to incoming calls and inquiries, ask qualifying questions, collect buyer or seller details, and help move prospects toward a showing or callback — available 24/7 including evenings and weekends. " +
+  "CyberCraft360 configures Amy around the team's existing phone, calendar, and CRM workflows. " +
+  "If asked about pricing, explain that pricing depends on the business's requirements and offer a free consultation — do not quote specific prices. " +
+  "IRIS does not autonomously self-learn from past conversations in real time; conversations may be reviewed by the CyberCraft360 team to improve the system over time. " +
+  "When a visitor expresses interest in getting started or contacting the team, politely ask for their name, business email, type of business, and reason for reaching out — one question at a time. Do not demand contact info before answering general questions. " +
+  "Offer to book a free consultation at any point a visitor expresses interest. Never invent integrations, results, or guarantees.";
 
 const GREETING =
   "Hi! 👋 Welcome to CyberCraft360. I'm IRIS, your AI assistant. Want to see how Amy could help your real estate business?";
 
-const QUICK_ACTIONS = [
-  { label: "Ask About Amy", text: "Tell me about Amy and what she does for real estate teams." },
-  { label: "Request Information", text: "I'd like to request more information about CyberCraft360." },
-  { label: "Book a Consultation", text: "I'd like to book a consultation with the team." },
+type QuickAction =
+  | { label: string; kind: "chat"; text: string }
+  | { label: string; kind: "navigate"; href: string };
+
+const QUICK_ACTIONS: QuickAction[] = [
+  { label: "Learn About Amy", kind: "chat", text: "Tell me about Amy and what she does for real estate agents and brokerages." },
+  { label: "Book a Free Consultation", kind: "navigate", href: "/book" },
+  { label: "Request More Information", kind: "chat", text: "I'd like to request more information about CyberCraft360 and Amy for real estate." },
 ];
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -384,11 +394,17 @@ export default function RealEstateChatWidget() {
                   <div style={{ paddingLeft: 36 }}>
                     <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: "0 0 8px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Quick options</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {QUICK_ACTIONS.map(({ label, text }) => (
+                      {QUICK_ACTIONS.map((action) => (
                         <button
-                          key={label}
-                          onClick={() => sendMessage(text)}
-                          disabled={sending}
+                          key={action.label}
+                          onClick={() => {
+                            if (action.kind === "navigate") {
+                              window.location.href = action.href;
+                            } else {
+                              sendMessage(action.text);
+                            }
+                          }}
+                          disabled={sending && action.kind === "chat"}
                           style={{
                             background: ACCENT_DIM,
                             border: `1px solid oklch(0.78 0.13 207 / 0.25)`,
@@ -397,16 +413,19 @@ export default function RealEstateChatWidget() {
                             fontSize: 13,
                             fontWeight: 600,
                             color: ACCENT,
-                            cursor: sending ? "not-allowed" : "pointer",
+                            cursor: (sending && action.kind === "chat") ? "not-allowed" : "pointer",
                             textAlign: "left",
                             fontFamily: "inherit",
                             transition: "background 0.15s, border-color 0.15s",
-                            opacity: sending ? 0.5 : 1,
+                            opacity: (sending && action.kind === "chat") ? 0.5 : 1,
                           }}
-                          onMouseEnter={e => { if (!sending) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.78 0.13 207 / 0.22)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.78 0.13 207 / 0.5)"; } }}
+                          onMouseEnter={e => { if (!(sending && action.kind === "chat")) { (e.currentTarget as HTMLButtonElement).style.background = "oklch(0.78 0.13 207 / 0.22)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.78 0.13 207 / 0.5)"; } }}
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = ACCENT_DIM; (e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.78 0.13 207 / 0.25)"; }}
                         >
-                          {label}
+                          {action.label}
+                          {action.kind === "navigate" && (
+                            <span style={{ marginLeft: 6, opacity: 0.5, fontSize: 11 }}>→</span>
+                          )}
                         </button>
                       ))}
                     </div>
