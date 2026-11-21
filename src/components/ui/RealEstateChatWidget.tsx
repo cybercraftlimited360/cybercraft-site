@@ -13,7 +13,7 @@ const BLUEPRINT =
   "Offer to book a free consultation at any point a visitor expresses interest. Never invent integrations, results, or guarantees.";
 
 const GREETING =
-  "Hi! 👋 Welcome to CyberCraft360. I'm IRIS, your AI assistant. Want to see how Amy could help your real estate business?";
+  "Hi! 👋 Welcome to CyberCraft360. I'm IRIS, your AI assistant. Interested in learning how Amy can help your real estate business? I can answer questions, help you request information, or guide you toward booking a free consultation.";
 
 type QuickAction =
   | { label: string; kind: "chat"; text: string }
@@ -44,7 +44,7 @@ export default function RealEstateChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // 12-second greeting — only once per session
+  // 5-second auto-open — only once per session; stays minimized after visitor closes
   useEffect(() => {
     try {
       if (sessionStorage.getItem("iris_re_greeted")) {
@@ -54,9 +54,9 @@ export default function RealEstateChatWidget() {
     } catch { /* blocked storage — proceed */ }
 
     const t = setTimeout(() => {
-      setPhase("greeting");
+      setPhase("open");
       try { sessionStorage.setItem("iris_re_greeted", "1"); } catch { /* ignore */ }
-    }, 12_000);
+    }, 5_000);
     return () => clearTimeout(t);
   }, []);
 
@@ -387,7 +387,7 @@ export default function RealEstateChatWidget() {
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: ACCENT_DIM, border: `1px solid oklch(0.78 0.13 207 / 0.25)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: ACCENT, flexShrink: 0 }}>I</div>
                     <div style={{ background: "oklch(0.18 0.008 240)", border: `1px solid ${BORDER}`, borderRadius: "4px 14px 14px 14px", padding: "10px 13px", fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.5, maxWidth: "85%" }}>
-                      Hi there! I'm IRIS, CyberCraft360's AI assistant. How can I help you today?
+                      Hi! 👋 Welcome to CyberCraft360. I'm IRIS, your AI assistant. Interested in learning how Amy can help your real estate business? I can answer questions, help you request information, or guide you toward booking a free consultation.
                     </div>
                   </div>
 
