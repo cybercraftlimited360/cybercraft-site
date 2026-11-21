@@ -9,8 +9,10 @@ const BLUEPRINT =
   "CyberCraft360 configures Amy around the team's existing phone, calendar, and CRM workflows. " +
   "If asked about pricing, explain that pricing depends on the business's requirements and offer a free consultation — do not quote specific prices. " +
   "IRIS does not autonomously self-learn from past conversations in real time; conversations may be reviewed by the CyberCraft360 team to improve the system over time. " +
+  "BOOKING INTENT: If a visitor says they want to book, schedule, or make an appointment, immediately share the consultation booking link: https://cybercraft360.com/book — this lets them pick an actual time slot and get an instant confirmation email. Do not make up or confirm specific meeting times through this chat; the booking page handles that. " +
+  "CONTACT REQUEST: If a visitor prefers to leave their details instead of booking directly, ask for their name, business email, and optionally their phone number — one question at a time. Once you have their name and email, say exactly: 'Got it — I've sent your details to our team. Someone will reach out within one business day. If you'd prefer to pick a specific time yourself, you can book directly at cybercraft360.com/book.' Do not say their request was submitted until you actually have their name and email. " +
   "When a visitor expresses interest in getting started or contacting the team, politely ask for their name, business email, type of business, and reason for reaching out — one question at a time. Do not demand contact info before answering general questions. " +
-  "Offer to book a free consultation at any point a visitor expresses interest. Never invent integrations, results, or guarantees.";
+  "Never invent integrations, results, appointment times, or guarantees.";
 
 const GREETING =
   "Hi! 👋 Welcome to CyberCraft360. I'm IRIS, your AI assistant. Interested in learning how Amy can help your real estate business? I can answer questions, help you request information, or guide you toward booking a free consultation.";
@@ -40,6 +42,7 @@ export default function RealEstateChatWidget() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQuick, setShowQuick] = useState(true);
+  const [leadCaptured, setLeadCaptured] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -105,6 +108,7 @@ export default function RealEstateChatWidget() {
         setError("Something went wrong. Please try again.");
       } else {
         setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+        if (data.lead?.email && !leadCaptured) setLeadCaptured(true);
       }
     } catch {
       setError("Network error — please check your connection.");
@@ -501,6 +505,26 @@ export default function RealEstateChatWidget() {
 
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Lead captured confirmation */}
+            {leadCaptured && (
+              <div style={{
+                margin: "0 12px 8px",
+                padding: "9px 13px",
+                borderRadius: 10,
+                background: "rgba(34,197,94,0.07)",
+                border: "1px solid rgba(34,197,94,0.22)",
+                fontSize: 12,
+                color: "rgba(34,197,94,0.9)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 14 }}>✓</span>
+                Your details have been sent to our team.
+              </div>
+            )}
 
             {/* Input */}
             <div style={{

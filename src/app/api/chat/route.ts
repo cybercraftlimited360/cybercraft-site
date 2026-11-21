@@ -244,6 +244,32 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...lead, source: "iris", skipCall: true }),
       }).catch(() => {});
+      // Send visitor confirmation email when we have their email address
+      if (lead.email) {
+        import("@/lib/mailer").then(({ sendEmail }) =>
+          sendEmail({
+            to: lead.email as string,
+            subject: "We received your request — CyberCraft360",
+            html: `<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body style="margin:0;padding:0;background:#0a0c12;font-family:'Inter',system-ui,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0c12;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#0f1117;border-radius:16px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
+        <tr><td style="height:3px;background:linear-gradient(90deg,#00d4ff,#7c3aed);"></td></tr>
+        <tr><td style="padding:36px;">
+          <p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin:0 0 12px;">CyberCraft360</p>
+          <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 8px;">We got your message, ${lead.name.split(" ")[0]}.</h1>
+          <p style="font-size:14px;color:rgba(255,255,255,0.5);margin:0 0 24px;">Our team will reach out within one business day.</p>
+          <p style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.7;margin:0 0 24px;">If you'd prefer to pick a specific time yourself, you can book a free 30-minute strategy call directly:</p>
+          <a href="https://cybercraft360.com/book" style="display:inline-block;padding:12px 24px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#000;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.05em;">Book a Call →</a>
+          <p style="margin:28px 0 0;font-size:11px;color:rgba(255,255,255,0.2);">CyberCraft360 · Bespoke AI Agency · Houston, TX</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`,
+          })
+        ).catch(err => console.error("[chat] Visitor confirmation email error:", err));
+      }
     }
 
     // Track analytics (non-blocking, only on first user message to avoid double-counting)
