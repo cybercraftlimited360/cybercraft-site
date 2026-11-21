@@ -192,7 +192,10 @@ export async function POST(req: NextRequest) {
     const [examples, extractedRaw] = await Promise.all([
       buildIrisExamples(),
       userCount >= 2
-        ? extractLeadData(apiKey, trimmedMessages)
+        ? extractLeadData(apiKey, trimmedMessages).catch(err => {
+            console.error("[chat] Lead extraction failed (non-fatal):", err?.message ?? err);
+            return null;
+          })
         : Promise.resolve(null),
     ]);
 
