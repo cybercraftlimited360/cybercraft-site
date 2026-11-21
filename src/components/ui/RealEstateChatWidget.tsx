@@ -9,8 +9,8 @@ const BLUEPRINT =
   "CyberCraft360 configures Amy around the team's existing phone, calendar, and CRM workflows. " +
   "If asked about pricing, explain that pricing depends on the business's requirements and offer a free consultation — do not quote specific prices. " +
   "IRIS does not autonomously self-learn from past conversations in real time; conversations may be reviewed by the CyberCraft360 team to improve the system over time. " +
-  "BOOKING INTENT: If a visitor says they want to book, schedule, or make an appointment, immediately share the consultation booking link: https://cybercraft360.com/book — this lets them pick an actual time slot and get an instant confirmation email. Do not make up or confirm specific meeting times through this chat; the booking page handles that. " +
-  "CONTACT REQUEST: If a visitor prefers to leave their details instead of booking directly, ask for their name, business email, and optionally their phone number — one question at a time. Once you have their name and email, say exactly: 'Got it — I've sent your details to our team. Someone will reach out within one business day. If you'd prefer to pick a specific time yourself, you can book directly at cybercraft360.com/book.' Do not say their request was submitted until you actually have their name and email. " +
+  "BOOKING INTENT: If a visitor says they want to book, schedule, or make an appointment, say: 'Absolutely! I can help schedule a free consultation. What name and business email should I use?' Then collect their name and business email one question at a time. Once you have both, say: 'Perfect — I've pulled up a scheduler below. Pick a time that works for you.' Never invent or confirm specific appointment times yourself — the booking interface handles that. " +
+  "CONTACT REQUEST: If a visitor wants to leave contact details without booking a time, collect their name and business email, then say: 'Got it — I've sent your details to our team. Someone will reach out within one business day.' Do not say the request was submitted until you have both name and email. " +
   "When a visitor expresses interest in getting started or contacting the team, politely ask for their name, business email, type of business, and reason for reaching out — one question at a time. Do not demand contact info before answering general questions. " +
   "Never invent integrations, results, appointment times, or guarantees.";
 
@@ -23,9 +23,45 @@ type QuickAction =
 
 const QUICK_ACTIONS: QuickAction[] = [
   { label: "Learn About Amy", kind: "chat", text: "Tell me about Amy and what she does for real estate agents and brokerages." },
-  { label: "Book a Free Consultation", kind: "navigate", href: "/book" },
+  { label: "Book a Free Consultation", kind: "chat", text: "I'd like to book a free consultation with the CyberCraft360 team." },
   { label: "Request More Information", kind: "chat", text: "I'd like to request more information about CyberCraft360 and Amy for real estate." },
 ];
+
+const BOOKING_RE = /\b(book|schedul|appointment|consult|reserv|call.*time|pick.*time|slot)\b/i;
+
+const BK_FIELD: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  background: "oklch(0.12 0.006 240)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: 8,
+  padding: "9px 11px",
+  fontSize: 13,
+  color: "#fff",
+  outline: "none",
+  fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+  marginTop: 6,
+};
+
+function getNextDays(count: number): string[] {
+  const days: string[] = [];
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  for (let i = 0; i < count; i++) {
+    days.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+function fmt12(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
+
+function fmtDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+}
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -42,7 +78,21 @@ export default function RealEstateChatWidget() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQuick, setShowQuick] = useState(true);
-  const [leadCaptured, setLeadCaptured] = useState(false);
+  const [capturedLead, setCapturedLead] = useState<{name: string; email: string} | null>(null);
+  // Inline booking state
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bkName, setBkName] = useState("");
+  const [bkEmail, setBkEmail] = useState("");
+  const [bkCompany, setBkCompany] = useState("");
+  const [bkPhone, setBkPhone] = useState("");
+  const [bkDate, setBkDate] = useState("");
+  const [bkSlots, setBkSlots] = useState<string[]>([]);
+  const [bkSlotsLoading, setBkSlotsLoading] = useState(false);
+  const [bkTime, setBkTime] = useState("");
+  const [bkSubmitting, setBkSubmitting] = useState(false);
+  const [bkError, setBkError] = useState<string | null>(null);
+  const [bkTz, setBkTz] = useState("America/Chicago");
+  const [bkSuccess, setBkSuccess] = useState<{date: string; time: string; id: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -74,6 +124,35 @@ export default function RealEstateChatWidget() {
       setTimeout(() => inputRef.current?.focus(), 120);
     }
   }, [phase]);
+
+  // Pre-fill booking form from capturedLead when booking panel opens
+  useEffect(() => {
+    if (bookingOpen && capturedLead) {
+      setBkName(prev => prev || capturedLead.name);
+      setBkEmail(prev => prev || capturedLead.email);
+    }
+    if (bookingOpen && !bkDate) {
+      const days = getNextDays(1);
+      if (days[0]) setBkDate(days[0]);
+    }
+  }, [bookingOpen]);
+
+  // Fetch available slots when date changes
+  useEffect(() => {
+    if (!bkDate || !bookingOpen) return;
+    setBkSlots([]);
+    setBkTime("");
+    setBkSlotsLoading(true);
+    setBkError(null);
+    fetch(`/api/bookings/slots?date=${bkDate}`)
+      .then(r => r.json())
+      .then(d => {
+        setBkSlots(d.slots ?? []);
+        if (d.timezone) setBkTz(d.timezone);
+      })
+      .catch(() => setBkError("Couldn't load times — please try again."))
+      .finally(() => setBkSlotsLoading(false));
+  }, [bkDate, bookingOpen]);
 
   // Escape closes
   useEffect(() => {
@@ -108,7 +187,12 @@ export default function RealEstateChatWidget() {
         setError("Something went wrong. Please try again.");
       } else {
         setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
-        if (data.lead?.email && !leadCaptured) setLeadCaptured(true);
+        if (data.lead?.name && data.lead?.email && !capturedLead) {
+          setCapturedLead({ name: data.lead.name, email: data.lead.email });
+        }
+        if (BOOKING_RE.test(trimmed) && data.lead?.name && data.lead?.email) {
+          setBookingOpen(true);
+        }
       }
     } catch {
       setError("Network error — please check your connection.");
@@ -506,23 +590,215 @@ export default function RealEstateChatWidget() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Lead captured confirmation */}
-            {leadCaptured && (
+            {/* Lead captured confirmation + booking CTA */}
+            {capturedLead && !bookingOpen && !bkSuccess && (
               <div style={{
                 margin: "0 12px 8px",
-                padding: "9px 13px",
                 borderRadius: 10,
                 background: "rgba(34,197,94,0.07)",
                 border: "1px solid rgba(34,197,94,0.22)",
                 fontSize: 12,
-                color: "rgba(34,197,94,0.9)",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
+                flexShrink: 0,
+                overflow: "hidden",
+              }}>
+                <div style={{ padding: "9px 13px", color: "rgba(34,197,94,0.9)", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>✓</span>
+                  Your details have been sent to our team.
+                </div>
+                <button
+                  onClick={() => setBookingOpen(true)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 13px",
+                    background: "rgba(34,197,94,0.12)",
+                    border: "none",
+                    borderTop: "1px solid rgba(34,197,94,0.15)",
+                    color: "rgba(34,197,94,1)",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  📅 Book a free consultation →
+                </button>
+              </div>
+            )}
+
+            {/* Inline booking panel */}
+            {bookingOpen && !bkSuccess && (
+              <div style={{
+                margin: "0 12px 8px",
+                borderRadius: 12,
+                background: "oklch(0.12 0.006 240)",
+                border: `1px solid ${BORDER}`,
+                flexShrink: 0,
+                overflow: "hidden",
+              }}>
+                {/* panel header */}
+                <div style={{ padding: "11px 14px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Book a Free Consultation</span>
+                  <button
+                    onClick={() => setBookingOpen(false)}
+                    aria-label="Close booking"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: 16, padding: "0 2px", lineHeight: 1, fontFamily: "inherit" }}
+                  >×</button>
+                </div>
+
+                <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto" }}>
+                  {/* Name */}
+                  <div>
+                    <label style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Your Name</label>
+                    <input
+                      value={bkName}
+                      onChange={e => setBkName(e.target.value)}
+                      placeholder="Jane Smith"
+                      style={BK_FIELD}
+                    />
+                  </div>
+                  {/* Email */}
+                  <div>
+                    <label style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Email</label>
+                    <input
+                      type="email"
+                      value={bkEmail}
+                      onChange={e => setBkEmail(e.target.value)}
+                      placeholder="jane@company.com"
+                      style={BK_FIELD}
+                    />
+                  </div>
+                  {/* Date */}
+                  <div>
+                    <label style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Date</label>
+                    <select
+                      value={bkDate}
+                      onChange={e => setBkDate(e.target.value)}
+                      style={{ ...BK_FIELD, appearance: "none" as const, WebkitAppearance: "none" as const }}
+                    >
+                      <option value="">Select a date…</option>
+                      {getNextDays(14).map(d => (
+                        <option key={d} value={d}>{fmtDate(d)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Time slots */}
+                  {bkDate && (
+                    <div>
+                      <label style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                        Available Times <span style={{ opacity: 0.5, textTransform: "none", fontWeight: 400 }}>({bkTz})</span>
+                      </label>
+                      {bkSlotsLoading && (
+                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: "6px 0 0" }}>Loading…</p>
+                      )}
+                      {!bkSlotsLoading && bkSlots.length === 0 && !bkError && (
+                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: "6px 0 0" }}>No slots available on this date.</p>
+                      )}
+                      {bkError && (
+                        <p style={{ fontSize: 12, color: "rgba(255,100,100,0.8)", margin: "6px 0 0" }}>{bkError}</p>
+                      )}
+                      {!bkSlotsLoading && bkSlots.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                          {bkSlots.map(slot => (
+                            <button
+                              key={slot}
+                              onClick={() => setBkTime(slot)}
+                              style={{
+                                padding: "7px 12px",
+                                borderRadius: 8,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                fontFamily: "inherit",
+                                cursor: "pointer",
+                                border: `1px solid ${bkTime === slot ? "oklch(0.78 0.13 207)" : BORDER}`,
+                                background: bkTime === slot ? "oklch(0.78 0.13 207 / 0.18)" : "transparent",
+                                color: bkTime === slot ? ACCENT : "rgba(255,255,255,0.65)",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              {fmt12(slot)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Error */}
+                  {bkError && bkDate && (
+                    <p style={{ fontSize: 12, color: "rgba(255,100,100,0.8)", margin: 0 }}>{bkError}</p>
+                  )}
+                  {/* Confirm button */}
+                  <button
+                    disabled={!bkName.trim() || !bkEmail.trim() || !bkDate || !bkTime || bkSubmitting}
+                    onClick={async () => {
+                      if (!bkName.trim() || !bkEmail.trim() || !bkDate || !bkTime) return;
+                      setBkSubmitting(true);
+                      setBkError(null);
+                      try {
+                        const res = await fetch("/api/bookings", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            name: bkName.trim(),
+                            email: bkEmail.trim(),
+                            date: bkDate,
+                            time: bkTime,
+                            ...(bkCompany.trim() ? { company: bkCompany.trim() } : {}),
+                            ...(bkPhone.trim() ? { phone: bkPhone.trim() } : {}),
+                            message: "Booked via IRIS chat widget",
+                          }),
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.ok) {
+                          setBkSuccess({ date: bkDate, time: bkTime, id: data.bookingId ?? "" });
+                          setBookingOpen(false);
+                        } else {
+                          setBkError(data.error || "Booking failed — please try again.");
+                        }
+                      } catch {
+                        setBkError("Network error — please try again.");
+                      } finally {
+                        setBkSubmitting(false);
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "11px",
+                      borderRadius: 10,
+                      border: "none",
+                      cursor: (!bkName.trim() || !bkEmail.trim() || !bkDate || !bkTime || bkSubmitting) ? "not-allowed" : "pointer",
+                      background: (!bkName.trim() || !bkEmail.trim() || !bkDate || !bkTime || bkSubmitting)
+                        ? "rgba(255,255,255,0.08)"
+                        : "linear-gradient(135deg, oklch(0.78 0.13 207), #7c3aed)",
+                      color: (!bkName.trim() || !bkEmail.trim() || !bkDate || !bkTime || bkSubmitting) ? "rgba(255,255,255,0.35)" : "#000",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      fontFamily: "inherit",
+                      transition: "all 0.2s",
+                      marginTop: 2,
+                    }}
+                  >
+                    {bkSubmitting ? "Confirming…" : "Confirm Booking"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Booking success */}
+            {bkSuccess && (
+              <div style={{
+                margin: "0 12px 8px",
+                padding: "12px 14px",
+                borderRadius: 12,
+                background: "rgba(34,197,94,0.07)",
+                border: "1px solid rgba(34,197,94,0.25)",
                 flexShrink: 0,
               }}>
-                <span style={{ fontSize: 14 }}>✓</span>
-                Your details have been sent to our team.
+                <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(34,197,94,0.95)", marginBottom: 4 }}>✓ Booking confirmed!</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                  {fmtDate(bkSuccess.date)} at {fmt12(bkSuccess.time)}
+                  <br />Check your email for the confirmation.
+                </div>
               </div>
             )}
 
