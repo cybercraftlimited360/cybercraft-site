@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import RealEstateChatWidget from "@/components/ui/RealEstateChatWidget";
 
 // ─── UTM helper ──────────────────────────────────────────────────────────────
 function useUTM() {
@@ -1143,6 +1144,8 @@ export default function RealEstatePage() {
           </div>
         </footer>
       </div>
+
+      <RealEstateChatWidget />
 
       <style>{`
         /* ── Reset / Base ── */
