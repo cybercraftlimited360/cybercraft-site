@@ -131,8 +131,8 @@ LANGUAGE: Detect their language and respond in it naturally throughout. If they 
 
 OPENING: When the conversation starts, greet them warmly, keep it short, and ask one easy question to get them talking. No pitch, no list of services. Just open the door.`;
 
-const EXTRACTION_PROMPT = `You are a lead data extractor. Given a conversation, extract the visitor's name, company/business, main challenge, and phone number if mentioned. Return ONLY valid JSON in this exact shape:
-{"name":"","company":"","challenge":"","phone":""}
+const EXTRACTION_PROMPT = `You are a lead data extractor. Given a conversation, extract the visitor's name, company/business, main challenge, email address, and phone number if mentioned. Return ONLY valid JSON in this exact shape:
+{"name":"","company":"","challenge":"","email":"","phone":""}
 Use empty string "" for any field not yet mentioned. Never guess or infer — only use what was explicitly stated.
 PHONE NUMBER RULES: Only extract a phone number if it is clearly complete — it must contain at least 10 digits. If the visitor is still in the middle of giving their number, or only a partial number has been shared, use "". Never extract fewer than 10 digits as a phone number.`;
 
@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
 
     const finalReply = await cerebrasChat(apiKey, trimmedMessages, enrichedPrompt, { maxTokens: 300 });
 
-    let lead: { name: string; company: string; challenge: string; phone?: string } | null = null;
+    let lead: { name: string; company: string; challenge: string; email?: string; phone?: string } | null = null;
     if (extractedRaw) {
       try {
         const parsed = JSON.parse(extractedRaw);
@@ -213,6 +213,7 @@ export async function POST(req: NextRequest) {
             name: parsed.name,
             company: parsed.company,
             challenge: parsed.challenge,
+            ...(parsed.email ? { email: parsed.email } : {}),
             ...(parsed.phone ? { phone: parsed.phone } : {}),
           };
         }
@@ -235,13 +236,13 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           subject: `💬 New Chat Lead — ${lead.name} @ ${lead.company}`,
-          body: `NEW LEAD CAPTURED VIA WEBSITE CHAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nName: ${lead.name}\nCompany: ${lead.company}\nChallenge: ${lead.challenge}\nPhone: ${lead.phone || "Not provided"}${blueprintContext ? `\n\nGUIDED FLOW ANSWERS\n${blueprintContext}` : ""}\n\n━━━━━━━━━━━━━━━━━━━━���━━━━━━━━\nCaptured by IRIS — CyberCraft360 Chat`,
+          body: `NEW LEAD CAPTURED VIA WEBSITE CHAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nName: ${lead.name}\nCompany: ${lead.company}\nChallenge: ${lead.challenge}\nEmail: ${lead.email || "Not provided"}\nPhone: ${lead.phone || "Not provided"}${blueprintContext ? `\n\nGUIDED FLOW ANSWERS\n${blueprintContext}` : ""}\n\n━━━━━━━━━━━━━━━━━━━━���━━━━━━━━\nCaptured by IRIS — CyberCraft360 Chat`,
         }),
       }).catch(() => {});
       fetch(new URL("/api/leads", req.url).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lead),
+        body: JSON.stringify({ ...lead, source: "iris", skipCall: true }),
       }).catch(() => {});
     }
 

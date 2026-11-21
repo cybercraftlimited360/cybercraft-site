@@ -178,9 +178,9 @@ export async function POST(req: NextRequest) {
     allLeads.push(enriched);
     await redis.set("leads:all", allLeads);
 
-    // Auto-trigger Amy only if phone number is complete (10+ digits)
+    // Auto-trigger Amy only if phone number is complete (10+ digits) and caller hasn't opted out
     let amyCalling = false;
-    if (lead.phone && isValidPhone(lead.phone)) {
+    if (lead.phone && isValidPhone(lead.phone) && !lead.skipCall) {
       triggerAmyCall({
         name: lead.name,
         company: lead.company,
