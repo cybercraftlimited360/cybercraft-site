@@ -208,7 +208,7 @@ export default function Scheduler() {
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
                 const key = dateKey(viewYear, viewMonth, day);
-                const isPast = key < todayKey;
+                const isPast = key <= todayKey;
                 const isSelected = key === selectedDate;
                 const isToday = key === todayKey;
                 return (

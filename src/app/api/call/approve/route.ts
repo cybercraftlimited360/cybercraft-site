@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const callRes = await fetch(`${origin}/api/call`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-admin-token": Buffer.from(`cc360:${process.env.ADMIN_SECRET}:v2`).toString("base64") },
     body: JSON.stringify({
       phone: lead.phone,
       name: lead.name,

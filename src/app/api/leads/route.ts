@@ -14,7 +14,7 @@ async function triggerAmyCall(lead: { name: string; company: string; challenge: 
   try {
     const res = await fetch(`${BASE_URL}/api/call`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-admin-token": Buffer.from(`cc360:${process.env.ADMIN_SECRET}:v2`).toString("base64") },
       body: JSON.stringify({
         phone: lead.phone,
         name: lead.name,

@@ -1,6 +1,16 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
+function isAuthorized(req: NextRequest): boolean {
+  const token = req.headers.get("x-admin-token");
+  const secret = process.env.ADMIN_SECRET;
+  if (!token || !secret) return false;
+  return token === Buffer.from(`cc360:${secret}:v2`).toString("base64");
+}
+
 export async function POST(req: NextRequest) {
+  if (!isAuthorized(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { phone, name, company, challenge } = await req.json();
 
